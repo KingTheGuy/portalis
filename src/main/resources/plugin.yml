@@ -1,0 +1,5 @@
+name: magic mirror
+version: 0.1
+author: surv
+main: com.surv.magic
+api-version: 1.19
