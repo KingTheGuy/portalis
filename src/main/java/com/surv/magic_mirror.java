@@ -1,12 +1,15 @@
 package com.surv;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.SoundCategory;
+import org.bukkit.entity.Enderman;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -14,7 +17,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -23,9 +28,14 @@ import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+
+import com.surv.items.Item_Manager;
+
 // import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
+
+//TODO: add SD tp
 
 //TODO: clean/ do re-something everything
 //TODO: change the way the player recives a magic mirror 
@@ -35,8 +45,8 @@ import net.kyori.adventure.text.Component;
 
 public class magic_mirror implements Listener {
   ///// Config////
-  String TheItemName = "Magic Mirror";
-  Material TheItemType = Material.BOOK;
+  // String TheItemName = "Magic Mirror";
+  // Material TheItemType = Material.BOOK;
   //// END////
 
   // TODO: add a delay, on item use.. will cause some problems otherwise.
@@ -61,10 +71,10 @@ public class magic_mirror implements Listener {
       selected = "LAST DEATH";
     }
     if (pitch >= 30 && pitch <= 61) {
-      selected = "INFO";
+      selected = "SHOPS";
     }
     if (pitch >= 60 && pitch <= 90) {
-      selected = "CLOSE";
+      selected = "INFO";
     }
     // play sound as the player changes their selection
     // index index = playersWithMenuOpen
@@ -161,6 +171,21 @@ public class magic_mirror implements Listener {
         }
 
       }
+      if (playerSelected == "SHOPS") {
+        // 5xp
+        if (xp >= 4) {
+          // tp
+          player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f, 1f);
+          player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+          player.setLevel(xp - 4);
+          Location new_location = new Location(Bukkit.getWorld("world"), -1806, 73, 1502);
+          // player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
+          player.teleportAsync(new_location);
+          success = true;
+
+        }
+
+      }
       if (playerSelected == "LAST DEATH") {
         // 3xp
         if (xp >= 3) {
@@ -222,6 +247,7 @@ public class magic_mirror implements Listener {
     ItemStack item = player.getInventory().getItemInMainHand();
     Material itemType = item.getType();
     Action action = ev.getAction();
+
     // player.sendMessage(ChatColor.AQUA + "______");
     // player.sendMessage(ChatColor.AQUA + "ItemType: " + itemType);
 
@@ -257,9 +283,11 @@ public class magic_mirror implements Listener {
       }
 
     }
-    if (itemType.equals(TheItemType)) {
-      String itemName = item.displayName().toString();
-      if (itemName.contains(TheItemName)) {
+    // if (itemType.equals(TheItemType)) {
+    if (ev.getItem() != null) {
+      if (ev.getItem().equals(Item_Manager.mm)) {
+        // String itemName = item.displayName().toString();
+        // if (itemName.contains(TheItemName)) {
         // item.setLore();
         boolean there = playersWithMenuOpen.stream().filter(o -> o.playerName == player.getName()).findFirst()
             .isPresent();
@@ -297,21 +325,29 @@ public class magic_mirror implements Listener {
           //// player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
 
         }
+        // }
       }
     }
   }
 
-  // wait till i have player use item first
-  // @EventHandler
-  // public void onPlayerDismount(EntityDismountEvent ev) {
-  // Audience audience = Audience.audience(ev.getEntity());
-  // audience.sendActionBar(() -> Component.text(ChatColor.BLUE + "dismounted " +
-  // ev.getEntity().getVehicle().getType().toString()));
-  // if (ev.getEntity().getType() == EntityType.PLAYER) {
-  // audience.sendActionBar(() -> Component.text(ChatColor.BLUE + "dismounted" +
-  // ev.getEntity().getType().toString()));
-  // }
-  // }
+  @EventHandler
+  public void onPlayerDamageEntity(EntityDamageByEntityEvent ev) {
+    if (ev.getEntity() instanceof Enderman && ev.getDamager() instanceof Player) {
+      Player player = (Player) ev.getDamager();
+      // player.sendMessage("Something is working ..but..");
+      // Enderman enderman = (Enderman) ev.getEntity();
+      if (player.getInventory().getItemInMainHand().getType().equals(Material.BOOK)) {
+        // player.sendMessage("This should be working then..");
+        player.getInventory().addItem(Item_Manager.mm);
+        player.playSound(ev.getEntity().getLocation(), Sound.ENTITY_EVOKER_CAST_SPELL, SoundCategory.BLOCKS, 1, 1);
+
+        ItemStack old_stack = player.getInventory().getItemInMainHand();
+        old_stack.setAmount(old_stack.getAmount() - 1);
+        player.getInventory().setItemInMainHand(old_stack);
+      }
+      // do something when player attacks enderman
+    }
+  }
 
   @EventHandler
   public void onPlayerMove(PlayerMoveEvent ev) {
@@ -379,14 +415,16 @@ public class magic_mirror implements Listener {
 
     if (isEmpty != null) {
       Material itemType = isEmpty.getType();
-      String itemInUseName = player.getInventory().getItem(newSlot).displayName().toString();
+      // String itemInUseName =
+      // player.getInventory().getItem(newSlot).displayName().toString();
 
-      if (itemType.equals(TheItemType)) {
-        if (itemInUseName.contains(TheItemName)) {
-          if (!hasItemInHand.contains(player.getName())) {
-            hasItemInHand.add(player.getName());
-          }
+      // if (ev.getItem().equals(Item_Manager.mm)) {
+      if (itemType.equals(Item_Manager.mm.getType())) {
+        // if (itemInUseName.contains(TheItemName)) {
+        if (!hasItemInHand.contains(player.getName())) {
+          hasItemInHand.add(player.getName());
         }
+        // }
       } else {
         notHoldingItem = true;
       }
@@ -447,14 +485,11 @@ public class magic_mirror implements Listener {
   }
 
   // @EventHandler
-  // public void onPlayerJump(PlayerJumpEvent ev) {
-  // Player player = ev.getPlayer();
-  // player.sendMessage(ChatColor.GOLD + "Some Data: ");
-  // for (var i : playersWithMenuOpen) {
-  // player.sendMessage("menuOpen: " + i.playerName);
+  // public void onPlayerDeath(PlayerDeathEvent ev) {
+  // // Player player = ev.getPlayer();
+  // List<ItemStack> dropped_items = ev.getDrops();
+  // // Location death_location = player.getLocation();
+  // if (dropped_items.contains(Item_Manager.mm)) {
   // }
-  // player.sendMessage(ChatColor.BLUE + "holding: " + hasItemInHand);
-
   // }
-
 }
