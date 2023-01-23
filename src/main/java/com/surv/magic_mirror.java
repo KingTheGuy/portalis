@@ -43,6 +43,16 @@ import net.kyori.adventure.text.Component;
 //TODO: figure out how to "add" my own item. so that the magic mirror is stricktly made
 //TODO: implement save/ reload data.
 
+//TODO: i could possibly add in the TP to other players again..
+
+//TODO: add a confirmation menu or sub menu.. not sure
+//will be needed for reseting home tp or teleporting somewhere.
+
+//TODO: move SPAWN, SHOPS.. and any other server wide warps to its own menu
+
+//FIXME: let player know not to have a shield in hand.. 
+//or add code to ignore the shield or any other item in offhand
+
 public class magic_mirror implements Listener {
   ///// Config////
   // String TheItemName = "Magic Mirror";
@@ -57,57 +67,58 @@ public class magic_mirror implements Listener {
     String selection = "-";
   }
 
-  ArrayList<PlayerMenuOption> playersWithMenuOpen = new ArrayList<PlayerMenuOption>();
+  menu new_menu = new menu();
 
-  public String menuSelecting(float pitch, Player player) {
-    String selected = "-";
-    if (pitch >= -90 && pitch <= -60) {
-      selected = "BED";
-    }
-    if (pitch >= -61 && pitch <= -30) {
-      selected = "SPAWN";
-    }
-    if (pitch >= -29 && pitch <= 29) {
-      selected = "LAST DEATH";
-    }
-    if (pitch >= 30 && pitch <= 61) {
-      selected = "SHOPS";
-    }
-    if (pitch >= 60 && pitch <= 90) {
-      selected = "INFO";
-    }
-    // play sound as the player changes their selection
-    // index index = playersWithMenuOpen
-    // .indexOf(playersWithMenuOpen.stream().filter(o -> o.playerName ==
-    // player.getName()).findFirst().orElse(-1));
-    boolean there = playersWithMenuOpen.stream().filter(o -> o.playerName == player.getName()).findFirst().isPresent();
-    int index = -1;
-    if (there == true) {
-      index = playersWithMenuOpen
-          .indexOf(playersWithMenuOpen.stream().filter(o -> o.playerName == player.getName()).findFirst().get());
-    }
-    // index being if the player has a spot in the array
-    if (index > -1) {
-      String oldSelection = playersWithMenuOpen.get(index).selection;
-      if (oldSelection != selected) {
-        player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_WORK_CARTOGRAPHER, 1f, 1f);
-      }
-      playersWithMenuOpen.get(index).selection = selected;
-    }
-    return selected;
-  }
+  // ArrayList<PlayerMenuOption> playersWithMenuOpen = new
+  // ArrayList<PlayerMenuOption>();
+
+  // public String menuSelecting(float pitch, Player player) {
+  // String selected = "-";
+  // if (pitch >= -90 && pitch <= -60) {
+  // selected = "BED";
+  // }
+  // if (pitch >= -61 && pitch <= -30) {
+  // selected = "SPAWN";
+  // }
+  // if (pitch >= -29 && pitch <= 29) {
+  // selected = "LAST DEATH";
+  // }
+  // if (pitch >= 30 && pitch <= 61) {
+  // selected = "SHOPS";
+  // }
+  // if (pitch >= 60 && pitch <= 90) {
+  // selected = "INFO";
+  // }
+  // // play sound as the player changes their selection
+  // // index index = playersWithMenuOpen
+  // // .indexOf(playersWithMenuOpen.stream().filter(o -> o.playerName ==
+  // // player.getName()).findFirst().orElse(-1));
+  // boolean there = playersWithMenuOpen.stream().filter(o -> o.playerName ==
+  // player.getName()).findFirst().isPresent();
+  // int index = -1;
+  // if (there == true) {
+  // index = playersWithMenuOpen
+  // .indexOf(playersWithMenuOpen.stream().filter(o -> o.playerName ==
+  // player.getName()).findFirst().get());
+  // }
+  // // index being if the player has a spot in the array
+  // if (index > -1) {
+  // String oldSelection = playersWithMenuOpen.get(index).selection;
+  // if (oldSelection != selected) {
+  // player.playSound(player.getLocation(),
+  // Sound.ENTITY_VILLAGER_WORK_CARTOGRAPHER, 1f, 1f);
+  // }
+  // playersWithMenuOpen.get(index).selection = selected;
+  // }
+  // return selected;
+  // }
 
   @EventHandler
   public void onLeave(PlayerQuitEvent ev) {
     Player player = ev.getPlayer();
-    boolean there = playersWithMenuOpen.stream().filter(o -> o.playerName == player.getName()).findFirst().isPresent();
-    int index = -1;
-    if (there == true) {
-      index = playersWithMenuOpen
-          .indexOf(playersWithMenuOpen.stream().filter(o -> o.playerName == player.getName()).findFirst().get());
-      playersWithMenuOpen.remove(index);
-    }
+    new_menu.close_menu(player);
   }
+
   // @EventHandler
   // public void onChat(AsyncChatEvent ev) {
   // Player player = ev.getPlayer();
@@ -134,14 +145,19 @@ public class magic_mirror implements Listener {
     Player player = ev.getPlayer();
     boolean isSneaking = ev.isSneaking();
 
-    boolean there = playersWithMenuOpen.stream().filter(o -> o.playerName == player.getName()).findFirst().isPresent();
-    int index = -1;
-    if (there == true) {
-      index = playersWithMenuOpen
-          .indexOf(playersWithMenuOpen.stream().filter(o -> o.playerName == player.getName()).findFirst().get());
-    }
+    int index = new_menu.get_player(player);
+    // boolean there = playersWithMenuOpen.stream().filter(o -> o.playerName ==
+    // player.getName()).findFirst().isPresent();
+    // int index = -1;
+    // if (there == true) {
+    // index = playersWithMenuOpen
+    // .indexOf(playersWithMenuOpen.stream().filter(o -> o.playerName ==
+    // player.getName()).findFirst().get());
+    // }
+
     if (isSneaking == true && index > -1) {
-      String playerSelected = playersWithMenuOpen.get(index).selection;
+      // String playerSelected = playersWithMenuOpen.get(index).selection;
+      String playerSelected = new_menu.has_menu.get(index).selected;
       boolean success = false;
       int xp = player.getLevel();
       if (playerSelected == "BED") {
@@ -173,11 +189,11 @@ public class magic_mirror implements Listener {
       }
       if (playerSelected == "SHOPS") {
         // 5xp
-        if (xp >= 4) {
+        if (xp >= 3) {
           // tp
           player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f, 1f);
           player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
-          player.setLevel(xp - 4);
+          player.setLevel(xp - 3);
           Location new_location = new Location(Bukkit.getWorld("world"), -1806, 73, 1502);
           // player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
           player.teleportAsync(new_location);
@@ -224,15 +240,17 @@ public class magic_mirror implements Listener {
       }
       if (success == true) {
         // FIXME: there is an issue here, right clicking a block acts incorrectly
-        playersWithMenuOpen.remove(index);
-        player.removePotionEffect(PotionEffectType.BLINDNESS);
+        // playersWithMenuOpen.remove(index);
+        // player.removePotionEffect(PotionEffectType.BLINDNESS);
+        new_menu.close_menu(player);
       } else {
         if (playerSelected != "-") {
           Audience audience = Audience.audience(player);
           audience.sendActionBar(() -> Component.text(ChatColor.RED + "not Enough xp"));
           player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
-          playersWithMenuOpen.remove(index);
-          player.removePotionEffect(PotionEffectType.BLINDNESS);
+          // playersWithMenuOpen.remove(index);
+          // player.removePotionEffect(PotionEffectType.BLINDNESS);
+          new_menu.close_menu(player);
         }
       }
       player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
@@ -283,40 +301,14 @@ public class magic_mirror implements Listener {
       }
 
     }
-    // if (itemType.equals(TheItemType)) {
+    // on use Magic Mirror
     if (ev.getItem() != null) {
       if (ev.getItem().equals(Item_Manager.mm)) {
-        // String itemName = item.displayName().toString();
-        // if (itemName.contains(TheItemName)) {
-        // item.setLore();
-        boolean there = playersWithMenuOpen.stream().filter(o -> o.playerName == player.getName()).findFirst()
-            .isPresent();
-        int index = -1;
-        if (there == true) {
-          index = playersWithMenuOpen
-              .indexOf(playersWithMenuOpen.stream().filter(o -> o.playerName == player.getName()).findFirst().get());
-        }
-        if (playersWithMenuOpen.size() > 0) {
-          index = playersWithMenuOpen
-              .indexOf(playersWithMenuOpen.stream().filter(o -> o.playerName == player.getName()).findFirst().get());
-        }
-
         if (action.equals(Action.RIGHT_CLICK_BLOCK) || action.equals(Action.RIGHT_CLICK_AIR)) {
-          // add player to array if not already in it
-
-          if (index <= -1) {
-            PlayerMenuOption playerSelection = new PlayerMenuOption();
-            playerSelection.playerName = player.getName();
-            playersWithMenuOpen.add(playerSelection);
-            player.addPotionEffect(
-                new PotionEffect(PotionEffectType.BLINDNESS, 600, 1).withAmbient(false).withParticles(false));
-          }
+          new_menu.open_menu(player);
         } else {
           // close the menu
-          if (index > -1) {
-            playersWithMenuOpen.remove(index);
-            player.removePotionEffect(PotionEffectType.BLINDNESS);
-          }
+          new_menu.close_menu(player);
           player.sendMessage(
               ChatColor.GOLD + "HOW TO USE: look up/down to see all selections. to confirm your selection, crouch.");
           player.sendMessage(ChatColor.GRAY
@@ -356,49 +348,65 @@ public class magic_mirror implements Listener {
     // player.sendMessage("this is it:" + block.getType());
     // player.getVehicle().getType();
 
-    if (block.getType() == Material.DIRT_PATH) {
-      player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 40, 1).withAmbient(false).withParticles(true));
-      if (player.isInsideVehicle()) {
-        EntityType entType = player.getVehicle().getType();
-        if (entType == EntityType.HORSE || entType == EntityType.MULE || entType == EntityType.DONKEY
-            || entType == EntityType.PIG) {
-          if (player.getVehicle() instanceof LivingEntity livingEntity) {
-            livingEntity.addPotionEffect(
-                new PotionEffect(PotionEffectType.SPEED, 40, 4).withAmbient(false).withParticles(true));
-          }
+    // speed effect stuff
+    // if (block.getType() == Material.DIRT_PATH) {
+    // player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 40,
+    // 1).withAmbient(false).withParticles(true));
+    // if (player.isInsideVehicle()) {
+    // EntityType entType = player.getVehicle().getType();
+    // if (entType == EntityType.HORSE || entType == EntityType.MULE || entType ==
+    // EntityType.DONKEY
+    // || entType == EntityType.PIG) {
+    // if (player.getVehicle() instanceof LivingEntity livingEntity) {
+    // livingEntity.addPotionEffect(
+    // new PotionEffect(PotionEffectType.SPEED, 40,
+    // 4).withAmbient(false).withParticles(true));
+    // }
+    // }
+    // }
+    // }
+
+    // does anyone have the menu?
+    // player.sendMessage(new_menu.has_menu.toString());
+
+    // Magic Mirror stuff
+    int index = new_menu.get_player(player);
+    if (index != -1) {
+
+      List<String> options = new ArrayList<>();
+      options.add("BED");
+      options.add("SPAWN");
+      options.add("LAST DEATH");
+      options.add("SHOPS");
+      options.add("INFO");
+      new_menu.menu_options(options, player);
+
+      // TODO: this needs to be cleaned up. no need for all these strings
+      Audience audience = Audience.audience(player);
+      String selection = new_menu.has_menu.get(index).selected;
+      if (selection == "BED") {
+        audience.sendActionBar(() -> Component.text("BED" + ChatColor.GRAY + " 6xp"));
+      } else if (selection == "SPAWN") {
+        audience.sendActionBar(() -> Component.text("SPAWN" + ChatColor.GRAY + " 4xp"));
+
+      } else if (selection == "LAST DEATH") {
+        audience.sendActionBar(() -> Component.text("LAST DEATH" + ChatColor.GRAY + " 3xp"));
+
+      } else if (selection == "SHOPS") {
+        audience.sendActionBar(() -> Component.text("SHOPS" + ChatColor.GRAY + " 3xp"));
+
+      } else {
+        audience.sendActionBar(() -> Component.text(selection));
+      }
+      boolean hasBlindness = false;
+      for (PotionEffect effect : player.getActivePotionEffects()) {
+        if (effect.getType().equals(PotionEffectType.BLINDNESS)) {
+          hasBlindness = true;
         }
       }
-    }
-    if (playersWithMenuOpen.size() > 0) {
-      boolean there = playersWithMenuOpen.stream().filter(o -> o.playerName == player.getName()).findFirst()
-          .isPresent();
-      if (there == true) {
-        int index = playersWithMenuOpen
-            .indexOf(playersWithMenuOpen.stream().filter(o -> o.playerName == player.getName()).findFirst().get());
-        String selection = menuSelecting(player.getLocation().getPitch(), player);
-        Audience audience = Audience.audience(player);
-        if (selection == "BED") {
-          audience.sendActionBar(() -> Component.text("BED" + ChatColor.GRAY + " 6xp"));
-
-        } else if (selection == "SPAWN") {
-          audience.sendActionBar(() -> Component.text("SPAWN" + ChatColor.GRAY + " 4xp"));
-
-        } else if (selection == "LAST DEATH") {
-          audience.sendActionBar(() -> Component.text("LAST DEATH" + ChatColor.GRAY + " 3xp"));
-
-        } else {
-          audience.sendActionBar(() -> Component.text(selection));
-        }
-        boolean hasBlindness = false;
-        for (PotionEffect effect : player.getActivePotionEffects()) {
-          if (effect.getType().equals(PotionEffectType.BLINDNESS)) {
-            hasBlindness = true;
-          }
-        }
-        if (hasBlindness == false) {
-          playersWithMenuOpen.remove(index);
-        }
-
+      if (hasBlindness == false) {
+        new_menu.close_menu(player);
+        // playersWithMenuOpen.remove(index);
       }
 
     }
@@ -431,12 +439,11 @@ public class magic_mirror implements Listener {
     } else {
       notHoldingItem = true;
     }
-
     if (notHoldingItem == true) {
       if (hasItemInHand.size() > 0) {
         if (hasItemInHand.contains(player.getName())) {
           hasItemInHand.remove(player.getName());
-          player.removePotionEffect(PotionEffectType.BLINDNESS);
+          new_menu.close_menu(player);
         }
       }
     }
@@ -484,12 +491,4 @@ public class magic_mirror implements Listener {
     }
   }
 
-  // @EventHandler
-  // public void onPlayerDeath(PlayerDeathEvent ev) {
-  // // Player player = ev.getPlayer();
-  // List<ItemStack> dropped_items = ev.getDrops();
-  // // Location death_location = player.getLocation();
-  // if (dropped_items.contains(Item_Manager.mm)) {
-  // }
-  // }
 }
