@@ -1,7 +1,13 @@
 package com.surv;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -25,6 +31,7 @@ import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
+import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -35,8 +42,12 @@ import com.surv.items.Item_Manager;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 
-//TODO: add SD tp
+//DOING//
+//TODO: save last death to file and have it load back up on restart
 
+/////////
+
+//SOME TIME//
 //TODO: clean/ do re-something everything
 //TODO: change the way the player recives a magic mirror 
 //maybe some in world recipe
@@ -50,6 +61,8 @@ import net.kyori.adventure.text.Component;
 
 //TODO: move SPAWN, SHOPS.. and any other server wide warps to its own menu
 
+//TODO: reset/increase the blindness effect when the player selectes a menu option
+
 //FIXME: let player know not to have a shield in hand.. 
 //or add code to ignore the shield or any other item in offhand
 
@@ -61,6 +74,89 @@ public class magic_mirror implements Listener {
 
   // TODO: add a delay, on item use.. will cause some problems otherwise.
   // may need to change the confirmation on select to be crouch.
+  // WHAT AM I DOING WRONG HERE?//
+  public List<player_deaths> deaths = new ArrayList<>();
+
+  class player_deaths {
+    public Player name;
+    public Location loc;
+
+  }
+
+  public String PLAYER_WARPS = "player_warps.yaml";
+
+  // public void saveToFile() {
+  // StringBuilder sb = new StringBuilder();
+  // for (Camp camp : campfires) {
+  // sb.append("- dimensionName: ").append(camp.dimensionName).append("\n")
+  // .append(" posX: ").append(camp.posX).append("\n")
+  // .append(" posY: ").append(camp.posY).append("\n")
+  // .append(" posZ: ").append(camp.posZ).append("\n")
+  // .append(" owner: ").append(camp.owner).append("\n")
+  // .append(" pick_crops: ").append(camp.pick_crops).append("\n")
+  // .append(" live_stock: ").append(camp.live_stock).append("\n\n");
+  // }
+  // String yamlString = sb.toString();
+  // try (FileWriter writer = new FileWriter(PLAYER_WARPS)) {
+  // writer.write(yamlString);
+  // } catch (IOException o) {
+  // }
+  // }
+
+  // public void loadFromFile() {
+  // try {
+  // File file = new File(PLAYER_WARPS);
+  // Scanner scanner = new Scanner(file);
+  // Camp new_claim = new Camp();
+  // while (scanner.hasNextLine()) {
+  // String line = scanner.nextLine();
+  // String[] splits = line.split(": ", 0);
+  // if (line.toString().startsWith("-")) {
+  // System.out.println("::this is the START of a claim::");
+  // }
+  // if (splits[0].contains("dimensionName")) {
+  // new_claim.dimensionName = splits[1];
+  // System.out.println(String.format("size of name WORLD is: %s should be 5",
+  // splits[1].length()));
+  // } else if (splits[0].contains("posX")) {
+  // new_claim.posX = Integer.parseInt(splits[1]);
+
+  // } else if (splits[0].contains("posY")) {
+  // new_claim.posY = Integer.parseInt(splits[1]);
+
+  // } else if (splits[0].contains("posZ")) {
+  // new_claim.posZ = Integer.parseInt(splits[1]);
+
+  // } else if (splits[0].contains("owner")) {
+  // new_claim.owner = splits[1];
+
+  // } else if (splits[0].contains("pick_crops")) {
+  // new_claim.pick_crops = Boolean.parseBoolean(splits[1]);
+
+  // } else if (splits[0].contains("live_stock")) {
+  // new_claim.live_stock = Boolean.parseBoolean(splits[1]);
+  // } else if (line.length() == 0) {
+  // campfires.add(new_claim);
+  // System.out.println(new_claim.toString());
+  // System.out.println("::this is the END of a claim::");
+  // }
+  // System.out.println(line);
+  // }
+  // scanner.close();
+  // } catch (FileNotFoundException e) {
+  // System.out.println("File not found");
+  // }
+  // }
+  // HUH//
+
+  @EventHandler
+  public void onServerStart(ServerLoadEvent ev) {
+    System.out.println(String.format("Does this not work %s", deaths.toString()));
+    // loadFromFile();
+    System.out.println(String.format("Does this not work %s", deaths.toString()));
+  }
+
+  // HUH//
 
   class PlayerMenuOption {
     String playerName;
@@ -205,20 +301,24 @@ public class magic_mirror implements Listener {
       if (playerSelected == "LAST DEATH") {
         // 3xp
         if (xp >= 3) {
-          boolean dead = playerDeathData.stream().filter(o -> o.playerName == player.getName()).findFirst().isPresent();
-          if (dead == true) {
-            int hasPlayerDied = playerDeathData
-                .indexOf(playerDeathData.stream().filter(o -> o.playerName == player.getName()).findFirst().get());
-            // NOTE: this looks like its had been fixed, this line was using a random index,
-            // but no more.
-            PlayerDeathLoc deathData = playerDeathData.get(hasPlayerDied);
-            player.setLevel(xp - 3);
-            player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f, 1f);
-            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
-            Location loc = new Location(Bukkit.getWorld(deathData.dim), deathData.x, deathData.y, deathData.z);
-            player.teleportAsync(loc);
-            success = true;
+          int dex = -1;
+          if (deaths.size() > 0) {
+            dex = deaths.indexOf(deaths.stream().filter(o -> o == player).findFirst().get());
+            if (dex > -1) {
+              // NOTE: this looks like its had been fixed, this line was using a random index,
+              // but no more.
+              player_deaths death_data = deaths.get(index);
+              player.setLevel(xp - 3);
+              player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f, 1f);
+              player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+              player.teleportAsync(death_data.loc);
+              success = true;
+
+            }
           } else {
+            player.sendMessage(ChatColor.RED + "no deaths");
+          }
+          if (dex == -1) {
             player.sendMessage(ChatColor.RED + "seems like you havent died yet");
 
           }
@@ -459,7 +559,7 @@ public class magic_mirror implements Listener {
 
   }
 
-  ArrayList<PlayerDeathLoc> playerDeathData = new ArrayList<PlayerDeathLoc>();
+  // ArrayList<PlayerDeathLoc> playerDeathData = new ArrayList<PlayerDeathLoc>();
 
   @EventHandler
   public void onPlayerDeath(EntityDeathEvent ev) {
@@ -469,25 +569,41 @@ public class magic_mirror implements Listener {
       Entity player = ev.getEntity();
       var location = player.getLocation();
       // check if the array contains the player or not
-      boolean there = playerDeathData.stream().filter(o -> o.playerName == player.getName()).findFirst()
-          .isPresent();
-      if (there == true) {
-        int index = playerDeathData
-            .indexOf(playerDeathData.stream().filter(o -> o.playerName == player.getName()).findAny().get());
-        playerDeathData.get(index).dim = player.getWorld().getName();
-        playerDeathData.get(index).x = (int) location.getX();
-        playerDeathData.get(index).y = (int) location.getY();
-        playerDeathData.get(index).z = (int) location.getZ();
-      } else {
-        PlayerDeathLoc playerDeath = new PlayerDeathLoc();
-        playerDeath.playerName = player.getName();
-        playerDeath.dim = player.getWorld().getName();
-        playerDeath.x = (int) location.getX();
-        playerDeath.y = (int) location.getY();
-        playerDeath.z = (int) location.getZ();
-        playerDeathData.add(playerDeath);
+      // boolean there = playerDeathData.stream().filter(o -> o.playerName ==
+      // player.getName()).findFirst()
+      // .isPresent();
+      // if (there == true) {
+      // int index = playerDeathData
+      // .indexOf(playerDeathData.stream().filter(o -> o.playerName ==
+      // player.getName()).findAny().get());
+      // playerDeathData.get(index).dim = player.getWorld().getName();
+      // playerDeathData.get(index).x = (int) location.getX();
+      // playerDeathData.get(index).y = (int) location.getY();
+      // playerDeathData.get(index).z = (int) location.getZ();
+      // } else {
+      // PlayerDeathLoc playerDeath = new PlayerDeathLoc();
+      // playerDeath.playerName = player.getName();
+      // playerDeath.dim = player.getWorld().getName();
+      // playerDeath.x = (int) location.getX();
+      // playerDeath.y = (int) location.getY();
+      // playerDeath.z = (int) location.getZ();
+      // playerDeathData.add(playerDeath);
 
+      // }
+      player_deaths this_death = new player_deaths();
+      this_death.name = (Player) player;
+      this_death.loc = player.getLocation();
+      int index = -1;
+      if (deaths.size() > 0) {
+        index = deaths.indexOf(deaths.stream().filter(p -> p == player).findFirst().get());
+        if (index > -1) {
+          deaths.get(index).loc = player.getLocation();
+        }
       }
+      if (index == -1) {
+        deaths.add(this_death);
+      }
+      // saveToFile();
     }
   }
 

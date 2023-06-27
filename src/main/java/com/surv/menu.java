@@ -11,6 +11,8 @@ import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.md_5.bungee.api.ChatColor;
 
+// GET BOOK/ GIVE BOOK.. hit enderman with a book.
+
 //TODO: this may be the chance to add particle markers showing where to aim for menu option
 //FIXME: timer may not be needed.. just using the built in effect for a timer
 //TODO: figure out how to do sub menus.. by by just recalling a menu with new options
