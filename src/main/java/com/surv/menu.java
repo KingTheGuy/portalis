@@ -50,35 +50,32 @@ public class menu {
 	public void menu_prompt(List<String> options, Player player) {
 		int pitch = (int) player.getLocation().getPitch();
 		// requires player move
-		int selected = 3;
+
+		int selected = 0;
 		if (within(pitch, -90, -60)) {
-			if (options.get(0) != null) {
-				selected = 0;
-			}
+			selected = 0;
 		}
 		if (within(pitch, -61, -30)) {
-			if (options.get(1) != null) {
-				selected = 1;
-			}
+			selected = 1;
 		}
 		if (within(pitch, -29, 29)) {
-			if (options.get(2) != null) {
-				selected = 2;
-			}
+			selected = 2;
 		}
 		if (within(pitch, 30, 61)) {
-			if (options.get(3) != null) {
-				selected = 3;
-			}
+			selected = 3;
 		}
 		if (within(pitch, 60, 90)) {
-			if (options.get(4) != null) {
-				selected = 4;
-			}
+			selected = 4;
 		}
 		int index = get_player(player);
 		if (index != -1) {
-			has_menu_open.get(index).selected_text = options.get(selected);
+			if (selected > options.size()) {
+				has_menu_open.get(index).selected_text = "-";
+
+			} else {
+				has_menu_open.get(index).selected_text = options.get(selected);
+
+			}
 			// player.sendMessage(String.format("selected %s: ", selected));
 		}
 		// now we have the player's selection

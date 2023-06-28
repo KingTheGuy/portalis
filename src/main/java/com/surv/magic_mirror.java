@@ -88,13 +88,13 @@ public class magic_mirror implements Listener {
 
   public String PLAYER_WARPS = "player_warps.yaml";
 
-  public class Main_menu_options {
-    public String name;
-    public int xp;
+  public class warp_options_cost {
+    private String name;
+    private int xp_cost;
 
-    public Main_menu_options(String name, int xp) {
+    public warp_options_cost(String name, int xp) {
       this.name = name;
-      this.xp = xp;
+      this.xp_cost = xp;
 
     }
 
@@ -104,8 +104,18 @@ public class magic_mirror implements Listener {
     }
 
     public int getXPCost() {
-      return this.xp;
+      return this.xp_cost;
     }
+  }
+
+  ArrayList<warp_options_cost> main_menu_selections = new ArrayList<>();
+
+  public void loader() {
+    main_menu_selections.add(new warp_options_cost("LAST DEATH", 6)); // 0
+    main_menu_selections.add(new warp_options_cost("BED", 3)); // 1
+    main_menu_selections.add(new warp_options_cost("PLAYERS", 0)); // 2
+    main_menu_selections.add(new warp_options_cost("WARPS", 4)); // 3
+    main_menu_selections.add(new warp_options_cost("INFO", 0)); // 4
   }
 
   // public void saveToFile() {
@@ -177,6 +187,7 @@ public class magic_mirror implements Listener {
     System.out.println(String.format("Does this not work %s", deaths.toString()));
     // loadFromFile();
     System.out.println(String.format("Does this not work %s", deaths.toString()));
+    loader();
   }
 
   // HUH//
@@ -278,52 +289,11 @@ public class magic_mirror implements Listener {
       // String playerSelected = playersWithMenuOpen.get(index).selection;
       String player_selected_text = prompt.has_menu_open.get(index).selected_text;
       boolean success = false;
+      boolean sub_menu = false;
       int xp = player.getLevel();
-      if (player_selected_text == "BED") {
-        if (xp >= 6) {
-          var has_bed = player.getBedSpawnLocation();
-          if (has_bed == null) {
-            player.sendMessage(ChatColor.RED + "you don't have a bed.");
-          } else {
-            player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f, 1f);
-            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
-            player.setLevel(xp - 6);
-            player.teleportAsync(player.getBedSpawnLocation());
-            success = true;
-          }
-        }
-      }
-      if (player_selected_text == "SPAWN") {
-        // 5xp
-        if (xp >= 4) {
-          // tp
-          player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f, 1f);
-          player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
-          player.setLevel(xp - 4);
-          player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
-          success = true;
 
-        }
-
-      }
-      if (player_selected_text == "SHOPS") {
-        // 5xp
-        if (xp >= 3) {
-          // tp
-          player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f, 1f);
-          player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
-          player.setLevel(xp - 3);
-          Location new_location = new Location(Bukkit.getWorld("world"), -1806, 73, 1502);
-          // player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
-          player.teleportAsync(new_location);
-          success = true;
-
-        }
-
-      }
-      if (player_selected_text == "LAST DEATH") {
-        // 3xp
-        if (xp >= 3) {
+      if (player_selected_text == main_menu_selections.get(0).getName()) {
+        if (xp >= main_menu_selections.get(0).getXPCost()) {
           int dex = -1;
           if (deaths.size() > 0) {
             dex = deaths.indexOf(deaths.stream().filter(o -> o == player).findFirst().get());
@@ -331,7 +301,7 @@ public class magic_mirror implements Listener {
               // NOTE: this looks like its had been fixed, this line was using a random index,
               // but no more.
               player_deaths death_data = deaths.get(index);
-              player.setLevel(xp - 3);
+              player.setLevel(xp - main_menu_selections.get(0).getXPCost());
               player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f, 1f);
               player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
               player.teleportAsync(death_data.loc);
@@ -346,40 +316,78 @@ public class magic_mirror implements Listener {
 
           }
         }
-
       }
-      if (player_selected_text == "INFO") {
-        // show the player info on how to use item
+      if (player_selected_text == main_menu_selections.get(1).getName()) {
+        if (xp >= main_menu_selections.get(1).getXPCost()) {
+          var has_bed = player.getBedSpawnLocation();
+          if (has_bed == null) {
+            player.sendMessage(ChatColor.RED + "you don't have a bed.");
+            success = false;
+          } else {
+            player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f, 1f);
+            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+            player.setLevel(xp - main_menu_selections.get(1).getXPCost());
+            player.teleportAsync(player.getBedSpawnLocation());
+            success = true;
+          }
+        }
+      }
+      if (player_selected_text == main_menu_selections.get(2).getName()) {
+        if (xp >= main_menu_selections.get(2).getXPCost()) {
+        }
+      }
+      if (player_selected_text == main_menu_selections.get(3).getName()) {
+        if (xp >= main_menu_selections.get(3).getXPCost()) {
+          var options = List.of("SPAWN", "SHOPPING");
+          prompt.close_menu(player);
+          // close menu then open a new one with new options.
+          menu new_prompt = new menu();
+          success = true;
+          sub_menu = true;
+          new_prompt.menu_prompt(options, player);
+          new_prompt.open_menu(player);
+        }
+      }
+      if (player_selected_text == "SPAWN") {
+        player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f,
+            1f);
+        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+        player.setLevel(xp - main_menu_selections.get(2).getXPCost());
+        player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
+        success = true;
+      }
+      if (player_selected_text == "SHOPPING") {
+        player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f, 1f);
+        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+        player.setLevel(xp - main_menu_selections.get(2).getXPCost());
+        Location new_location = new Location(Bukkit.getWorld("world"), -1806, 73, 1502);
+        // player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
+        player.teleportAsync(new_location);
+        success = true;
+      }
+      if (player_selected_text == main_menu_selections.get(4).getName()) {
         player.sendMessage(
             ChatColor.AQUA + "What is there to tell? you crouch to carry on with your selection and it costs xp.");
         player.sendMessage(ChatColor.AQUA
             + "Oh btw if you have an empty bottle in hand you can crouch use it and collect you xp in it. Great for later use.");
         success = true;
-
       }
-      if (player_selected_text == "CLOSE") {
-        success = true;
-
-      }
-      if (success == true) {
+      if (success == false) {
         // FIXME: there is an issue here, right clicking a block acts incorrectly
         // playersWithMenuOpen.remove(index);
         // player.removePotionEffect(PotionEffectType.BLINDNESS);
+        Audience audience = Audience.audience(player);
+        audience.sendActionBar(() -> Component.text(ChatColor.RED + "not Enough xp"));
+        player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
+        // playersWithMenuOpen.remove(index);
+        // player.removePotionEffect(PotionEffectType.BLINDNESS);
+      }
+      if (sub_menu != true) {
         prompt.close_menu(player);
-      } else {
-        if (player_selected_text != "-") {
-          Audience audience = Audience.audience(player);
-          audience.sendActionBar(() -> Component.text(ChatColor.RED + "not Enough xp"));
-          player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
-          // playersWithMenuOpen.remove(index);
-          // player.removePotionEffect(PotionEffectType.BLINDNESS);
-          prompt.close_menu(player);
-        }
+
       }
       player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
-
     }
-
   }
 
   @EventHandler
@@ -497,29 +505,39 @@ public class magic_mirror implements Listener {
     if (index != -1) {
 
       // ArrayList<String> selection_options = new ArrayList<>();
-      var main_selection_options = List.of("LAST DEATH", "BED", "WARPS", "PLAYERS", "INFO");
-      prompt.menu_prompt(main_selection_options, player);
+      // var main_selection_options = List.of("LAST DEATH", "BED", "WARPS", "PLAYERS",
+      // "INFO");
+      var names_only = List.of(
+          main_menu_selections.get(0).name,
+          main_menu_selections.get(1).name,
+          main_menu_selections.get(2).name,
+          main_menu_selections.get(3).name,
+          main_menu_selections.get(4).name);
+      prompt.menu_prompt(names_only, player);
 
       // TODO: this needs to be cleaned up. no need for all these strings
       Audience audience = Audience.audience(player);
       String selection = prompt.has_menu_open.get(index).selected_text;
-      if (selection == main_selection_options.get(0)) {
+      if (selection == main_menu_selections.get(0).name) {
         audience.sendActionBar(
-            () -> Component.text(String.format("%s", main_selection_options.get(0)) + ChatColor.GRAY + " 6xp"));
-      } else if (selection == main_selection_options.get(1)) {
+            () -> Component.text(String.format("%s", main_menu_selections.get(0).getName()) + ChatColor.GRAY
+                + String.format("%s", main_menu_selections.get(0).getXPCost())));
+      } else if (selection == main_menu_selections.get(1).getName()) {
         audience.sendActionBar(
-            () -> Component.text(String.format("%s", main_selection_options.get(1)) + ChatColor.GRAY + " 4xp"));
-
-      } else if (selection == main_selection_options.get(2)) {
+            () -> Component.text(String.format("%s", main_menu_selections.get(1).getName()) + ChatColor.GRAY
+                + String.format("%s", main_menu_selections.get(1).getXPCost())));
+      } else if (selection == main_menu_selections.get(2).getName()) {
         audience.sendActionBar(
-            () -> Component.text(String.format("%s", main_selection_options.get(2)) + ChatColor.GRAY + " 3xp"));
-
-      } else if (selection == main_selection_options.get(3)) {
+            () -> Component.text(String.format("%s", main_menu_selections.get(2).getName()) + ChatColor.GRAY
+                + String.format("%s", main_menu_selections.get(2).getXPCost())));
+      } else if (selection == main_menu_selections.get(3).getName()) {
         audience.sendActionBar(
-            () -> Component.text(String.format("%s", main_selection_options.get(3)) + ChatColor.GRAY + " 3xp"));
-
+            () -> Component.text(String.format("%s", main_menu_selections.get(3).getName()) + ChatColor.GRAY
+                + String.format("%s", main_menu_selections.get(3).getXPCost())));
       } else {
-        audience.sendActionBar(() -> Component.text(selection));
+        audience.sendActionBar(
+            () -> Component.text(String.format("%s", main_menu_selections.get(4).getName()) + ChatColor.GRAY
+                + String.format("%s", main_menu_selections.get(4).getXPCost())));
       }
       boolean hasBlindness = false;
       for (PotionEffect effect : player.getActivePotionEffects()) {
