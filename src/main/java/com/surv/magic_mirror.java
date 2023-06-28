@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+import org.apache.maven.model.MailingList;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -37,6 +38,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 import com.surv.items.Item_Manager;
+import com.surv.menu;
 
 // import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import net.kyori.adventure.audience.Audience;
@@ -67,6 +69,7 @@ import net.kyori.adventure.text.Component;
 //or add code to ignore the shield or any other item in offhand
 
 public class magic_mirror implements Listener {
+
   ///// Config////
   // String TheItemName = "Magic Mirror";
   // Material TheItemType = Material.BOOK;
@@ -84,6 +87,26 @@ public class magic_mirror implements Listener {
   }
 
   public String PLAYER_WARPS = "player_warps.yaml";
+
+  public class Main_menu_options {
+    public String name;
+    public int xp;
+
+    public Main_menu_options(String name, int xp) {
+      this.name = name;
+      this.xp = xp;
+
+    }
+
+    public String getName() {
+      return this.name;
+
+    }
+
+    public int getXPCost() {
+      return this.xp;
+    }
+  }
 
   // public void saveToFile() {
   // StringBuilder sb = new StringBuilder();
@@ -163,7 +186,7 @@ public class magic_mirror implements Listener {
     String selection = "-";
   }
 
-  menu new_menu = new menu();
+  menu prompt = new menu();
 
   // ArrayList<PlayerMenuOption> playersWithMenuOpen = new
   // ArrayList<PlayerMenuOption>();
@@ -212,7 +235,7 @@ public class magic_mirror implements Listener {
   @EventHandler
   public void onLeave(PlayerQuitEvent ev) {
     Player player = ev.getPlayer();
-    new_menu.close_menu(player);
+    prompt.close_menu(player);
   }
 
   // @EventHandler
@@ -241,7 +264,7 @@ public class magic_mirror implements Listener {
     Player player = ev.getPlayer();
     boolean isSneaking = ev.isSneaking();
 
-    int index = new_menu.get_player(player);
+    int index = prompt.get_player(player);
     // boolean there = playersWithMenuOpen.stream().filter(o -> o.playerName ==
     // player.getName()).findFirst().isPresent();
     // int index = -1;
@@ -253,13 +276,13 @@ public class magic_mirror implements Listener {
 
     if (isSneaking == true && index > -1) {
       // String playerSelected = playersWithMenuOpen.get(index).selection;
-      String playerSelected = new_menu.has_menu.get(index).selected;
+      String player_selected_text = prompt.has_menu_open.get(index).selected_text;
       boolean success = false;
       int xp = player.getLevel();
-      if (playerSelected == "BED") {
+      if (player_selected_text == "BED") {
         if (xp >= 6) {
-          var hasBed = player.getBedSpawnLocation();
-          if (hasBed == null) {
+          var has_bed = player.getBedSpawnLocation();
+          if (has_bed == null) {
             player.sendMessage(ChatColor.RED + "you don't have a bed.");
           } else {
             player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f, 1f);
@@ -270,7 +293,7 @@ public class magic_mirror implements Listener {
           }
         }
       }
-      if (playerSelected == "SPAWN") {
+      if (player_selected_text == "SPAWN") {
         // 5xp
         if (xp >= 4) {
           // tp
@@ -283,7 +306,7 @@ public class magic_mirror implements Listener {
         }
 
       }
-      if (playerSelected == "SHOPS") {
+      if (player_selected_text == "SHOPS") {
         // 5xp
         if (xp >= 3) {
           // tp
@@ -298,7 +321,7 @@ public class magic_mirror implements Listener {
         }
 
       }
-      if (playerSelected == "LAST DEATH") {
+      if (player_selected_text == "LAST DEATH") {
         // 3xp
         if (xp >= 3) {
           int dex = -1;
@@ -325,7 +348,7 @@ public class magic_mirror implements Listener {
         }
 
       }
-      if (playerSelected == "INFO") {
+      if (player_selected_text == "INFO") {
         // show the player info on how to use item
         player.sendMessage(
             ChatColor.AQUA + "What is there to tell? you crouch to carry on with your selection and it costs xp.");
@@ -334,7 +357,7 @@ public class magic_mirror implements Listener {
         success = true;
 
       }
-      if (playerSelected == "CLOSE") {
+      if (player_selected_text == "CLOSE") {
         success = true;
 
       }
@@ -342,15 +365,15 @@ public class magic_mirror implements Listener {
         // FIXME: there is an issue here, right clicking a block acts incorrectly
         // playersWithMenuOpen.remove(index);
         // player.removePotionEffect(PotionEffectType.BLINDNESS);
-        new_menu.close_menu(player);
+        prompt.close_menu(player);
       } else {
-        if (playerSelected != "-") {
+        if (player_selected_text != "-") {
           Audience audience = Audience.audience(player);
           audience.sendActionBar(() -> Component.text(ChatColor.RED + "not Enough xp"));
           player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
           // playersWithMenuOpen.remove(index);
           // player.removePotionEffect(PotionEffectType.BLINDNESS);
-          new_menu.close_menu(player);
+          prompt.close_menu(player);
         }
       }
       player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
@@ -405,10 +428,10 @@ public class magic_mirror implements Listener {
     if (ev.getItem() != null) {
       if (ev.getItem().equals(Item_Manager.mm)) {
         if (action.equals(Action.RIGHT_CLICK_BLOCK) || action.equals(Action.RIGHT_CLICK_AIR)) {
-          new_menu.open_menu(player);
+          prompt.open_menu(player);
         } else {
           // close the menu
-          new_menu.close_menu(player);
+          prompt.close_menu(player);
           player.sendMessage(
               ChatColor.GOLD + "HOW TO USE: look up/down to see all selections. to confirm your selection, crouch.");
           player.sendMessage(ChatColor.GRAY
@@ -470,30 +493,30 @@ public class magic_mirror implements Listener {
     // player.sendMessage(new_menu.has_menu.toString());
 
     // Magic Mirror stuff
-    int index = new_menu.get_player(player);
+    int index = prompt.get_player(player);
     if (index != -1) {
 
-      List<String> options = new ArrayList<>();
-      options.add("BED");
-      options.add("SPAWN");
-      options.add("LAST DEATH");
-      options.add("SHOPS");
-      options.add("INFO");
-      new_menu.menu_options(options, player);
+      // ArrayList<String> selection_options = new ArrayList<>();
+      var main_selection_options = List.of("LAST DEATH", "BED", "WARPS", "PLAYERS", "INFO");
+      prompt.menu_prompt(main_selection_options, player);
 
       // TODO: this needs to be cleaned up. no need for all these strings
       Audience audience = Audience.audience(player);
-      String selection = new_menu.has_menu.get(index).selected;
-      if (selection == "BED") {
-        audience.sendActionBar(() -> Component.text("BED" + ChatColor.GRAY + " 6xp"));
-      } else if (selection == "SPAWN") {
-        audience.sendActionBar(() -> Component.text("SPAWN" + ChatColor.GRAY + " 4xp"));
+      String selection = prompt.has_menu_open.get(index).selected_text;
+      if (selection == main_selection_options.get(0)) {
+        audience.sendActionBar(
+            () -> Component.text(String.format("%s", main_selection_options.get(0)) + ChatColor.GRAY + " 6xp"));
+      } else if (selection == main_selection_options.get(1)) {
+        audience.sendActionBar(
+            () -> Component.text(String.format("%s", main_selection_options.get(1)) + ChatColor.GRAY + " 4xp"));
 
-      } else if (selection == "LAST DEATH") {
-        audience.sendActionBar(() -> Component.text("LAST DEATH" + ChatColor.GRAY + " 3xp"));
+      } else if (selection == main_selection_options.get(2)) {
+        audience.sendActionBar(
+            () -> Component.text(String.format("%s", main_selection_options.get(2)) + ChatColor.GRAY + " 3xp"));
 
-      } else if (selection == "SHOPS") {
-        audience.sendActionBar(() -> Component.text("SHOPS" + ChatColor.GRAY + " 3xp"));
+      } else if (selection == main_selection_options.get(3)) {
+        audience.sendActionBar(
+            () -> Component.text(String.format("%s", main_selection_options.get(3)) + ChatColor.GRAY + " 3xp"));
 
       } else {
         audience.sendActionBar(() -> Component.text(selection));
@@ -505,7 +528,7 @@ public class magic_mirror implements Listener {
         }
       }
       if (hasBlindness == false) {
-        new_menu.close_menu(player);
+        prompt.close_menu(player);
         // playersWithMenuOpen.remove(index);
       }
 
@@ -543,7 +566,7 @@ public class magic_mirror implements Listener {
       if (hasItemInHand.size() > 0) {
         if (hasItemInHand.contains(player.getName())) {
           hasItemInHand.remove(player.getName());
-          new_menu.close_menu(player);
+          prompt.close_menu(player);
         }
       }
     }
