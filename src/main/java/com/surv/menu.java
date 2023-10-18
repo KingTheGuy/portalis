@@ -2,11 +2,12 @@ package com.surv;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalInt;
 
 import org.bukkit.entity.Player;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.yaml.snakeyaml.util.ArrayStack;
 
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
@@ -22,9 +23,65 @@ public class menu {
 	// may not be able to peep who have menu open here.
 	public ArrayList<player_selection> has_menu_open = new ArrayList<>();
 
-	class player_selection {
-		Player player;
-		String selected_text;
+	public int getPlayer(Player player) {
+		if (has_menu_open.size() > 0) {
+			int index = has_menu_open.indexOf(has_menu_open.stream().filter(p -> p.the_player == player).findFirst().get());
+			if (index != -1) {
+				return index;
+			}
+		}
+		return -1;
+	}
+
+	public class player_selection {
+		private Player the_player;
+		private String player_selected_text;
+		private String previeus_selected = null;
+		private List<String> prompt_options;
+		private int sub_menu_page = 1;
+
+		public String getSelectedText() {
+			return this.player_selected_text;
+		}
+
+		public void setSelectedText(String text) {
+			this.player_selected_text = text;
+		}
+
+		public String getPrevieusSelected() {
+			return this.previeus_selected;
+		}
+
+		public void setPrevieusSelected(String text) {
+			this.previeus_selected = text;
+		}
+	}
+
+	// needs to be called
+	public void playerSelection(PlayerMoveEvent ev) {
+		Player player = ev.getPlayer();
+
+		int index = getPlayer(player);
+		if (index == -1) {
+			return;
+		}
+		System.out.println(String.format("should be on page: %s", has_menu_open.get(index).sub_menu_page));
+
+		promptPlayer(has_menu_open.get(index).prompt_options, player);
+		Audience audience = Audience.audience(player);
+		audience.sendActionBar(
+				() -> Component.text(String.format("%s", has_menu_open.get(index).player_selected_text) + ChatColor.GRAY));
+
+		boolean hasBlindness = false;
+		for (PotionEffect effect : player.getActivePotionEffects()) {
+			if (effect.getType().equals(PotionEffectType.BLINDNESS)) {
+				hasBlindness = true;
+			}
+		}
+		if (hasBlindness == false) {
+			closeMenu(player);
+		}
+
 	}
 
 	private boolean within(int v, int w1, int w2) {
@@ -43,14 +100,10 @@ public class menu {
 		return false;
 	}
 
-	// this will show the player a list of options
-	// NOTE: i need this to loop.. looping would need to end once the player
-	// selects.. so it can't be done here
-	// NOTE: ok i am looping throught this using player move
-	public void menu_prompt(List<String> options, Player player) {
+	// this needs to run everytime the player moves
+	private void promptPlayer(List<String> options, Player player) {
 		int pitch = (int) player.getLocation().getPitch();
 		// requires player move
-
 		int selected = 0;
 		if (within(pitch, -90, -60)) {
 			selected = 0;
@@ -67,47 +120,57 @@ public class menu {
 		if (within(pitch, 60, 90)) {
 			selected = 4;
 		}
-		int index = get_player(player);
-		if (index != -1) {
-			if (selected > options.size()) {
-				has_menu_open.get(index).selected_text = "-";
-
-			} else {
-				has_menu_open.get(index).selected_text = options.get(selected);
-
-			}
-			// player.sendMessage(String.format("selected %s: ", selected));
+		int index = getPlayer(player);
+		if (index == -1) {
+			return;
 		}
+		if (options.size() > 5) {
+			// for a dynamic list
+			var chunk = has_menu_open.get(index).sub_menu_page * 4;
+			if (selected == 4) {
+				has_menu_open.get(index).player_selected_text = "NEXT PAGE";
+				return;
+			}
+			selected = (chunk - 4) + selected;
+		}
+		if (selected > options.size() - 1) {
+			has_menu_open.get(index).player_selected_text = "-";
+			return;
+		}
+		has_menu_open.get(index).player_selected_text = options.get(selected);
+
+		// player.sendMessage(String.format("selected %s: ", selected));
 		// now we have the player's selection
 	}
 
-	public int get_player(Player player) {
-		if (has_menu_open.size() > 0) {
-			int index = has_menu_open.indexOf(has_menu_open.stream().filter(p -> p.player == player).findFirst().get());
-			if (index != -1) {
-				return index;
-			}
+	public void nextPage(Player player) {
+		int index = getPlayer(player);
+		if (index == -1) {
+			return;
 		}
-		return -1;
+		has_menu_open.get(index).sub_menu_page++;
 	}
 
-	public void close_menu(Player player) {
-		int index = get_player(player);
+	public void closeMenu(Player player) {
+		int index = getPlayer(player);
 		if (index != -1) {
 			player.removePotionEffect(PotionEffectType.BLINDNESS);
 			player.clearTitle();
+			has_menu_open.get(index).sub_menu_page = 1;
 			has_menu_open.remove(index);
 		}
 	}
 
 	// effect and auto close timer
-	public void open_menu(Player player) {
+	public void openMenu(List<String> promp_list, Player player) {
 		player_selection new_player = new player_selection();
-		new_player.player = player;
-		new_player.selected_text = " ";
+		new_player.the_player = player;
+		new_player.player_selected_text = " ";
+
+		new_player.prompt_options = promp_list;
+
 		has_menu_open.add(new_player);
 		player.addPotionEffect(
 				new PotionEffect(PotionEffectType.BLINDNESS, 600, 1).withAmbient(false).withParticles(false));
 	}
-
 }

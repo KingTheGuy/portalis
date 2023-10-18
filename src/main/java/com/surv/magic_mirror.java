@@ -38,6 +38,9 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 import com.surv.items.Item_Manager;
+import com.comphenix.net.bytebuddy.agent.builder.AgentBuilder.InitializationStrategy.SelfInjection;
+import com.comphenix.net.bytebuddy.build.Plugin.Factory.UsingReflection.Priority;
+import com.comphenix.protocol.ProtocolManager;
 import com.surv.menu;
 
 // import com.destroystokyo.paper.event.player.PlayerJumpEvent;
@@ -50,6 +53,7 @@ import net.kyori.adventure.text.Component;
 /////////
 
 //SOME TIME//
+//IDEA: to add custome warps the player need to have a paining in their inventory
 //TODO: clean/ do re-something everything
 //TODO: change the way the player recives a magic mirror 
 //maybe some in world recipe
@@ -181,6 +185,7 @@ public class magic_mirror implements Listener {
   // }
   // }
   // HUH//
+  menu prompt = new menu();
 
   @EventHandler
   public void onServerStart(ServerLoadEvent ev) {
@@ -190,83 +195,16 @@ public class magic_mirror implements Listener {
     loader();
   }
 
-  // HUH//
-
-  class PlayerMenuOption {
-    String playerName;
-    String selection = "-";
-  }
-
-  menu prompt = new menu();
-
-  // ArrayList<PlayerMenuOption> playersWithMenuOpen = new
-  // ArrayList<PlayerMenuOption>();
-
-  // public String menuSelecting(float pitch, Player player) {
-  // String selected = "-";
-  // if (pitch >= -90 && pitch <= -60) {
-  // selected = "BED";
-  // }
-  // if (pitch >= -61 && pitch <= -30) {
-  // selected = "SPAWN";
-  // }
-  // if (pitch >= -29 && pitch <= 29) {
-  // selected = "LAST DEATH";
-  // }
-  // if (pitch >= 30 && pitch <= 61) {
-  // selected = "SHOPS";
-  // }
-  // if (pitch >= 60 && pitch <= 90) {
-  // selected = "INFO";
-  // }
-  // // play sound as the player changes their selection
-  // // index index = playersWithMenuOpen
-  // // .indexOf(playersWithMenuOpen.stream().filter(o -> o.playerName ==
-  // // player.getName()).findFirst().orElse(-1));
-  // boolean there = playersWithMenuOpen.stream().filter(o -> o.playerName ==
-  // player.getName()).findFirst().isPresent();
-  // int index = -1;
-  // if (there == true) {
-  // index = playersWithMenuOpen
-  // .indexOf(playersWithMenuOpen.stream().filter(o -> o.playerName ==
-  // player.getName()).findFirst().get());
-  // }
-  // // index being if the player has a spot in the array
-  // if (index > -1) {
-  // String oldSelection = playersWithMenuOpen.get(index).selection;
-  // if (oldSelection != selected) {
-  // player.playSound(player.getLocation(),
-  // Sound.ENTITY_VILLAGER_WORK_CARTOGRAPHER, 1f, 1f);
-  // }
-  // playersWithMenuOpen.get(index).selection = selected;
-  // }
-  // return selected;
-  // }
-
   @EventHandler
   public void onLeave(PlayerQuitEvent ev) {
     Player player = ev.getPlayer();
-    prompt.close_menu(player);
+    prompt.closeMenu(player);
   }
 
-  // @EventHandler
-  // public void onChat(AsyncChatEvent ev) {
-  // Player player = ev.getPlayer();
-  // Audience audience = Audience.audience(player);
-  // String msgContent =
-  // PlainTextComponentSerializer.plainText().serialize(ev.originalMessage());
-  // if (msgContent.startsWith("~")) {
-  // if (msgContent.contains("head")) {
-
-  // }
-  // } else {
-
-  // }
-  // String msg = "[slimshady]<" + player.getName() + "> " + msgContent;
-  // audience.sendMessage(() -> Component.text(ChatColor.WHITE + ":" + msg));
-  // ev.setCancelled(true);
-
-  // }
+  @EventHandler
+  public void onPlayerMove(PlayerMoveEvent ev) {
+    prompt.playerSelection(ev);
+  }
 
   // FIXME: Issue when player clicks blocks with the item.
   // NOTE: fixed this by changing click to crouch. to confirm selection
@@ -275,7 +213,7 @@ public class magic_mirror implements Listener {
     Player player = ev.getPlayer();
     boolean isSneaking = ev.isSneaking();
 
-    int index = prompt.get_player(player);
+    int player_index = prompt.getPlayer(player);
     // boolean there = playersWithMenuOpen.stream().filter(o -> o.playerName ==
     // player.getName()).findFirst().isPresent();
     // int index = -1;
@@ -285,13 +223,17 @@ public class magic_mirror implements Listener {
     // player.getName()).findFirst().get());
     // }
 
-    if (isSneaking == true && index > -1) {
+    if (isSneaking == true && player_index > -1) {
       // String playerSelected = playersWithMenuOpen.get(index).selection;
-      String player_selected_text = prompt.has_menu_open.get(index).selected_text;
+      String player_selected_text = prompt.has_menu_open.get(player_index).getSelectedText();
       boolean success = false;
       boolean sub_menu = false;
       int xp = player.getLevel();
-
+      if (player_selected_text == "NEXT PAGE") {
+        success = true;
+        sub_menu = true;
+        prompt.nextPage(player);
+      }
       if (player_selected_text == main_menu_selections.get(0).getName()) {
         if (xp >= main_menu_selections.get(0).getXPCost()) {
           int dex = -1;
@@ -300,7 +242,7 @@ public class magic_mirror implements Listener {
             if (dex > -1) {
               // NOTE: this looks like its had been fixed, this line was using a random index,
               // but no more.
-              player_deaths death_data = deaths.get(index);
+              player_deaths death_data = deaths.get(player_index);
               player.setLevel(xp - main_menu_selections.get(0).getXPCost());
               player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f, 1f);
               player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
@@ -332,38 +274,62 @@ public class magic_mirror implements Listener {
           }
         }
       }
+      // TODO: figure out how to make dynamic menus.. will be used for players to TP
+      // to.
+      // Also for dynamic lists.
       if (player_selected_text == main_menu_selections.get(2).getName()) {
-        if (xp >= main_menu_selections.get(2).getXPCost()) {
+        ArrayList<String> options = new ArrayList<>();
+        options.add("steve");
+        options.add("jim");
+        // options.add("pam");
+        // options.add("table");
+        // options.add("slim");
+        // options.add("shady");
+        // options.add("stripes");
+        // options.add("echo");
+        // options.add("bob");
+        // options.add("jimmy");
+        // options.add("tommy");
+        // options.add("not_me_you");
+        // options.add("the_guy");
+        for (Player p : Bukkit.getOnlinePlayers()) {
+          if (p.equals(player)) {
+            continue;
+          }
+          options.add(p.getName());
         }
+        prompt.closeMenu(player);
+        success = true;
+        sub_menu = true;
+        prompt.openMenu(options, player);
       }
       if (player_selected_text == main_menu_selections.get(3).getName()) {
-        if (xp >= main_menu_selections.get(3).getXPCost()) {
-          var options = List.of("SPAWN", "SHOPPING");
-          prompt.close_menu(player);
-          // close menu then open a new one with new options.
-          menu new_prompt = new menu();
-          success = true;
-          sub_menu = true;
-          new_prompt.menu_prompt(options, player);
-          new_prompt.open_menu(player);
-        }
+        var options = List.of("SPAWN", "SHOPPING");
+        prompt.closeMenu(player);
+        success = true;
+        sub_menu = true;
+        prompt.openMenu(options, player);
       }
       if (player_selected_text == "SPAWN") {
-        player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f,
-            1f);
-        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
-        player.setLevel(xp - main_menu_selections.get(2).getXPCost());
-        player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
-        success = true;
+        if (xp >= 3) {
+          player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f,
+              1f);
+          player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+          player.setLevel(xp - 3);
+          player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
+          success = true;
+        }
       }
       if (player_selected_text == "SHOPPING") {
-        player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f, 1f);
-        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
-        player.setLevel(xp - main_menu_selections.get(2).getXPCost());
-        Location new_location = new Location(Bukkit.getWorld("world"), -1806, 73, 1502);
-        // player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
-        player.teleportAsync(new_location);
-        success = true;
+        if (xp >= 3) {
+          player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f, 1f);
+          player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+          player.setLevel(xp - 3);
+          Location new_location = new Location(Bukkit.getWorld("world"), -1806, 73, 1502);
+          // player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
+          player.teleportAsync(new_location);
+          success = true;
+        }
       }
       if (player_selected_text == main_menu_selections.get(4).getName()) {
         player.sendMessage(
@@ -383,8 +349,18 @@ public class magic_mirror implements Listener {
         // player.removePotionEffect(PotionEffectType.BLINDNESS);
       }
       if (sub_menu != true) {
-        prompt.close_menu(player);
-
+        prompt.closeMenu(player);
+      }
+      if (player_selected_text != "NEXT PAGE") {
+        if (prompt.has_menu_open.get(player_index).getSelectedText() == main_menu_selections.get(2).getName()) {
+          for (Player p : Bukkit.getOnlinePlayers()) {
+            if (p.getName() == player_selected_text) {
+              player.teleportAsync(p.getLocation());
+              break;
+            }
+          }
+        }
+        prompt.has_menu_open.get(player_index).setPrevieusSelected(player_selected_text);
       }
       player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
     }
@@ -436,10 +412,14 @@ public class magic_mirror implements Listener {
     if (ev.getItem() != null) {
       if (ev.getItem().equals(Item_Manager.mm)) {
         if (action.equals(Action.RIGHT_CLICK_BLOCK) || action.equals(Action.RIGHT_CLICK_AIR)) {
-          prompt.open_menu(player);
+          // FIXME: so the issue is that the "options" are just tossed right after and
+          // menuPrompt does not see them
+          // NOTE: i could be wrong
+          var prompt_options = List.of("LAST DEATH", "BED", "WARPS", "PLAYERS", "INFO");
+          prompt.openMenu(prompt_options, player);
         } else {
           // close the menu
-          prompt.close_menu(player);
+          prompt.closeMenu(player);
           player.sendMessage(
               ChatColor.GOLD + "HOW TO USE: look up/down to see all selections. to confirm your selection, crouch.");
           player.sendMessage(ChatColor.GRAY
@@ -472,86 +452,71 @@ public class magic_mirror implements Listener {
     }
   }
 
-  @EventHandler
-  public void onPlayerMove(PlayerMoveEvent ev) {
-    var player = ev.getPlayer();
-    var block = ev.getTo().clone().subtract(0.0, 0.1, 0.0).getBlock();
-    // player.sendMessage("this is it:" + block.getType());
-    // player.getVehicle().getType();
+  // @EventHandler
+  // public void onPlayerMove(PlayerMoveEvent ev) {
+  // var player = ev.getPlayer();
+  // var block = ev.getTo().clone().subtract(0.0, 0.1, 0.0).getBlock();
+  // // does anyone have the menu?
+  // // player.sendMessage(new_menu.has_menu.toString());
 
-    // speed effect stuff
-    // if (block.getType() == Material.DIRT_PATH) {
-    // player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 40,
-    // 1).withAmbient(false).withParticles(true));
-    // if (player.isInsideVehicle()) {
-    // EntityType entType = player.getVehicle().getType();
-    // if (entType == EntityType.HORSE || entType == EntityType.MULE || entType ==
-    // EntityType.DONKEY
-    // || entType == EntityType.PIG) {
-    // if (player.getVehicle() instanceof LivingEntity livingEntity) {
-    // livingEntity.addPotionEffect(
-    // new PotionEffect(PotionEffectType.SPEED, 40,
-    // 4).withAmbient(false).withParticles(true));
-    // }
-    // }
-    // }
-    // }
+  // // Magic Mirror stuff
+  // int index = prompt.get_player(player);
+  // if (index != -1) {
 
-    // does anyone have the menu?
-    // player.sendMessage(new_menu.has_menu.toString());
+  // // ArrayList<String> selection_options = new ArrayList<>();
+  // // var main_selection_options = List.of("LAST DEATH", "BED", "WARPS",
+  // "PLAYERS",
+  // // "INFO");
+  // var names_only = List.of(
+  // main_menu_selections.get(0).name,
+  // main_menu_selections.get(1).name,
+  // main_menu_selections.get(2).name,
+  // main_menu_selections.get(3).name,
+  // main_menu_selections.get(4).name);
+  // prompt.menu_prompt(names_only, player);
 
-    // Magic Mirror stuff
-    int index = prompt.get_player(player);
-    if (index != -1) {
+  // // TODO: this needs to be cleaned up. no need for all these strings
+  // Audience audience = Audience.audience(player);
+  // String selection = prompt.has_menu_open.get(index).player_selected_text;
+  // if (selection == main_menu_selections.get(0).name) {
+  // audience.sendActionBar(
+  // () -> Component.text(String.format("%s",
+  // main_menu_selections.get(0).getName()) + ChatColor.GRAY
+  // + String.format("%s", main_menu_selections.get(0).getXPCost())));
+  // } else if (selection == main_menu_selections.get(1).getName()) {
+  // audience.sendActionBar(
+  // () -> Component.text(String.format("%s",
+  // main_menu_selections.get(1).getName()) + ChatColor.GRAY
+  // + String.format("%s", main_menu_selections.get(1).getXPCost())));
+  // } else if (selection == main_menu_selections.get(2).getName()) {
+  // audience.sendActionBar(
+  // () -> Component.text(String.format("%s",
+  // main_menu_selections.get(2).getName()) + ChatColor.GRAY
+  // + String.format("%s", main_menu_selections.get(2).getXPCost())));
+  // } else if (selection == main_menu_selections.get(3).getName()) {
+  // audience.sendActionBar(
+  // () -> Component.text(String.format("%s",
+  // main_menu_selections.get(3).getName()) + ChatColor.GRAY
+  // + String.format("%s", main_menu_selections.get(3).getXPCost())));
+  // } else {
+  // audience.sendActionBar(
+  // () -> Component.text(String.format("%s",
+  // main_menu_selections.get(4).getName()) + ChatColor.GRAY
+  // + String.format("%s", main_menu_selections.get(4).getXPCost())));
+  // }
+  // boolean hasBlindness = false;
+  // for (PotionEffect effect : player.getActivePotionEffects()) {
+  // if (effect.getType().equals(PotionEffectType.BLINDNESS)) {
+  // hasBlindness = true;
+  // }
+  // }
+  // if (hasBlindness == false) {
+  // prompt.close_menu(player);
+  // // playersWithMenuOpen.remove(index);
+  // }
 
-      // ArrayList<String> selection_options = new ArrayList<>();
-      // var main_selection_options = List.of("LAST DEATH", "BED", "WARPS", "PLAYERS",
-      // "INFO");
-      var names_only = List.of(
-          main_menu_selections.get(0).name,
-          main_menu_selections.get(1).name,
-          main_menu_selections.get(2).name,
-          main_menu_selections.get(3).name,
-          main_menu_selections.get(4).name);
-      prompt.menu_prompt(names_only, player);
-
-      // TODO: this needs to be cleaned up. no need for all these strings
-      Audience audience = Audience.audience(player);
-      String selection = prompt.has_menu_open.get(index).selected_text;
-      if (selection == main_menu_selections.get(0).name) {
-        audience.sendActionBar(
-            () -> Component.text(String.format("%s", main_menu_selections.get(0).getName()) + ChatColor.GRAY
-                + String.format("%s", main_menu_selections.get(0).getXPCost())));
-      } else if (selection == main_menu_selections.get(1).getName()) {
-        audience.sendActionBar(
-            () -> Component.text(String.format("%s", main_menu_selections.get(1).getName()) + ChatColor.GRAY
-                + String.format("%s", main_menu_selections.get(1).getXPCost())));
-      } else if (selection == main_menu_selections.get(2).getName()) {
-        audience.sendActionBar(
-            () -> Component.text(String.format("%s", main_menu_selections.get(2).getName()) + ChatColor.GRAY
-                + String.format("%s", main_menu_selections.get(2).getXPCost())));
-      } else if (selection == main_menu_selections.get(3).getName()) {
-        audience.sendActionBar(
-            () -> Component.text(String.format("%s", main_menu_selections.get(3).getName()) + ChatColor.GRAY
-                + String.format("%s", main_menu_selections.get(3).getXPCost())));
-      } else {
-        audience.sendActionBar(
-            () -> Component.text(String.format("%s", main_menu_selections.get(4).getName()) + ChatColor.GRAY
-                + String.format("%s", main_menu_selections.get(4).getXPCost())));
-      }
-      boolean hasBlindness = false;
-      for (PotionEffect effect : player.getActivePotionEffects()) {
-        if (effect.getType().equals(PotionEffectType.BLINDNESS)) {
-          hasBlindness = true;
-        }
-      }
-      if (hasBlindness == false) {
-        prompt.close_menu(player);
-        // playersWithMenuOpen.remove(index);
-      }
-
-    }
-  }
+  // }
+  // }
 
   ArrayList<String> hasItemInHand = new ArrayList<String>();
 
@@ -584,7 +549,7 @@ public class magic_mirror implements Listener {
       if (hasItemInHand.size() > 0) {
         if (hasItemInHand.contains(player.getName())) {
           hasItemInHand.remove(player.getName());
-          prompt.close_menu(player);
+          prompt.closeMenu(player);
         }
       }
     }
