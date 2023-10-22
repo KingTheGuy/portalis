@@ -8,12 +8,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
 
 import org.apache.maven.model.MailingList;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
 import org.bukkit.entity.Enderman;
@@ -27,6 +29,8 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.inventory.InventoryAction;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -34,6 +38,10 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -41,6 +49,7 @@ import com.surv.items.Item_Manager;
 import com.comphenix.net.bytebuddy.agent.builder.AgentBuilder.InitializationStrategy.SelfInjection;
 import com.comphenix.net.bytebuddy.build.Plugin.Factory.UsingReflection.Priority;
 import com.comphenix.protocol.ProtocolManager;
+import com.destroystokyo.paper.event.block.AnvilDamagedEvent.DamageState;
 import com.surv.menu;
 
 // import com.destroystokyo.paper.event.player.PlayerJumpEvent;
@@ -410,13 +419,42 @@ public class magic_mirror implements Listener {
     }
     // on use Magic Mirror
     if (ev.getItem() != null) {
-      if (ev.getItem().equals(Item_Manager.mm)) {
+      //FIXME: create a copy of the book and remove the persistanet data and then check to see if the items
+      //are equal without that data.
+      ItemStack magic_mirror_no_data = new ItemStack(Item_Manager.magic_mirror_book);
+      ItemMeta magic_meta = magic_mirror_no_data.getItemMeta();
+
+      ItemStack hand_item = new ItemStack(ev.getItem());
+      hand_item.setItemMeta(magic_meta);
+
+      if (magic_mirror_no_data.equals(hand_item)) {
         if (action.equals(Action.RIGHT_CLICK_BLOCK) || action.equals(Action.RIGHT_CLICK_AIR)) {
+          {//Decrease BOOK USE
+            NamespacedKey key = new NamespacedKey(magic.getPlugin(), "magic_mirror_use_data");
+            ItemMeta meta = ev.getItem().getItemMeta();
+            PersistentDataContainer container = meta.getPersistentDataContainer();
+            Integer max_uses = 6;
+            Integer cur_value = container.get(key, PersistentDataType.INTEGER);
+            if (cur_value == 0) {
+              return; // no uses left
+            }
+            Integer new_value = cur_value -1;
+            container.set(key,PersistentDataType.INTEGER,new_value);
+            List<Component> lore = new ArrayList<>();
+            meta.getPersistentDataContainer().set(key, PersistentDataType.INTEGER, new_value);
+            ev.getItem().setItemMeta(meta);
+            lore.add(Component.text("Warps it's users") );
+  	        lore.add(Component.text(String.format("%s/%s uses",new_value,max_uses)));
+            ev.getItem().lore().clear();
+            ev.getItem().lore(lore);
+          }
+
           // FIXME: so the issue is that the "options" are just tossed right after and
           // menuPrompt does not see them
-          // NOTE: i could be wrong
+          // NOTE: i could be wrong        
           var prompt_options = List.of("LAST DEATH", "BED", "WARPS", "PLAYERS", "INFO");
           prompt.openMenu(prompt_options, player);
+
         } else {
           // close the menu
           prompt.closeMenu(player);
@@ -441,7 +479,7 @@ public class magic_mirror implements Listener {
       // Enderman enderman = (Enderman) ev.getEntity();
       if (player.getInventory().getItemInMainHand().getType().equals(Material.BOOK)) {
         // player.sendMessage("This should be working then..");
-        player.getInventory().addItem(Item_Manager.mm);
+        player.getInventory().addItem(Item_Manager.magic_mirror_book);
         player.playSound(ev.getEntity().getLocation(), Sound.ENTITY_EVOKER_CAST_SPELL, SoundCategory.BLOCKS, 1, 1);
 
         ItemStack old_stack = player.getInventory().getItemInMainHand();
@@ -533,7 +571,7 @@ public class magic_mirror implements Listener {
       // player.getInventory().getItem(newSlot).displayName().toString();
 
       // if (ev.getItem().equals(Item_Manager.mm)) {
-      if (itemType.equals(Item_Manager.mm.getType())) {
+      if (itemType.equals(Item_Manager.magic_mirror_book.getType())) {
         // if (itemInUseName.contains(TheItemName)) {
         if (!hasItemInHand.contains(player.getName())) {
           hasItemInHand.add(player.getName());
