@@ -1,10 +1,7 @@
 package com.surv;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitScheduler;
 
 import com.surv.items.Item_Manager;
 
@@ -15,21 +12,18 @@ public class magic extends JavaPlugin {
   public static magic getPlugin() {
     return plugin;
   }
+  // public static BukkitScheduler magic_sccheduler;
+  // public static BukkitScheduler getScheduler() {
+  //   return magic_sccheduler;
+  // }
 
   @Override
   public void onEnable() {
     plugin = this;
-    // getServer().getPluginManager().registerEvents(new Events(), this);
-    // NamespacedKey key = new NamespacedKey(this, "magic_mirror");
-    // ShapedRecipe recipe = new ShapedRecipe(key, Item_Manager.mm);
-    // recipe.shape("E", "X", "Z");
-    // recipe.setIngredient('E', Material.EXPERIENCE_BOTTLE);
-    // recipe.setIngredient('X', Material.BOOK);
-    // recipe.setIngredient('Z', Material.ENDER_PEARL);
-    // Bukkit.addRecipe(recipe);
     Item_Manager.init();
+    // magic_sccheduler = getServer().getScheduler();
     getServer().getPluginManager().registerEvents(new magic_mirror(), this);
-    // getServer().getPluginManager().registerEvents(new menu(), this);
+    getServer().getPluginManager().registerEvents(new CauldronBrewing(), this);
     getServer().getConsoleSender().sendMessage("Magic Mirror loaded");
   }
 

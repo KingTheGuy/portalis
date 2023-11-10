@@ -29,6 +29,15 @@
   </repositories>
 
 <dependencies>
+
+    <dependency>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-assembly-plugin</artifactId>
+    <version>3.6.0</version>
+    </dependency>
+
+
+    
   <dependency>
     <groupId>io.papermc.paper</groupId>
     <artifactId>paper-api</artifactId>
