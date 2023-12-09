@@ -14,7 +14,7 @@ public class magic extends JavaPlugin {
   }
   // public static BukkitScheduler magic_sccheduler;
   // public static BukkitScheduler getScheduler() {
-  //   return magic_sccheduler;
+  // return magic_sccheduler;
   // }
 
   @Override

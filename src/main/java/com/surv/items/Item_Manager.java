@@ -44,6 +44,7 @@ public class Item_Manager {
 	public static ItemStack ender_oil;
 	public static ItemStack infused_paper;
 	public static ItemStack spawn_book;
+	public static ItemStack coin;
 
 	public static void init() {
 		createMagicMirror();
@@ -53,6 +54,7 @@ public class Item_Manager {
 		refillMagicMirrorRecipe();
 		createStoneCutterRecipe();
 		createSpawnBook();
+		createCoin();
 	}
 
 	private static ItemStack getMundanePotion() {
@@ -60,8 +62,25 @@ public class Item_Manager {
 		PotionMeta mundane_potion_meta = (PotionMeta) mundane_potion.getItemMeta();
 		mundane_potion_meta.setBasePotionData(new PotionData(PotionType.MUNDANE));
 		mundane_potion.setItemMeta(mundane_potion_meta);
-
 		return mundane_potion;
+	}
+
+	private static void createCoin() {
+		ItemStack item = new ItemStack(Material.GOLD_NUGGET, 1);
+		ItemMeta meta = item.getItemMeta();
+		meta.displayName(Component.text("Coin"));
+		List<Component> lore = new ArrayList<>();
+		lore.add(Component.text(String.format("for trading")));
+		meta.lore(lore);
+		meta.addEnchant(Enchantment.LUCK, 1, false);
+		meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+		item.setItemMeta(meta);
+		coin = item;
+
+		NamespacedKey coin_key = new NamespacedKey(magic.getPlugin(), "custom_coin");
+		ShapelessRecipe recipe = new ShapelessRecipe(coin_key, coin);
+		recipe.addIngredient(1, Material.BEDROCK);
+		Bukkit.addRecipe(recipe);
 	}
 
 	private static void createMagicMirror() {
@@ -138,10 +157,13 @@ public class Item_Manager {
 		ender_oil = potion;
 
 		// Ender Oil recipe
-		// NamespacedKey key = new NamespacedKey(magic.getPlugin(), "custom_potion_mix");
+		// NamespacedKey key = new NamespacedKey(magic.getPlugin(),
+		// "custom_potion_mix");
 		// ItemStack result = potion; // result
-		// RecipeChoice input = new RecipeChoice.ExactChoice(getMundanePotion()); // bottom three slots
-		// RecipeChoice ingredient = new RecipeChoice.MaterialChoice(Material.ENDER_PEARL); // top slot
+		// RecipeChoice input = new RecipeChoice.ExactChoice(getMundanePotion()); //
+		// bottom three slots
+		// RecipeChoice ingredient = new
+		// RecipeChoice.MaterialChoice(Material.ENDER_PEARL); // top slot
 		// PotionMix custom_potion_mix = new PotionMix(key, result, input, ingredient);
 		// PotionBrewer brewer = Bukkit.getServer().getPotionBrewer();
 		// brewer.addPotionMix(custom_potion_mix);
@@ -170,6 +192,12 @@ public class Item_Manager {
 
 	private static void createStoneCutterRecipe() {
 		{
+			NamespacedKey key = new NamespacedKey(magic.getPlugin(), "mm_stonecutter_cobblestone");
+			ItemStack result = new ItemStack(Material.COBBLESTONE);
+			StonecuttingRecipe recipe = new StonecuttingRecipe(key, result, Material.STONE);
+			Bukkit.addRecipe(recipe);
+		}
+		{
 			NamespacedKey key = new NamespacedKey(magic.getPlugin(), "mm_stonecutter_gravel");
 			ItemStack result = new ItemStack(Material.GRAVEL);
 			StonecuttingRecipe recipe = new StonecuttingRecipe(key, result, Material.COBBLESTONE);
@@ -181,6 +209,7 @@ public class Item_Manager {
 			StonecuttingRecipe recipe = new StonecuttingRecipe(key, result, Material.GRAVEL);
 			Bukkit.addRecipe(recipe);
 		}
+		// TODO: add "Netherack > Red Sand at Stonecutter"
 	}
 
 	private static void createSpawnBook() {
