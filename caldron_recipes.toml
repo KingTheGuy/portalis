@@ -1,0 +1,8 @@
+[recipe]
+result = {name = "OXIDIZED_COPPER_BLOCK", amount=8}
+to_convert = {name = "COPPER_BLOCK", amount=8}
+ingredients = [
+  {name = "FEATHER", amount = 1},
+  {name = "MEMBRANE", amount = 1},
+  {name = "POTATO", amount = 1},
+]
