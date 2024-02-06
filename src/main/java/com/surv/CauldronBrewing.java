@@ -1,6 +1,7 @@
 package com.surv;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
@@ -9,8 +10,10 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.Levelled;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -28,59 +31,196 @@ import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 
-//[]
-//TODO: figure out a better way yo go about making cauldron recipes
+//TODO(not really possible atm): make it so potion brewing can be done without a player.. so it can be automated.
 
-//TODO: make it so potion brewing can be done without a player.. so it can be automated.
-//IDEAS: 
-// -just drop paper into the cauldron?
-// -not sure what else.
-
-//FIXME(fixed? i dont see an error mate): for some reason there is error when cauldron gets broken will full or emptied
-//FIXME(done): need to make sure only the correct items and only of of each will trigger the mix from completing
 //TODO(scrapped no need for this): on server shutdown if a cauldron has any items but no uses
 //drop the items, and empty.
 //OR just figure out saving and loading data
-//TODO(done): adding items to brew will be as simple as just dropping them in
+
+//HOW(tossed in by order): toss item, log item:once logged dont log again. log next item and then last item. if they are equal to a mix: check again if the items are still there if so complete the mix | else overflow?
+//TODO: add a can be bottled option
+//MAYBE: i could also switch the ingrideinets to be an array and account for that. this can make it so that the recipes can take any amount of ingridenets.
+
+//DO NOW!!!
+//TODO: remove all print messages
 
 public class CauldronBrewing implements Listener {
 	// items need to be tossed in; in order
 	static List<Recipe> mixrecipeList = new ArrayList<>();
+	static double cauldron_radius = 0.3;
 
-	public void create_recipe(String recipe_name, ItemStack first, ItemStack second, ItemStack third,
-			ItemStack result) {
+	public void recipe(ItemStack first, ItemStack second, ItemStack third,
+			ItemStack last, ItemStack result, boolean bottled, int uses) {
 		Recipe new_recipe = new Recipe();
-		new_recipe.first_item = first;
-		new_recipe.second_item = second;
-		new_recipe.third_item = third;
+		new_recipe.first_ingridient = first;
+		new_recipe.second_ingridient = second;
+		new_recipe.third_ingridient = third;
+		new_recipe.last_item = last;
 		new_recipe.resulting_item = result;
-		new_recipe.recipe_name = recipe_name;
+		new_recipe.can_be_bottled = bottled;
+		new_recipe.result_uses = uses;
 		mixrecipeList.add(new_recipe);
 	}
 
 	public void init_recipes() {
-		create_recipe("ender oil", new ItemStack(Material.ENDER_PEARL), new ItemStack(Material.SPIDER_EYE),
-				new ItemStack(Material.DANDELION), Item_Manager.ender_oil);
+		recipe(new ItemStack(Material.ENDER_PEARL), new ItemStack(Material.SPIDER_EYE),
+				new ItemStack(Material.DANDELION), new ItemStack(Material.PAPER), Item_Manager.infused_paper, true, 8);
+		recipe(new ItemStack(Material.FEATHER), new ItemStack(Material.PHANTOM_MEMBRANE),
+				new ItemStack(Material.POTATO), new ItemStack(Material.COPPER_BLOCK), new ItemStack(Material.OXIDIZED_COPPER),
+				false, 8);
+		recipe(new ItemStack(Material.BONE_MEAL), new ItemStack(Material.NETHER_WART),
+				new ItemStack(Material.LILAC), new ItemStack(Material.NETHERRACK), new ItemStack(Material.COBBLESTONE),
+				false, 8);
+		// System.out.printf("Are we big? [%s]\n", mixrecipeList.size());
 	}
 
 	private class Recipe {
-		String recipe_name;
-		ItemStack first_item;
-		ItemStack second_item;
-		ItemStack third_item;
-
+		ItemStack first_ingridient;
+		ItemStack second_ingridient;
+		ItemStack third_ingridient;
+		ItemStack last_item;
 		ItemStack resulting_item;
+		boolean can_be_bottled;
+		int result_uses;
 	}
 
 	private List<Cauldron> all_cauldrons = new ArrayList<>();
 
 	public static int max_uses = 24;
 
-	private class Cauldron {
-		Location loc;
+	public class Cauldron {
+		Location location;
 		Boolean mixed;
-		List<Entity> items;
-		int uses;
+		// List<Entity> items;
+		// int uses;
+		Recipe locked_recipe;
+
+		public void CauldronOverflow() {
+			Location top = this.location.clone();
+			top.setY(top.getY() + 1);
+			if (top.getBlock().getType().equals(Material.AIR)) {
+				top.getBlock().setType(Material.WATER);
+				Levelled level = (Levelled) top.getBlock().getBlockData();
+				level.setLevel(3);
+				top.getBlock().setBlockData(level);
+			}
+			// RemoveCauldron();
+		}
+
+		public void CauldronTossIngridient(Location location) {
+			Bukkit.getWorld(location.getWorld().getUID()).spawnParticle(Particle.EXPLOSION_NORMAL, location.getX(),
+					location.getY() + 0.2, location.getZ(), 0);
+			location.getWorld().playSound(location, org.bukkit.Sound.BLOCK_BUBBLE_COLUMN_WHIRLPOOL_INSIDE, (float) 1.0,
+					(float) 0.8);
+		}
+
+		private void RemoveCauldron() {
+			// all_cauldrons.remove(this);
+			// if (remove_list.contains(this)) {
+			// return;
+			// }
+			remove_list.add(this);
+		}
+
+		private void CheckCauldron() {
+			Block block = this.location.getBlock();
+			Block block_below = Bukkit.getWorld(this.location.getWorld().getUID()).getBlockAt(this.location.getBlockX(),
+					this.location.getBlockY() - 1,
+					this.location.getBlockZ());
+			if (block.getType().equals(Material.AIR)) {
+				this.RemoveCauldron();
+				return;
+			}
+			if (!block.getType().equals(Material.WATER_CAULDRON)) {
+				// System.out.printf("removed cauldron at: [%s,%s,%s]\n", this.location.getX(),
+				// this.location.getY(),
+				// this.location.getZ());
+				this.RemoveCauldron();
+				return;
+			}
+			// FIXME: just make sure this is right != or just ==
+			if (block_below.getType().equals(Material.CAMPFIRE) || block_below.getType().equals(Material.SOUL_CAMPFIRE)) {
+			} else {
+				this.RemoveCauldron();
+			}
+		}
+
+		public void CauldronIdleParticles() {
+			int min = 2;
+			int max = 8;
+			float x = (new Random().nextInt(max - min + 1) + min);
+			float z = (new Random().nextInt(max - min + 1) + min);
+			// magic.getPlugin().getComponentLogger().info(Component.text(String.format("x:[%s],
+			// z:[%s]",x,z)));
+			// location.getWorld().playSound(location,org.bukkit.Sound.BLOCK_BUBBLE_COLUMN_BUBBLE_POP,
+			// 1,1);
+			this.location.getWorld().playSound(this.location, org.bukkit.Sound.BLOCK_BUBBLE_COLUMN_UPWARDS_AMBIENT, 1,
+					(float) 0.5);
+			// Bukkit.getWorld(location.getWorld().getUID()).spawnParticle(Particle.BUBBLE_POP,
+			// location.getBlockX() + (x / 10),
+			// location.getBlockY() + 1, location.getBlockZ() + (z / 10), 0);
+			Bukkit.getWorld(this.location.getWorld().getUID()).spawnParticle(Particle.WATER_SPLASH,
+					this.location.getBlockX() + (x / 10),
+					this.location.getBlockY() + 1, this.location.getBlockZ() + (z / 10), 0);
+		}
+
+		public void CauldronMixedParticle() {
+			int min = 2;
+			int max = 8;
+			float x = (new Random().nextInt(max - min + 1) + min);
+			float z = (new Random().nextInt(max - min + 1) + min);
+			float y = (new Random().nextInt(max - min + 1) + min);
+			Bukkit.getWorld(location.getWorld().getUID()).spawnParticle(Particle.GLOW, location.getBlockX() + (x / 10),
+					location.getBlockY() + (1 + y / 10), location.getBlockZ() + (z / 10), 0);
+		}
+
+		public void CauldronMixComplete() {
+			Bukkit.getWorld(this.location.getWorld().getUID()).spawnParticle(Particle.EXPLOSION_NORMAL,
+					this.location.getBlockX() + 0.5,
+					this.location.getBlockY() + 1, this.location.getBlockZ() + 0.5, 0);
+			this.location.getWorld().playSound(this.location, org.bukkit.Sound.BLOCK_BUBBLE_COLUMN_WHIRLPOOL_INSIDE,
+					(float) 1.0,
+					(float) 0.8);
+			// Bukkit.getWorld(location.getWorld().getUID()).spawnParticle(Particle.EXPLOSION_NORMAL,
+			// location.getBlockX() + 0.5,
+			// location.getBlockY() + 1, location.getBlockZ() + 0.5, 0);
+			// int index = findCauldron(location);
+			// Cauldron cauldron = all_cauldrons.get(index);
+			this.mixed = true;
+		}
+
+		public void CauldronMixUse(Recipe recipe, ItemStack item) {
+			// int index = findCauldron(this.location);
+			// location.getWorld().playSound(location, org.bukkit.Sound.ITEM_BOTTLE_FILL, 1,
+			// 1);
+			// if (index == -1) {
+			// return;
+			// }
+			Bukkit.getWorld(this.location.getWorld().getUID()).spawnParticle(Particle.END_ROD,
+					this.location.getBlockX() + 0.5,
+					this.location.getBlockY() + 1.5, this.location.getBlockZ() + 0.5, 0);
+			if (item.isSimilar(this.locked_recipe.last_item)) {
+				// System.out.printf("should be gettnig %s\n",
+				// this.locked_recipe.last_item);
+				Location new_location = new Location(this.location.getWorld(), this.location.getBlockX(),
+						this.location.getBlockY() + 1, this.location.getBlockZ());
+				// new_location.setY(new_location.getY() + 1);
+				Bukkit.getServer().getWorld(new_location.getWorld().getUID()).dropItem(new_location,
+						recipe.resulting_item);
+				this.locked_recipe.result_uses -= 1;
+			}
+			if (item.getType().equals(Material.GLASS_BOTTLE)) {
+				this.locked_recipe.result_uses -= 8; // bottle has 8 uses?
+			}
+			if (this.locked_recipe.result_uses < 1) {
+				// this.CauldronMixComplete();
+				this.RemoveCauldron();
+			}
+			for (Recipe mix : mixrecipeList) {
+				// System.out.printf("mix: (%s) has [%s] uese.\n", mix.last_item,
+				// mix.result_uses);
+			}
+		}
 	}
 
 	private int findCauldron(Location loc) {
@@ -88,7 +228,7 @@ public class CauldronBrewing implements Listener {
 			return -1;
 		}
 		for (Cauldron c : all_cauldrons) {
-			if (c.loc.equals(loc)) {
+			if (c.location.equals(loc)) {
 				return all_cauldrons.indexOf(c);
 			}
 		}
@@ -101,9 +241,9 @@ public class CauldronBrewing implements Listener {
 		// is: [%s]", index)));
 		if (index == -1) {
 			Cauldron c = new Cauldron();
-			c.loc = loc;
+			c.location = loc;
 			c.mixed = false;
-			c.items = new ArrayList<>();
+			c.locked_recipe = new Recipe();
 			all_cauldrons.add(c);
 		}
 		return;
@@ -111,34 +251,17 @@ public class CauldronBrewing implements Listener {
 
 	List<Cauldron> remove_list = new ArrayList<>();
 
-	private void RemoveCauldron(Location loc) {
-		int index = findCauldron(loc);
-		// ToBeRemoved(all_cauldrons.get(index));
-		remove_list.add(all_cauldrons.get(index));
-		// all_cauldrons.remove(index);
-	}
-
 	private void ToBeRemoved() {
 		for (Cauldron c : remove_list) {
+			// System.out.printf("removed cauldron at: [%s,%s,%s]\n", c.location.getX(),
+			// c.location.getY(),
+			// c.location.getZ());
+			if (c.location.getBlock().getType().equals(Material.WATER_CAULDRON)) {
+				c.location.getBlock().setType(Material.CAULDRON);
+			}
 			all_cauldrons.remove(c);
 		}
 		remove_list.clear();
-	}
-
-	private void CheckCauldron(Location loc) {
-		// int index = findCauldron(loc);
-		Block block = loc.getBlock();
-		if (block.getType() != Material.WATER_CAULDRON) {
-			RemoveCauldron(loc);
-			return;
-		}
-		Block block_below = Bukkit.getWorld(loc.getWorld().getUID()).getBlockAt(loc.getBlockX(), loc.getBlockY() - 1,
-				loc.getBlockZ());
-		if (block_below.getType() == Material.CAMPFIRE || block_below.getType() == Material.SOUL_CAMPFIRE) {
-		} else {
-			RemoveCauldron(loc);
-		}
-
 	}
 
 	// NOTE: this should also be looking for the Y axis
@@ -156,22 +279,24 @@ public class CauldronBrewing implements Listener {
 	@EventHandler
 	public void tick(ServerTickStartEvent event) {
 		if (all_cauldrons.size() > 0) {
-			for (Cauldron c : all_cauldrons) {
-				CheckCauldron(c.loc);
-			}
 			ToBeRemoved();
 			if (event.getTickNumber() % 6 == 1) {
 				for (Cauldron c : all_cauldrons) {
-					CauldronParticles(c.loc);
-					CauldronCheckMixRecipe(c.loc);
+					c.CheckCauldron();
+				}
+				for (Cauldron c : all_cauldrons) {
+					c.CauldronIdleParticles();
+					CauldronCheckMixRecipe(c.location);
 					if (c.mixed == true) {
-						CauldronMixedParticle(c.loc);
+						c.CauldronMixedParticle();
+						CauldronCheckResult(c.location);
 					}
 				}
 			}
 		}
 	}
 
+	// on player consume ender_oil teleport them
 	@EventHandler
 	public void onPlayerConsume(PlayerItemConsumeEvent event) {
 		Player player = event.getPlayer();
@@ -192,10 +317,12 @@ public class CauldronBrewing implements Listener {
 		}
 	}
 
+	// should only work if recipe can be bottled.
 	@EventHandler
 	public void onPlayerInteract(PlayerInteractEvent event) {
 		Player player = event.getPlayer();
 		Block clicked_block = event.getClickedBlock();
+		//
 		// magic.getPlugin().getComponentLogger().info(Component.text(String.format("what
 		// click? [%s]", event.getAction())));
 		// if (event.getAction().isLeftClick()) {
@@ -203,185 +330,198 @@ public class CauldronBrewing implements Listener {
 		// }
 		if (clicked_block != null) {
 			Location block_location = clicked_block.getLocation();
-			if (clicked_block.getType() == Material.WATER_CAULDRON
-					|| player.getInventory().getItemInMainHand().getType().equals(Material.WATER_BUCKET)) {
+			// if (clicked_block.getType() == Material.WATER_CAULDRON
+			// ||
+			if (player.getInventory().getItemInMainHand().getType().equals(Material.WATER_BUCKET)) {
+				if (clicked_block.getType() != Material.CAULDRON) {
+					return;
+				}
 				Block block_below = Bukkit.getWorld(block_location.getWorld().getUID()).getBlockAt(block_location.getBlockX(),
 						block_location.getBlockY() - 1, block_location.getBlockZ());
 				if (block_below.getType() == Material.CAMPFIRE || block_below.getType() == Material.SOUL_CAMPFIRE) {
 					createCauldron(block_location);
-					ItemStack bottle = new ItemStack(Material.GLASS_BOTTLE);
-					if (player.getInventory().getItemInMainHand().getType().equals(Material.GLASS_BOTTLE)) {
-						event.setCancelled(true);// cancel the bottle from turing into water
-						PlayerInventory player_inv = player.getInventory();
-						player_inv.removeItem(bottle);
-						player_inv.addItem(Item_Manager.ender_oil);
-						player.updateInventory();
-						CauldronMixUse(block_location, bottle);
-						// TODO: i need to check if the player's inv is full
-						// player_inv.getContents();
-					}
+					// System.out.printf("created cauldron at [%s,%s,%s]\n",
+					// clicked_block.getLocation().blockX(),
+					// clicked_block.getLocation().blockY(), clicked_block.getLocation().blockZ());
+
+					// ItemStack bottle = new ItemStack(Material.GLASS_BOTTLE);
+					// if
+					// (player.getInventory().getItemInMainHand().getType().equals(Material.GLASS_BOTTLE))
+					// {
+					// event.setCancelled(true);// cancel the bottle from turing into water
+					// PlayerInventory player_inv = player.getInventory();
+					// player_inv.removeItem(bottle);
+					// player_inv.addItem(Item_Manager.ender_oil);
+					// player.updateInventory();
+					// CauldronMixUse(block_location, bottle);
+					// // TODO: i need to check if the player's inv is full
+					// // player_inv.getContents();
+					// }
 				}
 			}
 		}
+	}
+
+	public void CauldronCheckResult(Location location) {
+		int index = findCauldron(location);
+		Cauldron cauldron = all_cauldrons.get(index);
+		Collection<Entity> entities = location.getNearbyEntities(location.getBlockX(), location.getBlockY(),
+				location.getBlockZ());
+
+		Recipe recipe = cauldron.locked_recipe;
+		entities.forEach(entity -> {
+			if (entity instanceof Item) {
+				Item entity_item = (Item) entity;
+				ItemStack item = entity_item.getItemStack();
+				// if (cauldron.mixed == true) {
+				// return;
+				// }
+				if (getDistance(location.blockX(), location.blockZ(), entity.getLocation().blockX(),
+						entity.getLocation().blockZ()) > cauldron_radius) {
+					return;
+				}
+				if (recipe.last_item.isSimilar(item)) {
+					// System.out.printf("entity size: %s\n", item);
+					cauldron.CauldronTossIngridient(location);
+					for (int x = 0; x <= item.getAmount(); x++) {
+						// System.out.printf("uses left: %s\n", cauldron.locked_recipe.result_uses);
+						cauldron.CauldronMixUse(recipe, item);
+						item.setAmount(item.getAmount() - 1);
+						if (cauldron.locked_recipe.result_uses < 1) {
+							break;
+						}
+					}
+					if (item.getAmount() < 1) {
+						entity.remove();
+					}
+					// if (entity_item.getItemStack().getAmount() == recipe.result_uses) {
+					// // ItemStack new_item = new ItemStack(recipe.resulting_item.getType(),
+					// // recipe.result_uses);
+					// Location new_location = cauldron.location;
+					// new_location.setY(new_location.getY() + 1);
+					// for (int x = 0; x < recipe.result_uses; x++) {
+					// Bukkit.getServer().getWorld(new_location.getWorld().getUID()).dropItem(new_location,
+					// recipe.resulting_item);
+					// }
+					// cauldron.CauldronMixComplete();
+					// cauldron.RemoveCauldron();
+					// }
+
+				}
+			}
+		});
+
+	}
+
+	public boolean recipeContainsIngridient(ItemStack item) {
+		for (Recipe recipe : mixrecipeList) {
+			if (recipe.first_ingridient.isSimilar(item)) {
+				return true;
+			}
+			if (recipe.second_ingridient.isSimilar(item)) {
+				return true;
+			}
+			if (recipe.third_ingridient.isSimilar(item)) {
+				return true;
+			}
+			if (recipe.last_item.isSimilar(item)) {
+				return true;
+			}
+
+		}
+		return false;
 	}
 
 	// TODO: at function to check right items were tossed in
 	public void CauldronCheckMixRecipe(Location location) {
 		int index = findCauldron(location);
 		Cauldron cauldron = all_cauldrons.get(index);
-		// int found_items = 0;
-		double cauldron_radius = 1;
-		List<Entity> entities_to_kill = new ArrayList<>();
-		location.getNearbyEntities(location.getBlockX(), location.getBlockY(), location.getBlockZ()).forEach(entity -> {
-			if (entity.getType().equals(EntityType.DROPPED_ITEM)) {
-				// if (cauldron.mixed == true) {
-				// if (entity.getName().toUpperCase().replace(" ",
-				// "_").equals(Material.PAPER.name())) {
-				// if (getDistance(location.blockX(), location.blockZ(),
-				// entity.getLocation().blockX(),
-				// entity.getLocation().blockZ()) < cauldron_radius) {
-				// if (!cauldron.items.contains(entity)) {
-				// cauldron.items.add(entity);
-				// entities_to_kill.add(entity);
-				// for (Entity e : cauldron.items) {
-				// e.remove();
-				// }
-				// cauldron.items.clear();
-				// }
-				// }
-				// }
-				// CauldronMixUse(location, new ItemStack(Material.PAPER));
-				// return;
-				// }
+		Collection<Entity> entities = location.getNearbyEntities(location.getBlockX(), location.getBlockY(),
+				location.getBlockZ());
 
-				// magic.getPlugin().getComponentLogger().info(Component.text(String.format("found
-				// a: [%s] looking for: [%s]",entity.getName().toUpperCase().replace(" ",
-				// "_"),Material.ENDER_PEARL.name())));
-
-				if (entity.getName().toUpperCase().replace(" ", "_").equals(Material.ENDER_PEARL.name())) {
-					if (getDistance(location.blockX(), location.blockZ(), entity.getLocation().blockX(),
-							entity.getLocation().blockZ()) < cauldron_radius) {
-						if (!cauldron.items.contains(entity)) {
-							cauldron.items.add(entity);
-							entities_to_kill.add(entity);
-						}
-						// magic.getPlugin().getComponentLogger().info(Component.text("found the ender
-						// pearl"));
-					}
+		Recipe recipe = cauldron.locked_recipe;
+		entities.forEach(entity -> {
+			if (entity instanceof Item) {
+				Item entity_item = (Item) entity;
+				ItemStack item = entity_item.getItemStack();
+				if (cauldron.mixed == true) {
+					return;
 				}
-				if (entity.getName().toUpperCase().equals(Material.DANDELION.name())) {
-					if (getDistance(location.blockX(), location.blockZ(), entity.getLocation().blockX(),
-							entity.getLocation().blockZ()) < cauldron_radius) {
-						if (!cauldron.items.contains(entity)) {
-							cauldron.items.add(entity);
-							entities_to_kill.add(entity);
-						}
-						// magic.getPlugin().getComponentLogger().info(Component.text("found the
-						// dendelion"));
-					}
+				if (getDistance(location.blockX(), location.blockZ(), entity.getLocation().blockX(),
+						entity.getLocation().blockZ()) > cauldron_radius) {
+					return;
 				}
-				if (entity.getName().toUpperCase().replace(" ", "_").equals(Material.SPIDER_EYE.name())) {
-					if (getDistance(location.blockX(), location.blockZ(), entity.getLocation().blockX(),
-							entity.getLocation().blockZ()) < cauldron_radius) {
-						// location.getWorld().playSound(location,org.bukkit.Sound.ENTITY_FISHING_BOBBER_SPLASH,
-						// 1,(float) cauldron_radius);
-						// magic.getPlugin().getComponentLogger().info(Component.text("found the spider
-						// eye"));
-						if (!cauldron.items.contains(entity)) {
-							cauldron.items.add(entity);
-							entities_to_kill.add(entity);
-						}
-					}
+				if (!recipeContainsIngridient(item)) {
+					cauldron.CauldronTossIngridient(entity.getLocation());
+					cauldron.CauldronOverflow();
+					cauldron.RemoveCauldron();
+					return;
+				}
+				if (recipe.first_ingridient == null || recipe.first_ingridient.equals(item)) {
+					recipe.first_ingridient = item;
+					cauldron.CauldronTossIngridient(entity.getLocation());
+					entity.remove();
+					return;
+				}
+				if (recipe.second_ingridient == null || recipe.second_ingridient.equals(item)) {
+					recipe.second_ingridient = item;
+					cauldron.CauldronTossIngridient(entity.getLocation());
+					entity.remove();
+					return;
+				}
+				if (recipe.third_ingridient == null || recipe.third_ingridient.equals(item)) {
+					recipe.third_ingridient = item;
+					cauldron.CauldronTossIngridient(entity.getLocation());
+					entity.remove();
+					return;
 				}
 			}
 		});
+		// FIXME: THIS IS FUCKED!!!!!!
 
-		// FIXME: why defuq does this not work?
-		if (cauldron.mixed == true) { // make sure items dont keep getting ate
-			// magic.getPlugin().getComponentLogger().info(Component.text(String.format("bro
-			// why no work?")));
-			return;
-		}
+		if (cauldron.mixed == false) {
+			for (int x = 0; x < mixrecipeList.size(); x++) {
+				// System.out.printf("%s: mix=[%s,%s,%s],current=[%s,%s,%s]\n",
+				// mixrecipeList.indexOf(mix), mix.first_ingridient,
+				// mix.second_ingridient, mix.third_ingridient, recipe.first_ingridient,
+				// recipe.second_ingridient,
+				// recipe.third_ingridient);
+				Recipe mix = mixrecipeList.get(x);
+				if (!mix.first_ingridient.equals(recipe.first_ingridient)) {
+					continue;
+				}
+				if (!mix.second_ingridient.equals(recipe.second_ingridient)) {
+					continue;
+				}
+				if (!mix.third_ingridient.equals(recipe.third_ingridient)) {
+					continue;
+				}
+				// FIXME: shit i need to also implement the deletion of the items/entities
+				cauldron.locked_recipe = new Recipe();
+				cauldron.locked_recipe.first_ingridient = mix.first_ingridient;
+				cauldron.locked_recipe.second_ingridient = mix.second_ingridient;
+				cauldron.locked_recipe.third_ingridient = mix.third_ingridient;
+				cauldron.locked_recipe.last_item = mix.last_item;
+				cauldron.locked_recipe.resulting_item = mix.resulting_item;
+				cauldron.locked_recipe.can_be_bottled = mix.can_be_bottled;
+				cauldron.locked_recipe.result_uses = mix.result_uses;
 
-		if (cauldron.items.size() == 3) {
-			// magic.getPlugin().getComponentLogger()
-			// .info(Component.text(String.format("have found [%s/2] items", found_items)));
-			CauldronMixComplete(location);
-			for (Entity e : cauldron.items) {
-				e.remove();
+				cauldron.CauldronMixComplete();
 			}
-			cauldron.items.clear();
-		} else {
-			cauldron.items.clear();
+			// for (Recipe mix : mixrecipeList) {
+
+			// }
 		}
-		// for (Entity e : entities_to_kill) {
-		// found_items++;
-		// }
-		// if (found_items == 3) {
-		// }
-	}
-
-	public void CauldronMixComplete(Location location) {
-		Bukkit.getWorld(location.getWorld().getUID()).spawnParticle(Particle.EXPLOSION_NORMAL, location.getBlockX() + 0.5,
-				location.getBlockY() + 1, location.getBlockZ() + 0.5, 0);
-		// Bukkit.getWorld(location.getWorld().getUID()).spawnParticle(Particle.EXPLOSION_NORMAL,
-		// location.getBlockX() + 0.5,
-		// location.getBlockY() + 1, location.getBlockZ() + 0.5, 0);
-		int index = findCauldron(location);
-		Cauldron cauldron = all_cauldrons.get(index);
-		location.getWorld().playSound(location, org.bukkit.Sound.BLOCK_BUBBLE_COLUMN_WHIRLPOOL_INSIDE, (float) 1.0,
-				(float) 0.8);
-		cauldron.mixed = true;
-		cauldron.uses = max_uses;
-	}
-
-	public void CauldronMixUse(Location location, ItemStack item) {
-		int index = findCauldron(location);
-		location.getWorld().playSound(location, org.bukkit.Sound.ITEM_BOTTLE_FILL, 1, 1);
-
-		if (index == -1) {
-			return;
+		if (recipe.first_ingridient != null && recipe.second_ingridient != null && recipe.third_ingridient != null) {
+			if (cauldron.mixed == false) {
+				cauldron.CauldronOverflow();
+				cauldron.RemoveCauldron();
+			}
 		}
-		Bukkit.getWorld(location.getWorld().getUID()).spawnParticle(Particle.END_ROD, location.getBlockX() + 0.5,
-				location.getBlockY() + 1.5, location.getBlockZ() + 0.5, 0);
-		Cauldron cauldron = all_cauldrons.get(index);
-		if (item.getType().equals(Material.GLASS_BOTTLE)) {
-			cauldron.uses = cauldron.uses - 8;
-		} else if (item.getType().equals(Material.PAPER)) {
-
-		}
-		// Block block = location.getBlock();
-		if (cauldron.uses == 0) {
-			location.getBlock().setType(Material.CAULDRON);
-			RemoveCauldron(location);
-		}
-	}
-
-	public void CauldronParticles(Location location) {
-		int min = 2;
-		int max = 8;
-		float x = (new Random().nextInt(max - min + 1) + min);
-		float z = (new Random().nextInt(max - min + 1) + min);
-		// magic.getPlugin().getComponentLogger().info(Component.text(String.format("x:[%s],
-		// z:[%s]",x,z)));
-		// location.getWorld().playSound(location,org.bukkit.Sound.BLOCK_BUBBLE_COLUMN_BUBBLE_POP,
-		// 1,1);
-		location.getWorld().playSound(location, org.bukkit.Sound.BLOCK_BUBBLE_COLUMN_UPWARDS_AMBIENT, 1, (float) 0.5);
-		// Bukkit.getWorld(location.getWorld().getUID()).spawnParticle(Particle.BUBBLE_POP,
-		// location.getBlockX() + (x / 10),
-		// location.getBlockY() + 1, location.getBlockZ() + (z / 10), 0);
-		Bukkit.getWorld(location.getWorld().getUID()).spawnParticle(Particle.WATER_SPLASH, location.getBlockX() + (x / 10),
-				location.getBlockY() + 1, location.getBlockZ() + (z / 10), 0);
-	}
-
-	public void CauldronMixedParticle(Location location) {
-		int min = 2;
-		int max = 8;
-		float x = (new Random().nextInt(max - min + 1) + min);
-		float z = (new Random().nextInt(max - min + 1) + min);
-		float y = (new Random().nextInt(max - min + 1) + min);
-		Bukkit.getWorld(location.getWorld().getUID()).spawnParticle(Particle.GLOW, location.getBlockX() + (x / 10),
-				location.getBlockY() + (1 + y / 10), location.getBlockZ() + (z / 10), 0);
+		// System.out.printf("Items [%s][%s][%s]\n",
+		// cauldron.locked_recipe.first_ingridient,
+		// cauldron.locked_recipe.second_ingridient,
+		// cauldron.locked_recipe.third_ingridient);
 	}
 
 }

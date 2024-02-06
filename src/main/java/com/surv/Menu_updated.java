@@ -13,11 +13,8 @@ import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-import com.comphenix.net.bytebuddy.build.Plugin.Factory.UsingReflection.Priority;
-import com.comphenix.protocol.PacketType.Play;
 import com.destroystokyo.paper.exception.ServerInternalException;
 import com.destroystokyo.paper.profile.PlayerProfile;
-import com.google.common.util.concurrent.ClosingFuture.AsyncClosingCallable;
 
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;

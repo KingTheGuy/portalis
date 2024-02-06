@@ -28,15 +28,11 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionBrewer;
 import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionType;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import com.sun.source.tree.LambdaExpressionTree.BodyKind;
 import com.surv.magic;
 
 import io.papermc.paper.potion.PotionMix;
 import net.kyori.adventure.text.Component;
-import net.md_5.bungee.api.chat.hover.content.Item;
 
 public class Item_Manager {
 
@@ -80,7 +76,8 @@ public class Item_Manager {
 		NamespacedKey coin_key = new NamespacedKey(magic.getPlugin(), "custom_coin");
 		ShapelessRecipe recipe = new ShapelessRecipe(coin_key, coin);
 		recipe.addIngredient(1, Material.BEDROCK);
-		Bukkit.addRecipe(recipe);
+		Bukkit.getServer().addRecipe(recipe);
+		Bukkit.updateRecipes();
 	}
 
 	private static void createMagicMirror() {
@@ -111,7 +108,9 @@ public class Item_Manager {
 			recipe.setIngredient('A', Material.GOLD_INGOT);
 			recipe.setIngredient('S', Material.ENDER_EYE);
 			recipe.setIngredient('D', infused_paper);
-			Bukkit.addRecipe(recipe);
+			Bukkit.getServer().addRecipe(recipe);
+			Bukkit.updateRecipes();
+			// Bukkit.addRecipe(recipe);
 		}
 
 		// rabbit hide
@@ -123,7 +122,9 @@ public class Item_Manager {
 			recipe.setIngredient('A', Material.GOLD_INGOT);
 			recipe.setIngredient('S', Material.ENDER_EYE);
 			recipe.setIngredient('D', infused_paper);
-			Bukkit.addRecipe(recipe);
+			// Bukkit.addRecipe(recipe);
+			Bukkit.getServer().addRecipe(recipe);
+			Bukkit.updateRecipes();
 		}
 	}
 
@@ -141,7 +142,9 @@ public class Item_Manager {
 		ShapelessRecipe recipe = new ShapelessRecipe(key, repaired_book);
 		recipe.addIngredient(1, magic_mirror_book);
 		recipe.addIngredient(6, infused_paper);
-		Bukkit.addRecipe(recipe);
+		// Bukkit.addRecipe(recipe);
+		Bukkit.getServer().addRecipe(recipe);
+		Bukkit.updateRecipes();
 	}
 
 	private static void createEnderOil() {
@@ -187,7 +190,9 @@ public class Item_Manager {
 		recipe.shape("XXX", "XYX", "XXX");
 		recipe.setIngredient('X', Material.PAPER);
 		recipe.setIngredient('Y', ender_oil);
-		Bukkit.addRecipe(recipe);
+		// Bukkit.addRecipe(recipe);
+		Bukkit.getServer().addRecipe(recipe);
+		Bukkit.updateRecipes();
 	}
 
 	private static void createStoneCutterRecipe() {
@@ -195,19 +200,25 @@ public class Item_Manager {
 			NamespacedKey key = new NamespacedKey(magic.getPlugin(), "mm_stonecutter_cobblestone");
 			ItemStack result = new ItemStack(Material.COBBLESTONE);
 			StonecuttingRecipe recipe = new StonecuttingRecipe(key, result, Material.STONE);
-			Bukkit.addRecipe(recipe);
+			// Bukkit.addRecipe(recipe);
+			Bukkit.getServer().addRecipe(recipe);
+			Bukkit.updateRecipes();
 		}
 		{
 			NamespacedKey key = new NamespacedKey(magic.getPlugin(), "mm_stonecutter_gravel");
 			ItemStack result = new ItemStack(Material.GRAVEL);
 			StonecuttingRecipe recipe = new StonecuttingRecipe(key, result, Material.COBBLESTONE);
-			Bukkit.addRecipe(recipe);
+			// Bukkit.addRecipe(recipe);
+			Bukkit.getServer().addRecipe(recipe);
+			Bukkit.updateRecipes();
 		}
 		{
 			NamespacedKey key = new NamespacedKey(magic.getPlugin(), "mm_stonecutter_sand");
 			ItemStack result = new ItemStack(Material.SAND);
 			StonecuttingRecipe recipe = new StonecuttingRecipe(key, result, Material.GRAVEL);
-			Bukkit.addRecipe(recipe);
+			// Bukkit.addRecipe(recipe);
+			Bukkit.getServer().addRecipe(recipe);
+			Bukkit.updateRecipes();
 		}
 		// TODO: add "Netherack > Red Sand at Stonecutter"
 	}

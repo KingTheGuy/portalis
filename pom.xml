@@ -3,14 +3,16 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.surv.magic</groupId>
   <artifactId>magic-mirror</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
   <name>magic-mirror</name>
   <!-- FIXME change it to the project's website -->
   <url>https://dustyhub.net</url>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>1.7</maven.compiler.source>
-    <maven.compiler.target>1.7</maven.compiler.target>
+    <!-- <maven.compiler.source>1.7</maven.compiler.source> -->
+    <!-- <maven.compiler.target>1.7</maven.compiler.target> -->
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
   </properties>
   <repositories>
     <repository>
@@ -31,24 +33,8 @@
     <dependency>
       <groupId>io.papermc.paper</groupId>
       <artifactId>paper-api</artifactId>
-      <version>1.20.2-R0.1-SNAPSHOT</version>
+      <version>1.20.4-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
-      <version>2.10.1</version>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.11</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.comphenix.protocol</groupId>
-      <artifactId>ProtocolLib</artifactId>
-      <version>4.8.0</version>
     </dependency>
   </dependencies>
   <build>
