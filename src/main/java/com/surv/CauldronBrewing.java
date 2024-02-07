@@ -47,7 +47,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 public class CauldronBrewing implements Listener {
 	// items need to be tossed in; in order
 	static List<Recipe> mixrecipeList = new ArrayList<>();
-	static double cauldron_radius = 0.3;
+	static double cauldron_radius = 1;
 
 	public void recipe(ItemStack first, ItemStack second, ItemStack third,
 			ItemStack last, ItemStack result, boolean bottled, int uses) {
@@ -373,11 +373,8 @@ public class CauldronBrewing implements Listener {
 			if (entity instanceof Item) {
 				Item entity_item = (Item) entity;
 				ItemStack item = entity_item.getItemStack();
-				// if (cauldron.mixed == true) {
-				// return;
-				// }
-				if (getDistance(location.blockX(), location.blockZ(), entity.getLocation().blockX(),
-						entity.getLocation().blockZ()) > cauldron_radius) {
+				if (getDistance(location.getBlockX(), location.getBlockZ(), entity.getLocation().getBlockX(),
+						entity.getLocation().getBlockZ()) > cauldron_radius) {
 					return;
 				}
 				if (recipe.last_item.isSimilar(item)) {
@@ -394,19 +391,6 @@ public class CauldronBrewing implements Listener {
 					if (item.getAmount() < 1) {
 						entity.remove();
 					}
-					// if (entity_item.getItemStack().getAmount() == recipe.result_uses) {
-					// // ItemStack new_item = new ItemStack(recipe.resulting_item.getType(),
-					// // recipe.result_uses);
-					// Location new_location = cauldron.location;
-					// new_location.setY(new_location.getY() + 1);
-					// for (int x = 0; x < recipe.result_uses; x++) {
-					// Bukkit.getServer().getWorld(new_location.getWorld().getUID()).dropItem(new_location,
-					// recipe.resulting_item);
-					// }
-					// cauldron.CauldronMixComplete();
-					// cauldron.RemoveCauldron();
-					// }
-
 				}
 			}
 		});
@@ -427,7 +411,6 @@ public class CauldronBrewing implements Listener {
 			if (recipe.last_item.isSimilar(item)) {
 				return true;
 			}
-
 		}
 		return false;
 	}
@@ -447,11 +430,14 @@ public class CauldronBrewing implements Listener {
 				if (cauldron.mixed == true) {
 					return;
 				}
-				if (getDistance(location.blockX(), location.blockZ(), entity.getLocation().blockX(),
-						entity.getLocation().blockZ()) > cauldron_radius) {
+				if (getDistance(location.getBlockX(), location.getBlockZ(), entity.getLocation().getBlockX(),
+						entity.getLocation().getBlockZ()) > cauldron_radius) {
 					return;
 				}
 				if (!recipeContainsIngridient(item)) {
+					if (recipe.resulting_item == null || recipe.resulting_item.isSimilar(item)) {
+						return;
+					}
 					cauldron.CauldronTossIngridient(entity.getLocation());
 					cauldron.CauldronOverflow();
 					cauldron.RemoveCauldron();
