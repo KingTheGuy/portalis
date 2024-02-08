@@ -115,6 +115,8 @@ public class BetterMenu {
 		String selection_last;
 		Integer page;
 		float initial_yaw;
+		float last_yaw_value;
+		int last_selection_value;
 		ArrayList<PlayerContext> context = new ArrayList<>();
 
 		private List<String> menu_options = new ArrayList<>();
@@ -148,32 +150,32 @@ public class BetterMenu {
 
 			// int pitch = (int) player.getLocation().getPitch();
 			float yaw = player.getLocation().getYaw();
-			// if (yaw < 180) {
-			// yaw += initial_yaw;
-			// } else if (yaw > -180) {
-			// yaw -= initial_yaw;
-			// }
-			System.out.printf("player yaw: %s", yaw);
+			if (yaw < 0) {
+				yaw += 180;
+			}
+			// System.out.printf("player yaw: %s", yaw);
 			// requires player move
-			int selected = 0;
-			if (within(yaw, -90, -60)) {
+			int selected = last_selection_value;
+			// System.out.println(yaw % 40);
+			if (selected > getMenuOptions().size() - 1) {
 				selected = 0;
 			}
-			if (within(yaw, -61, -30)) {
-				selected = 1;
+			if (18 < yaw % 40) {
+				// System.out.println("yes");
+				if (yaw > last_yaw_value) {
+					if (selected < getMenuOptions().size() - 1) {
+						selected++;
+					}
+				} else if (yaw < last_yaw_value) {
+					if (selected > 0) {
+						selected--;
+					}
+				}
 			}
-			if (within(yaw, -29, 29)) {
-				selected = 2;
+			if (last_yaw_value != yaw) {
+				last_yaw_value = yaw;
 			}
-			if (within(yaw, 30, 61)) {
-				selected = 3;
-			}
-			if (within(yaw, 60, 90)) {
-				selected = 4;
-			}
-			if (getMenuOptions().size() - 1 < selected) {
-				return;
-			}
+			last_selection_value = selected;
 			selection = getMenuOptions().get(selected);
 			// NOTE: this next line should not be hard coded here
 			if (selection != selection_last) {
@@ -181,26 +183,26 @@ public class BetterMenu {
 				System.out.print("the page flip sound should be playing");
 
 				Location location = player.getLocation();
-				Bukkit.getWorld(location.getWorld().getUID()).playSound(location, Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
-				// player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
+				Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
+						Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
 			}
 		}
 	}
 
-	private boolean within(float v, float w1, float w2) {
-		// 360/40 9
-		if (v > 0) {
-			if (v >= w1 && v <= w2) {
-				return true;
-			}
-		}
-		if (v < 0) {
-			if (v >= w1 && v <= w2) {
-				return true;
-			}
-		}
-		return false;
-	}
+	// private boolean within(float v, float w1, float w2) {
+	// // 360/40 9
+	// if (v > 0) {
+	// if (v >= w1 && v <= w2) {
+	// return true;
+	// }
+	// }
+	// if (v < 0) {
+	// if (v >= w1 && v <= w2) {
+	// return true;
+	// }
+	// }
+	// return false;
+	// }
 
 	public void playerSelection(PlayerMoveEvent ev) {
 		Player player = ev.getPlayer();
@@ -244,6 +246,9 @@ public class BetterMenu {
 		// if (ev.isSneaking() == false) {
 		// return;
 		// }
+		if (ev.getPlayer().getInventory().getItemInMainHand() == null) {
+			return;
+		}
 		if (!ev.getHand().equals(EquipmentSlot.HAND)) {
 			return;
 		}

@@ -228,6 +228,9 @@ public class magic_mirror implements Listener {
 
   @EventHandler
   public void onPlayerInteract(PlayerInteractEvent ev) {
+    if (ev.getPlayer().getInventory().getItemInMainHand() == null) {
+      return;
+    }
     if (!ev.getHand().equals(EquipmentSlot.HAND)) {
       return;
     }
@@ -292,6 +295,8 @@ public class magic_mirror implements Listener {
               }
             }
             if (death_index == -1) {
+              // NOTE: this message does not show up because i am clearing the title when
+              // closing the menu
               audience.sendActionBar(() -> Component.text("Long Live").color(NamedTextColor.RED));
               player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
             } else {
@@ -421,7 +426,7 @@ public class magic_mirror implements Listener {
           // menuPrompt does not see them
           // NOTE: i could be wrong
           player.playSound(player.getLocation(), Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1f, 1f);
-          List<String> prompt_options = List.of("LAST DEATH", "BED", "SPAWN");
+          List<String> prompt_options = List.of("BED", "SPAWN", "LAST DEATH");
           betterMenu.openMenu(prompt_options, player);
 
         } else {
