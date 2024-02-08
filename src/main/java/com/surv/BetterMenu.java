@@ -8,94 +8,187 @@ import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
+import com.surv.items.Item_Manager;
+
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
+import net.md_5.bungee.api.ChatColor;
 
 //TODO: getPlayer should expect and integer, should change all uses to check if returning a -1
 
 public class BetterMenu {
 
-    ArrayList<PlayerWithMenu> player_with_menu = new ArrayList<>();
+	ArrayList<PlayerWithMenu> player_with_menu = new ArrayList<>();
 
-    public Integer getPlayer(Player lp) {
-        for (PlayerWithMenu p : player_with_menu) {
-            if (p.player.equals(lp)) {
-                return player_with_menu.indexOf(p);
-            }
-        }
-        return -1;
-    }   
+	public Integer getPlayer(Player lp) {
+		for (PlayerWithMenu p : player_with_menu) {
+			if (p.player.equals(lp)) {
+				return player_with_menu.indexOf(p);
+			}
+		}
+		return -1;
+	}
 
 	public void closeMenu(Player player) {
-	    Integer index = getPlayer(player);
-        if (index != -1) {
+		Integer index = getPlayer(player);
+		if (index != -1) {
 			player.removePotionEffect(PotionEffectType.BLINDNESS);
-			player.clearTitle();
-            player_with_menu.remove(player_with_menu.get(index));
-        }
+			// player.clearTitle();
+			Audience audience = Audience.audience(player);
+			// audience.clearTitle();
+			audience.sendActionBar(
+					() -> Component.text(""));
+			player_with_menu.get(index).menu_options = null;
+			player_with_menu.remove(player_with_menu.get(index));
+		}
 	}
+
 	public void openMenu(List<String> promp_list, Player player) {
 		player.addPotionEffect(
 				new PotionEffect(PotionEffectType.BLINDNESS, 600, 1).withAmbient(false).withParticles(false));
 		Integer index = getPlayer(player);
 		if (index == -1) {
-            PlayerWithMenu new_player = new PlayerWithMenu();
+			PlayerWithMenu new_player = new PlayerWithMenu();
 			new_player.createPlayer(player);
-            player_with_menu.add(new_player);
+			player_with_menu.add(new_player);
 			new_player.selection = "MAIN";
 			addContext(new_player);
-			// addContext(new_player);
 			index = getPlayer(player);
-			// return;
 		}
+		// FIXME: something with the promp list stuff is broken.
 		PlayerWithMenu has_menu_open = player_with_menu.get(index);
-        if (has_menu_open.menu_options == promp_list) {
-            return;         
-        }
-        has_menu_open.selection = promp_list.get(0);
+		List<String> new_list = new ArrayList<>();
+		for (int x = 0; x < promp_list.size(); x++) {
+			new_list.add(promp_list.get(x));
+		}
+		has_menu_open.selection = new_list.get(0);
+
+		// if (promp_list.size() < 4) {
+		// promp_list.add("CANCEL");
+		// }
+		// if (promp_list.size() < 2) {
+		// }
+		new_list.add("CANCEL");
+
+		// if (has_menu_open.getMenuOptions().size() > 5) {
+		// List<String> new_list = new ArrayList<>();
+		// for (int x = 0; x < 4; x++) {
+		// new_list.add(has_menu_open.getMenuOptions().get(x));
+		// }
+		// new_list.add("NEXT PAGE");
+		// has_menu_open.menu_options = new_list;
+		// }
+
+		// if (has_menu_open.selected > getMenuOptions().size() - 1) {
+		// selection = "CANCEL";
+		// return;
+		// }
+		has_menu_open.menu_options = new_list;
 		Audience audience = Audience.audience(player);
-		audience.sendActionBar(() -> Component.text(has_menu_open.selection));
-        has_menu_open.menu_options = promp_list;
+		audience.sendActionBar(
+				() -> Component.text(formatListToString(has_menu_open.getMenuOptions(), has_menu_open.selection)));
 	}
 
-    public class PlayerContext {
-        String prompt;
-        String answer;
-        public String getPrompt() {
-            return prompt;
-        }
-        public String getAnswer() {
-            return answer;
-        }
-    }
+	public class PlayerContext {
+		String prompt;
+		String answer;
 
-    public class PlayerWithMenu {
-        Player player;
-        String selection;
+		public String getPrompt() {
+			return prompt;
+		}
+
+		public String getAnswer() {
+			return answer;
+		}
+	}
+
+	public class PlayerWithMenu {
+		Player player;
+		String selection;
 		String selection_last;
-        Integer page;
-        ArrayList<PlayerContext> context = new ArrayList<>();
+		Integer page;
+		float initial_yaw;
+		ArrayList<PlayerContext> context = new ArrayList<>();
 
-        private List<String> menu_options = new ArrayList<>();
-        public List<String> getMenuOptions() {
-            return menu_options;
-        }
+		private List<String> menu_options = new ArrayList<>();
+
+		public List<String> getMenuOptions() {
+			return menu_options;
+		}
+
 		public void createPlayer(Player the_player) {
 			this.player = the_player;
 			this.menu_options = new ArrayList<String>();
 			this.selection = "";
 			this.selection_last = "";
+			this.initial_yaw = the_player.getLocation().getYaw();
 		}
-    }
 
-	private boolean within(int v, int w1, int w2) {
-		// why so many if statements? i have no idea, they are the same.. but yet they
-		// were needed
+		// this needs to run everytime the player moves
+		/**
+		 * show the player a prompt with a list of options to choose from
+		 * 
+		 * @param options a list of strings for the player to choose from
+		 * @param player  the player
+		 */
+		public void prompt_selections() {
+			// NOTE: this should not need to have player passed in
+			// Integer index = getPlayer(player);
+			// PlayerWithMenu has_menu_open = player_with_menu.get(index);
+			// if (index == -1) {
+			// return;
+			// }
+
+			// int pitch = (int) player.getLocation().getPitch();
+			float yaw = player.getLocation().getYaw();
+			// if (yaw < 180) {
+			// yaw += initial_yaw;
+			// } else if (yaw > -180) {
+			// yaw -= initial_yaw;
+			// }
+			System.out.printf("player yaw: %s", yaw);
+			// requires player move
+			int selected = 0;
+			if (within(yaw, -90, -60)) {
+				selected = 0;
+			}
+			if (within(yaw, -61, -30)) {
+				selected = 1;
+			}
+			if (within(yaw, -29, 29)) {
+				selected = 2;
+			}
+			if (within(yaw, 30, 61)) {
+				selected = 3;
+			}
+			if (within(yaw, 60, 90)) {
+				selected = 4;
+			}
+			if (getMenuOptions().size() - 1 < selected) {
+				return;
+			}
+			selection = getMenuOptions().get(selected);
+			// NOTE: this next line should not be hard coded here
+			if (selection != selection_last) {
+				selection_last = getMenuOptions().get(selected);
+				System.out.print("the page flip sound should be playing");
+
+				Location location = player.getLocation();
+				Bukkit.getWorld(location.getWorld().getUID()).playSound(location, Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
+				// player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
+			}
+		}
+	}
+
+	private boolean within(float v, float w1, float w2) {
+		// 360/40 9
 		if (v > 0) {
 			if (v >= w1 && v <= w2) {
 				return true;
@@ -108,78 +201,32 @@ public class BetterMenu {
 		}
 		return false;
 	}
-	// this needs to run everytime the player moves
-	/**
-	 * show the player a prompt with a list of options to choose from
-	 * 
-	 * @param options a list of strings for the player to choose from
-	 * @param player  the player
-	 */
-	private void prompt_selections(Player player) {
-		// NOTE: this should not need to have player passed in
-		Integer index = getPlayer(player);
-		PlayerWithMenu has_menu_open = player_with_menu.get(index);
-        if (index == -1) {
-            return;
-        }
-
-		int pitch = (int) player.getLocation().getPitch();
-		// requires player move
-		int selected = 0;
-		if (within(pitch, -90, -60)) {
-			selected = 0;
-		}
-		if (within(pitch, -61, -30)) {
-			selected = 1;
-		}
-		if (within(pitch, -29, 29)) {
-			selected = 2;
-		}
-		if (within(pitch, 30, 61)) {
-			selected = 3;
-		}
-		if (within(pitch, 60, 90)) {
-			selected = 4;
-		}
-		if (has_menu_open.getMenuOptions().size() > 5) {
-			// for a dynamic list
-			var chunk = has_menu_open.page * 4;
-			if (selected == 4) {
-                has_menu_open.selection = "NEXT PAGE";
-				return;
-			}
-			selected = (chunk - 4) + selected;
-		}
-		if (selected > has_menu_open.getMenuOptions().size() - 1) {
-            has_menu_open.selection = "CANCEL";
-			return;
-		}
-        has_menu_open.selection = has_menu_open.getMenuOptions().get(selected);
-
-		//NOTE: this next line should not be hard coded here
-		if (has_menu_open.selection != has_menu_open.selection_last) {
-			has_menu_open.selection_last = has_menu_open.getMenuOptions().get(selected);
-			System.out.print("the page flip sound should be playing");
-
-      Location location = player.getLocation();
-      Bukkit.getWorld(location.getWorld().getUID()).playSound(location,Sound.ITEM_BOOK_PAGE_TURN,1f,1f);
-      // player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
-		}
-	}
 
 	public void playerSelection(PlayerMoveEvent ev) {
 		Player player = ev.getPlayer();
 
-        Integer index = getPlayer(ev.getPlayer());
-        if (index == -1) {
-            return;
-        }
-		prompt_selections(player);
+		Integer index = getPlayer(ev.getPlayer());
+		if (index == -1) {
+			return;
+		}
 		PlayerWithMenu has_menu_open = player_with_menu.get(index);
+		has_menu_open.prompt_selections();
 
 		// using ACTIONBAR
 		Audience audience = Audience.audience(player);
-		audience.sendActionBar(() -> Component.text(has_menu_open.selection));
+		// NOTE: this is the new format, need to apply it to everything else
+		// String action_list = new String();
+		// for (int x = 0; x < has_menu_open.getMenuOptions().size(); x++) {
+		// if (has_menu_open.getMenuOptions().get(x) == has_menu_open.selection) {
+		// action_list += String.format(ChatColor.GOLD + "[%s]" + ChatColor.WHITE,
+		// has_menu_open.selection);
+		// continue;
+		// }
+		// action_list += String.format(" %s ", has_menu_open.getMenuOptions().get(x));
+		// }
+		// String action_selections = action_list;
+		audience.sendActionBar(
+				() -> Component.text(formatListToString(has_menu_open.getMenuOptions(), has_menu_open.selection)));
 
 		boolean hasBlindness = false;
 		for (PotionEffect effect : player.getActivePotionEffects()) {
@@ -192,16 +239,28 @@ public class BetterMenu {
 		}
 	}
 
-	public void playerChoose(PlayerToggleSneakEvent ev) {
+	public void playerChoose(PlayerInteractEvent ev) {
 		// System.out.println("sneaking>> YESSSSS");
-		if (ev.isSneaking() == false) {
+		// if (ev.isSneaking() == false) {
+		// return;
+		// }
+		if (!ev.getHand().equals(EquipmentSlot.HAND)) {
 			return;
 		}
+
 		Player player = ev.getPlayer();
-        Integer index = getPlayer(player);
-        if (index == -1) {
-            return;
-        }
+		Integer index = getPlayer(player);
+
+		if (index == -1) {
+			return;
+		}
+		if (player.getInventory().getItemInMainHand().isEmpty()) {
+			return;
+		}
+		if (!player.getInventory().getItemInMainHand().getType().equals(Item_Manager.magic_mirror_book.getType())) {
+			return;
+		}
+
 		PlayerWithMenu has_menu_open = player_with_menu.get(index);
 
 		if (has_menu_open.selection == "NEXT PAGE") {
@@ -211,23 +270,36 @@ public class BetterMenu {
 		addContext(has_menu_open);
 
 		// player_selection.addNewContext(player_selection.getSelectedText());
-        // PlayerContext context = new PlayerContext();
+		// PlayerContext context = new PlayerContext();
 
-        if (has_menu_open.selection == "CANCEL") {
-			closeMenu(player);
-			return; // same reason as above
-        }
+		// if (has_menu_open.selection == "CANCEL") {
+		// closeMenu(player);
+		// return; // same reason as above
+		// }
 	}
+
 	public void addContext(PlayerWithMenu player) {
-        PlayerContext new_context = new PlayerContext();
-        new_context.prompt = player.selection;
-        if (player.context.size() >= 1) {
-            player.context.get(player.context.size()-1).answer = player.selection;           
-			if (player.context.get(player.context.size()-1).prompt == new_context.prompt) {
-				//we do not want copies
+		PlayerContext new_context = new PlayerContext();
+		new_context.prompt = player.selection;
+		if (player.context.size() >= 1) {
+			player.context.get(player.context.size() - 1).answer = player.selection;
+			if (player.context.get(player.context.size() - 1).prompt == new_context.prompt) {
+				// we do not want copies
 				return;
 			}
-        }
-        player.context.add(new_context);
+		}
+		player.context.add(new_context);
+	}
+
+	public String formatListToString(List<String> list, String selection) {
+		String action_list = new String();
+		for (int x = 0; x < list.size(); x++) {
+			if (list.get(x) == selection) {
+				action_list += String.format(ChatColor.GOLD + "[%s]" + ChatColor.WHITE, selection);
+				continue;
+			}
+			action_list += String.format(" %s ", list.get(x));
+		}
+		return action_list;
 	}
 }

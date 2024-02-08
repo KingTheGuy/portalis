@@ -41,6 +41,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.inventory.CraftingInventory;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Merchant;
 import org.bukkit.inventory.MerchantInventory;
@@ -57,6 +58,7 @@ import com.surv.items.Item_Manager;
 
 import com.destroystokyo.paper.event.block.AnvilDamagedEvent.DamageState;
 import com.destroystokyo.paper.event.player.PlayerElytraBoostEvent;
+import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent;
 import com.surv.menu;
 import com.surv.BetterMenu.PlayerContext;
@@ -158,272 +160,25 @@ public class magic_mirror implements Listener {
     betterMenu.playerSelection(ev);
   }
 
+  // @EventHandler
+  // public void onPlayerAttac(PlayerInteractEvent event) {
+  // Player player = event.getPlayer();
+  // if (player.getInventory().getItemInMainHand().isEmpty()) {
+  // return;
+  // }
+  // if
+  // (player.getInventory().getItemInMainHand().getType().equals(Item_Manager.magic_mirror_book.getType()))
+  // {
+  // System.out.println("YES this should be working..");
+  // }
+  // }
+
   // FIXME: Issue when player clicks blocks with the item.
   // NOTE: fixed this by changing click to crouch. to confirm selection
-  @EventHandler
-  public void onPlayerSneak(PlayerToggleSneakEvent ev) {
+  // @EventHandler
+  // public void onPlayerSneak(PlayerInteractEvent ev) {
 
-    betterMenu.playerChoose(ev);
-
-    Player player = ev.getPlayer();
-    boolean isSneaking = ev.isSneaking();
-
-    Integer index = betterMenu.getPlayer(player);
-
-    if (index == -1) {
-      return;
-    }
-
-    if (isSneaking == false) {
-      return;
-    }
-
-    PlayerWithMenu has_menu_open = betterMenu.player_with_menu.get(index);
-    // System.out.print(String.format("Current menu
-    // index:[%s]\n",has_menu_open.context.size()));
-    Integer context_size = has_menu_open.context.size();
-
-    if (context_size == 2) {
-      if (has_menu_open.context.get(0).answer == "LAST DEATH") {
-        // System.out.print(String.format("%s wants to chose
-        // %s\n",ev.getPlayer().getName(),has_menu_open.context.get(0).answer));
-        List<String> prompt_options = List.of("WARP");
-        betterMenu.openMenu(prompt_options, player);
-        return;
-        // List<String> prompt_options = List.of("LAST DEATH", "BED" , "INFO");
-        // betterMenu.openMenu(prompt_options, player);
-      }
-      if (has_menu_open.context.get(0).answer == "BED") {
-        // System.out.print(String.format("%s wants to chose
-        // %s\n",ev.getPlayer().getName(),has_menu_open.context.get(0).answer));
-        List<String> prompt_options = List.of("WARP");
-        betterMenu.openMenu(prompt_options, player);
-        // List<String> prompt_options = List.of("LAST DEATH", "BED" , "INFO");
-        // betterMenu.openMenu(prompt_options, player);
-        return;
-      }
-
-      if (has_menu_open.context.get(0).answer == "SPAWN") {
-        // System.out.print(String.format("%s wants to chose
-        // %s\n",ev.getPlayer().getName(),has_menu_open.context.get(0).answer));
-        List<String> prompt_options = List.of("WARP");
-        betterMenu.openMenu(prompt_options, player);
-        // List<String> prompt_options = List.of("LAST DEATH", "BED" , "INFO");
-        // betterMenu.openMenu(prompt_options, player);
-        return;
-      }
-    }
-
-    Audience audience = Audience.audience(player);
-    if (context_size == 3) {
-      // System.out.print("So this is working right?\n");
-      if (has_menu_open.context.get(1).prompt == "LAST DEATH") {
-        if (has_menu_open.context.get(1).answer == "WARP") {
-          int death_index = -1;
-          for (player_deaths d : deaths) {
-            if (d.name == player) {
-              death_index = deaths.indexOf(d);
-            }
-          }
-          if (death_index == -1) {
-            audience.sendActionBar(() -> Component.text("Long Live").color(NamedTextColor.RED));
-            player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
-          } else {
-            teleportEffect(player);
-            player.teleportAsync(deaths.get(death_index).loc);
-            betterMenu.closeMenu(player);
-            useBook(player);
-            teleportEffect(player);
-          }
-        }
-        betterMenu.closeMenu(player);
-      }
-      if (has_menu_open.context.get(1).prompt == "BED") {
-        if (has_menu_open.context.get(1).answer == "WARP") {
-          if (player.getBedSpawnLocation() == null) {
-            audience.sendActionBar(() -> Component.text("Where is my bed?").color(NamedTextColor.RED));
-            player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
-          } else {
-            teleportEffect(player);
-            player.teleportAsync(player.getBedSpawnLocation());
-            betterMenu.closeMenu(player);
-            useBook(player);
-            teleportEffect(player);
-          }
-        }
-        betterMenu.closeMenu(player);
-      }
-      if (has_menu_open.context.get(1).prompt == "SPAWN") {
-        if (has_menu_open.context.get(1).answer == "WARP") {
-          teleportEffect(player);
-          player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
-          betterMenu.closeMenu(player);
-          useBook(player);
-          teleportEffect(player);
-        }
-        betterMenu.closeMenu(player);
-      }
-    }
-
-    // for (PlayerContext c : has_menu_open.context) {
-    // System.out.print(String.format("[%s]
-    // %s,%s\n",has_menu_open.context.indexOf(c),c.prompt,c.answer));
-    // }
-
-    // if (isSneaking == true && player_index > -1) {
-    // String player_selected_text =
-    // prompt.has_menu_open.get(player_index).getSelectedText();
-    // boolean success = false;
-    // boolean sub_menu = false;
-    // int xp = player.getLevel();
-    // if (player_selected_text == "NEXT PAGE") {
-    // success = true;
-    // sub_menu = true;
-    // prompt.nextPage(player);
-    // }
-    // if (player_selected_text == main_menu_selections.get(0).getName()) {
-    // if (xp >= main_menu_selections.get(0).getXPCost()) {
-    // int dex = -1;
-    // if (deaths.size() > 0) {
-    // dex = deaths.indexOf(deaths.stream().filter(o -> o ==
-    // player).findFirst().get());
-    // if (dex > -1) {
-    // // NOTE: this looks like its had been fixed, this line was using a random
-    // index,
-    // // but no more.
-    // player_deaths death_data = deaths.get(player_index);
-    // player.setLevel(xp - main_menu_selections.get(0).getXPCost());
-    // player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f,
-    // 1f);
-    // player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
-    // player.teleportAsync(death_data.loc);
-    // success = true;
-
-    // }
-    // } else {
-    // player.sendMessage(ChatColor.RED + "no deaths");
-    // }
-    // if (dex == -1) {
-    // player.sendMessage(ChatColor.RED + "seems like you havent died yet");
-
-    // }
-    // }
-    // }
-    // if (player_selected_text == main_menu_selections.get(1).getName()) {
-    // if (xp >= main_menu_selections.get(1).getXPCost()) {
-    // var has_bed = player.getBedSpawnLocation();
-    // if (has_bed == null) {
-    // player.sendMessage(ChatColor.RED + "you don't have a bed.");
-    // success = false;
-    // } else {
-    // player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f,
-    // 1f);
-    // player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
-    // player.setLevel(xp - main_menu_selections.get(1).getXPCost());
-    // player.teleportAsync(player.getBedSpawnLocation());
-    // success = true;
-    // }
-    // }
-    // }
-    // // TODO: figure out how to make dynamic menus.. will be used for players to
-    // TP
-    // // to.
-    // // Also for dynamic lists.
-    // if (player_selected_text == main_menu_selections.get(2).getName()) {
-    // ArrayList<String> options = new ArrayList<>();
-    // options.add("steve");
-    // options.add("jim");
-    // // options.add("pam");
-    // // options.add("table");
-    // // options.add("slim");
-    // // options.add("shady");
-    // // options.add("stripes");
-    // // options.add("echo");
-    // // options.add("bob");
-    // // options.add("jimmy");
-    // // options.add("tommy");
-    // // options.add("not_me_you");
-    // // options.add("the_guy");
-    // for (Player p : Bukkit.getOnlinePlayers()) {
-    // if (p.equals(player)) {
-    // continue;
-    // }
-    // options.add(p.getName());
-    // }
-    // prompt.closeMenu(player);
-    // success = true;
-    // sub_menu = true;
-    // prompt.openMenu(options, player);
-    // }
-    // if (player_selected_text == main_menu_selections.get(3).getName()) {
-    // var options = List.of("SPAWN", "SHOPPING");
-    // prompt.closeMenu(player);
-    // success = true;
-    // sub_menu = true;
-    // prompt.openMenu(options, player);
-    // }
-    // if (player_selected_text == "SPAWN") {
-    // if (xp >= 3) {
-    // player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f,
-    // 1f);
-    // player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
-    // player.setLevel(xp - 3);
-    // player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
-    // success = true;
-    // }
-    // }
-    // if (player_selected_text == "SHOPPING") {
-    // if (xp >= 3) {
-    // player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f,
-    // 1f);
-    // player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
-    // player.setLevel(xp - 3);
-    // Location new_location = new Location(Bukkit.getWorld("world"), -1806, 73,
-    // 1502);
-    // // player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
-    // player.teleportAsync(new_location);
-    // success = true;
-    // }
-    // }
-    // if (player_selected_text == main_menu_selections.get(4).getName()) {
-    // player.sendMessage(
-    // ChatColor.AQUA + "What is there to tell? you crouch to carry on with your
-    // selection and it costs xp.");
-    // player.sendMessage(ChatColor.AQUA
-    // + "Oh btw if you have an empty bottle in hand you can crouch use it and
-    // collect you xp in it. Great for later use.");
-    // success = true;
-    // }
-    // if (success == false) {
-    // // FIXME: there is an issue here, right clicking a block acts incorrectly
-    // // playersWithMenuOpen.remove(index);
-    // // player.removePotionEffect(PotionEffectType.BLINDNESS);
-    // Audience audience = Audience.audience(player);
-    // audience.sendActionBar(() -> Component.text(ChatColor.RED + "not Enough
-    // xp"));
-    // player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f,
-    // 1f);
-    // // playersWithMenuOpen.remove(index);
-    // // player.removePotionEffect(PotionEffectType.BLINDNESS);
-    // }
-    // if (sub_menu != true) {
-    // prompt.closeMenu(player);
-    // }
-    // if (player_selected_text != "NEXT PAGE") {
-    // if (prompt.has_menu_open.get(player_index).getSelectedText() ==
-    // main_menu_selections.get(2).getName()) {
-    // for (Player p : Bukkit.getOnlinePlayers()) {
-    // if (p.getName() == player_selected_text) {
-    // player.teleportAsync(p.getLocation());
-    // break;
-    // }
-    // }
-    // }
-    // prompt.has_menu_open.get(player_index).setPrevieusSelected(player_selected_text);
-    // }
-    // player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
-    // }
-  }
+  // }
 
   // public void createItem(CraftItemEvent event) {
   // magic.getPlugin().getLogger().warning("is this working?");
@@ -473,11 +228,124 @@ public class magic_mirror implements Listener {
 
   @EventHandler
   public void onPlayerInteract(PlayerInteractEvent ev) {
+    if (!ev.getHand().equals(EquipmentSlot.HAND)) {
+      return;
+    }
     Player player = ev.getPlayer();
     ItemStack item = player.getInventory().getItemInMainHand();
     Material itemType = item.getType();
     Action action = ev.getAction();
     Audience audience = Audience.audience(player);
+
+    // BEGINING OF THIS
+    // Player player = ev.getPlayer();
+    // boolean isSneaking = ev.isSneaking();
+    betterMenu.playerChoose(ev);
+    Integer index = betterMenu.getPlayer(player);
+
+    if (index > -1) {
+      PlayerWithMenu has_menu_open = betterMenu.player_with_menu.get(index);
+      // System.out.print(String.format("Current menu
+      // index:[%s]\n",has_menu_open.context.size()));
+      Integer context_size = has_menu_open.context.size();
+
+      if (context_size == 2) {
+        if (has_menu_open.context.get(0).answer == "LAST DEATH") {
+          // System.out.print(String.format("%s wants to chose
+          // %s\n",ev.getPlayer().getName(),has_menu_open.context.get(0).answer));
+          List<String> prompt_options = List.of("WARP");
+          betterMenu.openMenu(prompt_options, player);
+          return;
+          // List<String> prompt_options = List.of("LAST DEATH", "BED" , "INFO");
+          // betterMenu.openMenu(prompt_options, player);
+        }
+        if (has_menu_open.context.get(0).answer == "BED") {
+          // System.out.print(String.format("%s wants to chose
+          // %s\n",ev.getPlayer().getName(),has_menu_open.context.get(0).answer));
+          List<String> prompt_options = List.of("WARP");
+          betterMenu.openMenu(prompt_options, player);
+          // List<String> prompt_options = List.of("LAST DEATH", "BED" , "INFO");
+          // betterMenu.openMenu(prompt_options, player);
+          return;
+        }
+
+        if (has_menu_open.context.get(0).answer == "SPAWN") {
+          // System.out.print(String.format("%s wants to chose
+          // %s\n",ev.getPlayer().getName(),has_menu_open.context.get(0).answer));
+          List<String> prompt_options = List.of("WARP");
+          betterMenu.openMenu(prompt_options, player);
+          // List<String> prompt_options = List.of("LAST DEATH", "BED" , "INFO");
+          // betterMenu.openMenu(prompt_options, player);
+          return;
+        }
+      }
+
+      // Audience audience = Audience.audience(player);
+      if (context_size == 3) {
+        // System.out.print("So this is working right?\n");
+        if (has_menu_open.context.get(1).prompt == "LAST DEATH") {
+          if (has_menu_open.context.get(1).answer == "WARP") {
+            int death_index = -1;
+            for (player_deaths d : deaths) {
+              if (d.name == player) {
+                death_index = deaths.indexOf(d);
+              }
+            }
+            if (death_index == -1) {
+              audience.sendActionBar(() -> Component.text("Long Live").color(NamedTextColor.RED));
+              player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
+            } else {
+              teleportEffect(player);
+              player.teleportAsync(deaths.get(death_index).loc);
+              betterMenu.closeMenu(player);
+              useBook(player);
+              teleportEffect(player);
+            }
+          }
+          betterMenu.closeMenu(player);
+        }
+        if (has_menu_open.context.get(1).prompt == "BED") {
+          if (has_menu_open.context.get(1).answer == "WARP") {
+            if (player.getBedSpawnLocation() == null) {
+              audience.sendActionBar(() -> Component.text("Where is my bed?").color(NamedTextColor.RED));
+              player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
+            } else {
+              teleportEffect(player);
+              player.teleportAsync(player.getBedSpawnLocation());
+              betterMenu.closeMenu(player);
+              useBook(player);
+              teleportEffect(player);
+            }
+          }
+          betterMenu.closeMenu(player);
+        }
+        if (has_menu_open.context.get(1).prompt == "SPAWN") {
+          if (has_menu_open.context.get(1).answer == "WARP") {
+            teleportEffect(player);
+            player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
+            betterMenu.closeMenu(player);
+            useBook(player);
+            teleportEffect(player);
+          }
+          betterMenu.closeMenu(player);
+        }
+      }
+      for (PlayerContext c : has_menu_open.context) {
+        if (c.prompt == "CANCEL") {
+          betterMenu.closeMenu(player);
+        }
+      }
+      // if (has_menu_open.context.get(1).answer == "WARP") {
+
+      // }
+      // END OF THSIS
+      return;
+    }
+
+    // if (isSneaking == false) {
+    // return;
+    // }
+
     // player.sendMessage(ChatColor.AQUA + "______");
     // player.sendMessage(ChatColor.AQUA + "ItemType: " + itemType);
 
@@ -553,22 +421,25 @@ public class magic_mirror implements Listener {
           // menuPrompt does not see them
           // NOTE: i could be wrong
           player.playSound(player.getLocation(), Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1f, 1f);
-          List<String> prompt_options = List.of("LAST DEATH", "BED", "SPAWN", "INFO");
+          List<String> prompt_options = List.of("LAST DEATH", "BED", "SPAWN");
           betterMenu.openMenu(prompt_options, player);
 
         } else {
-          // close the menu
-          betterMenu.closeMenu(player);
-          // prompt.closeMenu(player);
-          player.sendMessage(
-              ChatColor.GOLD + "HOW TO USE: look up/down to see all selections. to confirm your selection, crouch.");
-          player.sendMessage(ChatColor.GRAY
-              + "NOTE: you can crouch click with an empty bottle to store your xp for later use. crouch use an enchanted bottle to get the full xp back.");
-          player.playSound(player.getLocation(), Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1f, 1f);
-          //// player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
+          // // close the menu
+          // betterMenu.closeMenu(player);
+          // // prompt.closeMenu(player);
+          // player.sendMessage(
+          // ChatColor.GOLD + "HOW TO USE: look up/down to see all selections. to confirm
+          // your selection, crouch.");
+          // player.sendMessage(ChatColor.GRAY
+          // + "NOTE: you can crouch click with an empty bottle to store your xp for later
+          // use. crouch use an enchanted bottle to get the full xp back.");
+          // player.playSound(player.getLocation(), Sound.ENTITY_ILLUSIONER_CAST_SPELL,
+          // 1f, 1f);
+          // //// player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 1f,
+          // 1f);
 
         }
-        // }
       }
     }
   }
