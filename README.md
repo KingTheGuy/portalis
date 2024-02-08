@@ -1,6 +1,6 @@
 ### Magic Mirror
 ---
-![magic mirror dem](./repo_assets/magic_mirror.gif)
+![magic mirror dem](./repo_assets/mm_dem.gif)
 
 Just like every other game out there, it's an item that teleports the player.
 
