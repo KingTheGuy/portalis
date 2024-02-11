@@ -138,6 +138,22 @@ public class magic_mirror implements Listener {
     }
   }
 
+  ArrayList<WarpPlayer> avalible_for_warp = new ArrayList<>();
+
+  public class WarpPlayer {
+    Player player;
+
+    public void removePlayer() {
+      avalible_for_warp.remove(this);
+    }
+  }
+
+  public void addPlayerToAvalibleForWarp(Player player) {
+    WarpPlayer warpable_player = new WarpPlayer();
+    warpable_player.player = player;
+    avalible_for_warp.add(warpable_player);
+  }
+
   ArrayList<warp_options_cost> main_menu_selections = new ArrayList<>();
 
   // HUH//
@@ -243,109 +259,113 @@ public class magic_mirror implements Listener {
     // BEGINING OF THIS
     // Player player = ev.getPlayer();
     // boolean isSneaking = ev.isSneaking();
-    betterMenu.playerChoose(ev);
-    Integer index = betterMenu.getPlayer(player);
+    // System.out.printf("latest: %s\n", p.context.get(p.context.size() -
+    // 1).context);
+    // TODO: check if the latest list mateches this new list, something like that
+    // List<String> list = List.of("WARP");
+    // p.showPrompt(list);
+    // PlayerWithMenu has_menu_open = betterMenu.player_with_menu.get(index);
+    // System.out.print(String.format("Current menu
+    // index:[%s]\n",has_menu_open.context.size()));
+    // Integer context_size = p.context.size();
 
-    if (index > -1) {
-      PlayerWithMenu has_menu_open = betterMenu.player_with_menu.get(index);
-      // System.out.print(String.format("Current menu
-      // index:[%s]\n",has_menu_open.context.size()));
-      Integer context_size = has_menu_open.context.size();
+    // if (context_size == 2) {
+    // if (p.context.get(0).answer == "LAST DEATH") {
+    // // System.out.print(String.format("%s wants to chose
+    // // %s\n",ev.getPlayer().getName(),has_menu_open.context.get(0).answer));
+    // List<String> prompt_options = List.of("WARP");
+    // betterMenu.openMenu(prompt_options, player);
+    // return;
+    // // List<String> prompt_options = List.of("LAST DEATH", "BED" , "INFO");
+    // // betterMenu.openMenu(prompt_options, player);
+    // }
+    // if (p.context.get(0).answer == "BED") {
+    // // System.out.print(String.format("%s wants to chose
+    // // %s\n",ev.getPlayer().getName(),has_menu_open.context.get(0).answer));
+    // List<String> prompt_options = List.of("WARP");
+    // betterMenu.openMenu(prompt_options, player);
+    // // List<String> prompt_options = List.of("LAST DEATH", "BED" , "INFO");
+    // // betterMenu.openMenu(prompt_options, player);
+    // return;
+    // }
 
-      if (context_size == 2) {
-        if (has_menu_open.context.get(0).answer == "LAST DEATH") {
-          // System.out.print(String.format("%s wants to chose
-          // %s\n",ev.getPlayer().getName(),has_menu_open.context.get(0).answer));
-          List<String> prompt_options = List.of("WARP");
-          betterMenu.openMenu(prompt_options, player);
-          return;
-          // List<String> prompt_options = List.of("LAST DEATH", "BED" , "INFO");
-          // betterMenu.openMenu(prompt_options, player);
-        }
-        if (has_menu_open.context.get(0).answer == "BED") {
-          // System.out.print(String.format("%s wants to chose
-          // %s\n",ev.getPlayer().getName(),has_menu_open.context.get(0).answer));
-          List<String> prompt_options = List.of("WARP");
-          betterMenu.openMenu(prompt_options, player);
-          // List<String> prompt_options = List.of("LAST DEATH", "BED" , "INFO");
-          // betterMenu.openMenu(prompt_options, player);
-          return;
-        }
+    // if (p.context.get(0).answer == "SPAWN") {
+    // // System.out.print(String.format("%s wants to chose
+    // // %s\n",ev.getPlayer().getName(),has_menu_open.context.get(0).answer));
+    // List<String> prompt_options = List.of("WARP");
+    // betterMenu.openMenu(prompt_options, player);
+    // // List<String> prompt_options = List.of("LAST DEATH", "BED" , "INFO");
+    // // betterMenu.openMenu(prompt_options, player);
+    // return;
+    // }
+    // }
 
-        if (has_menu_open.context.get(0).answer == "SPAWN") {
-          // System.out.print(String.format("%s wants to chose
-          // %s\n",ev.getPlayer().getName(),has_menu_open.context.get(0).answer));
-          List<String> prompt_options = List.of("WARP");
-          betterMenu.openMenu(prompt_options, player);
-          // List<String> prompt_options = List.of("LAST DEATH", "BED" , "INFO");
-          // betterMenu.openMenu(prompt_options, player);
-          return;
-        }
-      }
+    // // Audience audience = Audience.audience(player);
+    // if (context_size == 3) {
+    // // System.out.print("So this is working right?\n");
+    // if (p.context.get(1).prompt == "LAST DEATH") {
+    // if (p.context.get(1).answer == "WARP") {
+    // int death_index = -1;
+    // for (player_deaths d : deaths) {
+    // if (d.name == player) {
+    // death_index = deaths.indexOf(d);
+    // }
+    // }
+    // if (death_index == -1) {
+    // // NOTE: this message does not show up because i am clearing the title when
+    // // closing the menu
+    // audience.sendActionBar(() -> Component.text("Long
+    // Live").color(NamedTextColor.RED));
+    // player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f,
+    // 1f);
+    // } else {
+    // teleportEffect(player);
+    // player.teleportAsync(deaths.get(death_index).loc);
+    // betterMenu.closeMenu(player);
+    // useBook(player);
+    // teleportEffect(player);
+    // }
+    // }
+    // betterMenu.closeMenu(player);
+    // }
+    // if (p.context.get(1).prompt == "BED") {
+    // if (p.context.get(1).answer == "WARP") {
+    // if (player.getBedSpawnLocation() == null) {
+    // audience.sendActionBar(() -> Component.text("Where is my
+    // bed?").color(NamedTextColor.RED));
+    // player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f,
+    // 1f);
+    // } else {
+    // teleportEffect(player);
+    // player.teleportAsync(player.getBedSpawnLocation());
+    // betterMenu.closeMenu(player);
+    // useBook(player);
+    // teleportEffect(player);
+    // }
+    // }
+    // betterMenu.closeMenu(player);
+    // }
+    // if (p.context.get(1).prompt == "SPAWN") {
+    // if (p.context.get(1).answer == "WARP") {
+    // teleportEffect(player);
+    // player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
+    // betterMenu.closeMenu(player);
+    // useBook(player);
+    // teleportEffect(player);
+    // }
+    // betterMenu.closeMenu(player);
+    // }
+    // }
+    // for (PlayerContext c : p.context) {
+    // if (p.prompt == "CANCEL") {
+    // betterMenu.closeMenu(player);
+    // }
+    // }
+    // if (has_menu_open.context.get(1).answer == "WARP") {
 
-      // Audience audience = Audience.audience(player);
-      if (context_size == 3) {
-        // System.out.print("So this is working right?\n");
-        if (has_menu_open.context.get(1).prompt == "LAST DEATH") {
-          if (has_menu_open.context.get(1).answer == "WARP") {
-            int death_index = -1;
-            for (player_deaths d : deaths) {
-              if (d.name == player) {
-                death_index = deaths.indexOf(d);
-              }
-            }
-            if (death_index == -1) {
-              // NOTE: this message does not show up because i am clearing the title when
-              // closing the menu
-              audience.sendActionBar(() -> Component.text("Long Live").color(NamedTextColor.RED));
-              player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
-            } else {
-              teleportEffect(player);
-              player.teleportAsync(deaths.get(death_index).loc);
-              betterMenu.closeMenu(player);
-              useBook(player);
-              teleportEffect(player);
-            }
-          }
-          betterMenu.closeMenu(player);
-        }
-        if (has_menu_open.context.get(1).prompt == "BED") {
-          if (has_menu_open.context.get(1).answer == "WARP") {
-            if (player.getBedSpawnLocation() == null) {
-              audience.sendActionBar(() -> Component.text("Where is my bed?").color(NamedTextColor.RED));
-              player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
-            } else {
-              teleportEffect(player);
-              player.teleportAsync(player.getBedSpawnLocation());
-              betterMenu.closeMenu(player);
-              useBook(player);
-              teleportEffect(player);
-            }
-          }
-          betterMenu.closeMenu(player);
-        }
-        if (has_menu_open.context.get(1).prompt == "SPAWN") {
-          if (has_menu_open.context.get(1).answer == "WARP") {
-            teleportEffect(player);
-            player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
-            betterMenu.closeMenu(player);
-            useBook(player);
-            teleportEffect(player);
-          }
-          betterMenu.closeMenu(player);
-        }
-      }
-      for (PlayerContext c : has_menu_open.context) {
-        if (c.prompt == "CANCEL") {
-          betterMenu.closeMenu(player);
-        }
-      }
-      // if (has_menu_open.context.get(1).answer == "WARP") {
-
-      // }
-      // END OF THSIS
-      return;
-    }
+    // }
+    // END OF THSIS
+    // return;
 
     // if (isSneaking == false) {
     // return;
@@ -425,28 +445,150 @@ public class magic_mirror implements Listener {
           // FIXME: so the issue is that the "options" are just tossed right after and
           // menuPrompt does not see them
           // NOTE: i could be wrong
+          // FIXME: p.sendprompt will never happen because there is no player
+          // Integer index = betterMenu.getPlayer(player);
+          // if (index < 0) {
+          // return;
+          // }
+          // PlayerWithMenu p_menu = betterMenu.player_with_menu.get(index);
+          // p.open
+          final String confirm_prompt = "RIP OUT PAGE";
+          final String cancel_prompt = "CLOSE";
           player.playSound(player.getLocation(), Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1f, 1f);
-          List<String> prompt_options = List.of("BED", "SPAWN", "LAST DEATH");
-          betterMenu.openMenu(prompt_options, player);
+          Integer index = betterMenu.findPlayer(player);
+          if (index < 0) {
+            List<String> THIS_LIST = List.of("BED", "SPAWN", "WARPS", "LAST DEATH", cancel_prompt);
+            // List<String> THIS_LIST = List.of("JUST", "SOME", "NEW", "LIST");
+            betterMenu.sendPrompt(1, THIS_LIST, player);
+            index = betterMenu.findPlayer(player);
+          }
+          PlayerWithMenu p_menu = betterMenu.player_with_menu.get(index);
+          p_menu.playerChoose(ev);
+          if (p_menu.all_context.size() <= 1) {
+            switch (p_menu.getAll_context().answer) {
+              case "BED":
+                betterMenu.sendPrompt(2, List.of(confirm_prompt, cancel_prompt), player);
+                return;
+              case "SPAWN":
+                betterMenu.sendPrompt(2, List.of(confirm_prompt, cancel_prompt), player);
+                return;
+              case "WARPS":
+                betterMenu.sendPrompt(3, List.of("WARP TO", "WAIT FOR", cancel_prompt), player);
+                return;
+              case "LAST DEATH":
+                betterMenu.sendPrompt(2, List.of(confirm_prompt, cancel_prompt), player);
+                return;
+              case cancel_prompt:
+                betterMenu.closeMenu(player);
+                return;
+            }
+          }
+          if (p_menu.getAll_context().id == 2) {
+            switch (p_menu.getAll_context().answer) {
+              case confirm_prompt:
+                switch (p_menu.all_context.get(0).answer) {
+                  case "BED":
+                    if (player.getBedSpawnLocation() == null) {
+                      audience.sendActionBar(() -> Component.text("Where is my bed?").color(NamedTextColor.RED));
+                      player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
+                    } else {
+                      teleportEffect(player);
+                      player.teleportAsync(player.getBedSpawnLocation());
+                      betterMenu.closeMenu(player);
+                      useBook(player);
+                      teleportEffect(player);
+                    }
+                    betterMenu.closeMenu(player);
+                    return;
+                  case "SPAWN":
+                    teleportEffect(player);
+                    player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
+                    betterMenu.closeMenu(player);
+                    useBook(player);
+                    teleportEffect(player);
+                    betterMenu.closeMenu(player);
+                    return;
+                  case "LAST DEATH":
+                    int death_index = -1;
+                    for (player_deaths d : deaths) {
+                      if (d.name == player) {
+                        death_index = deaths.indexOf(d);
+                      }
+                    }
+                    if (death_index == -1) {
+                      // NOTE: this message does not show up because i am clearing the title when
+                      // closing the menu
+                      audience.sendActionBar(() -> Component.text("Long Live").color(NamedTextColor.RED));
+                      player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
+                    } else {
+                      teleportEffect(player);
+                      player.teleportAsync(deaths.get(death_index).loc);
+                      betterMenu.closeMenu(player);
+                      useBook(player);
+                      teleportEffect(player);
+                    }
+                    return;
+                  case "WARPS":
+                    betterMenu.closeMenu(player);
+                    return;
+                }
+              case cancel_prompt:
+                betterMenu.closeMenu(player);
+                return;
+            }
+          }
+          if (p_menu.getAll_context().id == 3) {
+            switch (p_menu.getAll_context().answer) {
+              case "WARP TO":
+                // TODO: list all players in the wait list
+                List<String> the_players = new ArrayList<>();
+                for (Player waiting_players : betterMenu.wait_list) {
+                  the_players.add(waiting_players.getName().toUpperCase());
+                }
+                the_players.add(cancel_prompt);
+                betterMenu.sendPrompt(4, the_players, player);
+                return;
+              case "WAIT FOR":
+                // TODO: add player to some wait list
+                betterMenu.wait_list.add(player);
+                betterMenu.sendPrompt(5, List.of(cancel_prompt), player);
+                return;
+              case cancel_prompt:
+                betterMenu.closeMenu(player);
+                return;
+            }
 
-        } else {
-          // // close the menu
-          // betterMenu.closeMenu(player);
-          // // prompt.closeMenu(player);
-          // player.sendMessage(
-          // ChatColor.GOLD + "HOW TO USE: look up/down to see all selections. to confirm
-          // your selection, crouch.");
-          // player.sendMessage(ChatColor.GRAY
-          // + "NOTE: you can crouch click with an empty bottle to store your xp for later
-          // use. crouch use an enchanted bottle to get the full xp back.");
-          // player.playSound(player.getLocation(), Sound.ENTITY_ILLUSIONER_CAST_SPELL,
-          // 1f, 1f);
-          // //// player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 1f,
-          // 1f);
-
+          }
+          if (p_menu.getAll_context().id == 4) {
+            // FIXME: why is this not working?
+            switch (p_menu.getAll_context().answer) {
+              case cancel_prompt:
+                betterMenu.closeMenu(player);
+                return;
+              default:
+                for (Player wait_player : betterMenu.wait_list) {
+                  System.out.printf("Player chose [%s]\n", p_menu.getAll_context().answer.toUpperCase());
+                  if (p_menu.getAll_context().answer.toUpperCase().equals(wait_player.getName().toUpperCase())) {
+                    useBook(player);
+                    player.teleport(wait_player);
+                    betterMenu.closeMenu(player);
+                    betterMenu.closeMenu(wait_player);
+                    return;
+                  }
+                }
+            }
+          }
+          if (p_menu.getAll_context().id == 5) {
+            switch (p_menu.getAll_context().answer) {
+              case cancel_prompt:
+                betterMenu.closeMenu(player);
+                return;
+            }
+          }
         }
       }
     }
+
   }
 
   @EventHandler
