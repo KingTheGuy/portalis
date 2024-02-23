@@ -1,5 +1,6 @@
 package com.surv;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -104,7 +105,7 @@ public class BetterMenu {
 		String selection_last;
 		Integer page;
 		float initial_yaw;
-		float last_yaw_value;
+		int last_yaw_value;
 		int last_selection_value;
 		ArrayList<PlayerContext> all_context = new ArrayList<>();
 
@@ -142,22 +143,34 @@ public class BetterMenu {
 			// }
 
 			// int pitch = (int) player.getLocation().getPitch();
-			float yaw = player.getLocation().getYaw();
+			int yaw = (int) player.getLocation().getYaw();
 			if (yaw < 0) {
 				yaw += 360;
-
 			}
-			// System.out.println(yaw);
-			// 181,0,1
-			// System.out.printf("player yaw: %s", yaw);
-			// requires player move
+			System.out.printf("last Yaw: %s\n", yaw);
+			// 360/9
+			// System.out.printf("last Yaw: %s and switch\n", last_yaw_value);
+			// TODO: go back to between range system.
+
+			// prevents the selection from jumping back when going from 3 digits to 1
+			if (String.valueOf(last_yaw_value).length() == 3) {
+				if (String.valueOf(yaw).length() == 1) {
+					last_yaw_value = yaw;
+				}
+			}
+			// prevents the selection from jumping back when going from 3 digits to 1
+			if (String.valueOf(last_yaw_value).length() == 1) {
+				if (String.valueOf(yaw).length() == 3) {
+					last_yaw_value = yaw;
+				}
+			}
+
 			int selected = last_selection_value;
-			// System.out.println(yaw % 40);
 			if (selected > getAll_context().context.size() - 1) {
 				selected = 0;
 			}
-			if (yaw % 40 < 18) {
-				// System.out.println("yes");
+			if (yaw % 60 >= 30) {
+				// if (yaw % 40 >= 20) {
 				if (yaw > last_yaw_value) {
 					if (selected < getAll_context().context.size() - 1) {
 						selected++;

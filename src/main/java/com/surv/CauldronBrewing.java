@@ -64,7 +64,7 @@ public class CauldronBrewing implements Listener {
 
 	public void init_recipes() {
 		recipe(new ItemStack(Material.ENDER_PEARL), new ItemStack(Material.SPIDER_EYE),
-				new ItemStack(Material.DANDELION), new ItemStack(Material.PAPER), Item_Manager.infused_paper, true, 8);
+				new ItemStack(Material.DANDELION), new ItemStack(Material.PAPER), Item_Manager.infused_paper, true, 3);
 		recipe(new ItemStack(Material.FEATHER), new ItemStack(Material.PHANTOM_MEMBRANE),
 				new ItemStack(Material.POTATO), new ItemStack(Material.COPPER_BLOCK), new ItemStack(Material.OXIDIZED_COPPER),
 				false, 8);

@@ -1,5 +1,13 @@
 package com.surv;
 
+import java.awt.image.BufferedImageOp;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -8,6 +16,7 @@ import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -60,7 +69,9 @@ import com.destroystokyo.paper.event.block.AnvilDamagedEvent.DamageState;
 import com.destroystokyo.paper.event.player.PlayerElytraBoostEvent;
 import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent;
-import com.surv.menu;
+import com.moandjiezana.toml.Toml;
+import com.moandjiezana.toml.TomlWriter;
+// import com.surv.menu;
 import com.surv.BetterMenu.PlayerContext;
 import com.surv.BetterMenu.PlayerWithMenu;
 
@@ -108,7 +119,122 @@ public class magic_mirror implements Listener {
   // TODO: add a delay, on item use.. will cause some problems otherwise.
   // may need to change the confirmation on select to be crouch.
   // WHAT AM I DOING WRONG HERE?//
+  String global_warps_file = "global_warps.txt";
+  String player_warps_file = "player_warps.txt";
   public List<player_deaths> deaths = new ArrayList<>();
+
+  public List<GlobalWarps> global_warps = new ArrayList<>();
+  public List<PlayerWarps> player_warps = new ArrayList<>();
+
+  public void addWarp(Location location) {
+    GlobalWarps warp_to_add = new GlobalWarps();
+    warp_to_add.location = new Vector3();
+    warp_to_add.location.X = location.getBlockX();
+    warp_to_add.location.Y = location.getBlockY();
+    warp_to_add.location.Z = location.getBlockZ();
+    warp_to_add.dimension_name = location.getWorld().getName();
+    for (GlobalWarps w : global_warps) {
+      // System.out.printf("warps:\n\n");
+      // System.out.printf("new: [%s]\n\n", warp_to_add.location.toString());
+      // System.out.printf("found: [%s]\n\n", w.location.toString());
+      if (w.location.toString().equals(warp_to_add.location.toString())) {
+        if (w.dimension_name.equals(warp_to_add.dimension_name)) {
+          // System.out.println("location already exists");
+          return;
+        }
+      }
+    }
+    global_warps.add(warp_to_add);
+    saveGlobalWarpsToFile(global_warps_file);
+    // System.out.println("new location saved");
+  }
+
+  public void addPlayerWarp(Location location, Player player) {
+    // TODO(done): check if player is in the list
+    // TODO: check if the player already has this warp spot
+    GlobalWarps warp_to_add = new GlobalWarps();
+    warp_to_add.location = new Vector3();
+    warp_to_add.location.X = location.getBlockX();
+    warp_to_add.location.Y = location.getBlockY();
+    warp_to_add.location.Z = location.getBlockZ();
+    warp_to_add.dimension_name = location.getWorld().getName();
+    // check if the warp has been created
+    String found_player = null; // check if player had a list
+    for (PlayerWarps pw : player_warps) {
+      if (pw.player_name.equals(player.getName())) {
+        System.out.println("found the player");
+        found_player = pw.player_name;
+      } else {
+        System.out.println("did not find the player..");
+      }
+    }
+    for (GlobalWarps w : global_warps) {
+      if (w.location.toString().equals(warp_to_add.location.toString())) {
+        if (w.dimension_name.equals(warp_to_add.dimension_name)) {
+          System.out.println("found this location");
+          // yes we have a warp spot here
+          if (found_player == null) {
+            System.out.println("did not find the player, creating new list..");
+            PlayerWarps new_player_warp = new PlayerWarps();
+            found_player = player.getName();
+            new_player_warp.player_name = player.getName();
+            player_warps.add(new_player_warp);
+          }
+          for (PlayerWarps pw : player_warps) {
+            if (pw.player_name.equals(found_player)) {
+              System.out.println("player is in fact found");
+              for (GlobalWarps pww : pw.known_warps) {
+                if (w.location.toString().equals(pww.location.toString())) {
+                  if (w.dimension_name.equals(pww.dimension_name)) {
+                    System.out.println("the player is already aware of this warp.");
+                    return;
+                  }
+                }
+              }
+              pw.known_warps.add(w);
+              // player_warps.add(pw);
+              savePlayerWarpsToFile(player_warps_file);
+              break;
+            }
+          }
+          return;
+        }
+      }
+    }
+    // new_player_warp.known_warps
+
+    // global_warps.add(warp_to_add);
+    // saveGlobalWarpsToFile(global_warps_file);
+    // System.out.println("new location saved");
+  }
+
+  class Vector3 implements Serializable {
+    int X;
+    int Y;
+    int Z;
+
+    @Override
+    public String toString() {
+      return String.format("%s,%s,%s", X, Y, Z);
+    }
+  }
+
+  class GlobalWarps implements Serializable {
+    Vector3 location = new Vector3();
+    String dimension_name;
+    String name;
+
+    @Override
+    public String toString() {
+      return String.format("[warp] <%s>, <%s>, <%s>\n", location, dimension_name, name);
+
+    }
+  }
+
+  class PlayerWarps implements Serializable {
+    String player_name;
+    List<GlobalWarps> known_warps = new ArrayList<>();
+  }
 
   class player_deaths {
     public Player name;
@@ -157,24 +283,180 @@ public class magic_mirror implements Listener {
   ArrayList<warp_options_cost> main_menu_selections = new ArrayList<>();
 
   // HUH//
-  menu prompt = new menu();
-  Menu_updated new_prompt = new Menu_updated();
+  // menu prompt = new menu();
+  // Menu_updated new_prompt = new Menu_updated();
   BetterMenu betterMenu = new BetterMenu();
-
-  @EventHandler
-  public void onServerStart(ServerLoadEvent ev) {
-  }
 
   @EventHandler
   public void onLeave(PlayerQuitEvent ev) {
     Player player = ev.getPlayer();
-    new_prompt.closeMenu(player);
+    betterMenu.closeMenu(player);
+    // new_prompt.closeMenu(player);
+  }
+
+  public void saveGlobalWarpsToFile(String file) {
+    try {
+      BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+      for (GlobalWarps w : global_warps) {
+        writer.write("[warp]\n");
+        writer.write(String.format("\t-location:%s\n", w.location.toString()));
+        writer.write(String.format("\t-dimension:%s\n", w.dimension_name));
+        writer.write(String.format("\t-name:%s\n", w.name));
+        writer.write("\n");
+      }
+      writer.close();
+    } catch (IOException e) {
+      System.out.println(e);
+    }
+  }
+
+  public void savePlayerWarpsToFile(String file) {
+    try {
+      BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+      for (PlayerWarps pw : player_warps) {
+        writer.write(String.format("PLAYER:%s\n", pw.player_name));
+        for (GlobalWarps w : pw.known_warps) {
+          writer.write("\t[warp]\n");
+          writer.write(String.format("\t\t-location:%s\n", w.location.toString()));
+          writer.write(String.format("\t\t-dimension:%s\n", w.dimension_name));
+          writer.write(String.format("\t\t-name:%s\n", w.name));
+          writer.write("\n");
+        }
+        writer.write("\n");
+      }
+      writer.close();
+    } catch (IOException e) {
+      System.out.println(e);
+    }
+  }
+
+  public void loadGlobalWarpsFromFile(String file) {
+    try {
+      BufferedReader reader = new BufferedReader(new FileReader(file));
+      String line;
+      GlobalWarps warp_from_file = new GlobalWarps();
+      while ((line = reader.readLine()) != null) {
+        String trimmed = line.trim();
+        if (trimmed.startsWith("-location")) {
+          String[] split = trimmed.split(":", -1);
+          String[] xyz = split[1].split(",", -1);
+          warp_from_file.location = new Vector3();
+          warp_from_file.location.X = Integer.parseInt(xyz[0]);
+          warp_from_file.location.Y = Integer.parseInt(xyz[1]);
+          warp_from_file.location.Z = Integer.parseInt(xyz[2]);
+        }
+        if (trimmed.startsWith("-dimension")) {
+          String[] split = trimmed.split(":", -1);
+          warp_from_file.dimension_name = split[1];
+        }
+        if (trimmed.startsWith("-name")) {
+          String[] split = trimmed.split(":", -1);
+          if (split[1] == "null") {
+            warp_from_file.name = null;
+          } else {
+            warp_from_file.name = split[1];
+          }
+        }
+        if (trimmed.isBlank()) {
+          if (warp_from_file != null) {
+            global_warps.add(warp_from_file);
+            warp_from_file = new GlobalWarps();
+          }
+        }
+      }
+      reader.close();
+    } catch (IOException e) {
+      System.out.println(e);
+    }
+
+  }
+
+  // TODO: implement this
+  public void loadPlayerWarpsFromFile(String file) {
+    try {
+      BufferedReader reader = new BufferedReader(new FileReader(file));
+      String line;
+      PlayerWarps player_warp_from_file = new PlayerWarps();
+      GlobalWarps warp = new GlobalWarps();
+      boolean last_line_empty = false;
+      while ((line = reader.readLine()) != null) {
+        String trimmed = line.trim();
+        if (trimmed.startsWith("PLAYER:")) {
+          String[] split = trimmed.split(":", -1);
+          player_warp_from_file.player_name = split[1];
+          System.out.println("loaded the name");
+          System.out.println(player_warp_from_file.player_name);
+        }
+        if (trimmed.startsWith("-location")) {
+          String[] split = trimmed.split(":", -1);
+          String[] xyz = split[1].split(",", -1);
+          warp.location = new Vector3();
+          warp.location.X = Integer.parseInt(xyz[0]);
+          warp.location.Y = Integer.parseInt(xyz[1]);
+          warp.location.Z = Integer.parseInt(xyz[2]);
+        }
+        if (trimmed.startsWith("-dimension")) {
+          String[] split = trimmed.split(":", -1);
+          warp.dimension_name = split[1];
+        }
+        if (trimmed.startsWith("-name")) {
+          String[] split = trimmed.split(":", -1);
+          if (split[1] == "null") {
+            warp.name = null;
+          } else {
+            warp.name = split[1];
+          }
+        }
+        if (trimmed.isBlank()) {
+          if (last_line_empty == true) {
+            if (player_warp_from_file.player_name != null) {
+              player_warps.add(player_warp_from_file);
+              player_warp_from_file = new PlayerWarps();
+            }
+            last_line_empty = false;
+          }
+          last_line_empty = true;
+          if (warp != null) {
+            System.out.printf("found a warp spot: %s\n", warp);
+            player_warp_from_file.known_warps.add(warp);
+            warp = new GlobalWarps();
+          }
+        }
+      }
+      reader.close();
+      System.out.printf("player warp spots: %s\n", player_warps.toString());
+    } catch (IOException e) {
+      System.out.println(e);
+    }
+
+  }
+
+  @EventHandler
+  public void onServerStart(ServerLoadEvent ev) {
+    loadGlobalWarpsFromFile(global_warps_file);
+    loadPlayerWarpsFromFile(player_warps_file);
+    // try {
+    // global_warps = Data.deserializeList(global_warps_file);
+    // } catch (IOException | ClassNotFoundException e) {
+    // System.out.println("this shit did not load right");
+    // System.out.printf("here is the error: %s\n", e);
+    // }
+    // try {
+    // player_warps = Data.deserializeList(player_warps_file);
+    // } catch (IOException | ClassNotFoundException e) {
+    // }
   }
 
   @EventHandler
   public void onPlayerMove(PlayerMoveEvent ev) {
     betterMenu.playerSelection(ev);
   }
+
+  // public void saveToFile() {
+  // StringBuilder builder = new StringBuilder();
+  // builder.append()
+
+  // }
 
   // @EventHandler
   // public void onPlayerAttac(PlayerInteractEvent event) {
@@ -215,6 +497,9 @@ public class magic_mirror implements Listener {
   // }
 
   public void useBook(Player player) {
+    if (player.getGameMode().equals(GameMode.CREATIVE)) {
+      return; // let them work
+    }
     ItemStack item = player.getInventory().getItemInMainHand();
     NamespacedKey key = new NamespacedKey(magic.getPlugin(), "magic_mirror_use_data");
     ItemMeta meta = item.getItemMeta();
@@ -240,6 +525,22 @@ public class magic_mirror implements Listener {
     // location.getX(),location.getY(),location.getZ());
     // player.playSound(player.getLocation(), Sound.ENTITY_SHULKER_TELEPORT, 1f,
     // 1f);
+  }
+
+  public boolean isEmpty(PlayerInteractEvent ev) {
+    Player player = ev.getPlayer();
+    Audience audience = Audience.audience(player);
+    NamespacedKey key = new NamespacedKey(magic.getPlugin(), "magic_mirror_use_data");
+    ItemMeta meta = ev.getItem().getItemMeta();
+    PersistentDataContainer container = meta.getPersistentDataContainer();
+    Integer cur_value = container.get(key, PersistentDataType.INTEGER);
+    if (cur_value == 0) {
+      betterMenu.closeMenu(player);
+      audience.sendActionBar(() -> Component.text("out of pages").color(NamedTextColor.RED));
+      player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
+      return true;
+    }
+    return false;
   }
 
   @EventHandler
@@ -407,6 +708,18 @@ public class magic_mirror implements Listener {
     }
     // on use Magic Mirror
     if (ev.getItem() != null) {
+
+      // TODO: This is for naming the lodestone
+      if (ev.getItem().getType().equals(Material.NAME_TAG)) {
+        ItemStack nametag = ev.getItem();
+        String nametag_name = nametag.displayName().toString();
+        // NamespacedKey tag_key = new NamespacedKey(magic.getPlugin(),
+        // "lodestone_name");
+        // PersistentDataContainer lodestone_data =
+        // ev.getClickedBlock().getWorld().getPersistentDataContainer();
+        // lodestone_data.set(tag_key, PersistentDataType.LIST, );
+      }
+
       // FIXME: create a copy of the book and remove the persistanet data and then
       // check to see if the items
       // are equal without that data.
@@ -418,43 +731,21 @@ public class magic_mirror implements Listener {
 
       if (magic_mirror_no_data.equals(hand_item)) {
         if (action.equals(Action.RIGHT_CLICK_BLOCK) || action.equals(Action.RIGHT_CLICK_AIR)) {
-
-          // TODO: move this, the book should not use a use until the player teleports
-          {// Decrease BOOK USE
-            NamespacedKey key = new NamespacedKey(magic.getPlugin(), "magic_mirror_use_data");
-            ItemMeta meta = ev.getItem().getItemMeta();
-            PersistentDataContainer container = meta.getPersistentDataContainer();
-            Integer cur_value = container.get(key, PersistentDataType.INTEGER);
-            if (cur_value == 0) {
-              audience.sendActionBar(() -> Component.text("out of pages").color(NamedTextColor.RED));
-              player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
-              return; // no uses left
+          if (ev.getClickedBlock() != null) {
+            if (ev.getClickedBlock().getType().equals(Material.LODESTONE)) {
+              // System.out.println("yes this is the lodestone");
+              addWarp(ev.getClickedBlock().getLocation());
+              addPlayerWarp(ev.getClickedBlock().getLocation(), ev.getPlayer());
             }
-            // Integer max_uses = 6;
-            // Integer new_value = cur_value -1;
-            // container.set(key,PersistentDataType.INTEGER,new_value);
-            // List<Component> lore = new ArrayList<>();
-            // meta.getPersistentDataContainer().set(key, PersistentDataType.INTEGER,
-            // new_value);
-            // ev.getItem().setItemMeta(meta);
-            // lore.add(Component.text(String.format("%s/%s uses",new_value,max_uses)));
-            // ev.getItem().lore().clear();
-            // ev.getItem().lore(lore);
+            return;
           }
 
-          // FIXME: so the issue is that the "options" are just tossed right after and
-          // menuPrompt does not see them
-          // NOTE: i could be wrong
-          // FIXME: p.sendprompt will never happen because there is no player
-          // Integer index = betterMenu.getPlayer(player);
-          // if (index < 0) {
-          // return;
-          // }
-          // PlayerWithMenu p_menu = betterMenu.player_with_menu.get(index);
-          // p.open
+          // TODO: move this, the book should not use a use until the player teleports
+
           final String confirm_prompt = "RIP OUT PAGE";
           final String cancel_prompt = "CLOSE";
-          player.playSound(player.getLocation(), Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1f, 1f);
+          // player.playSound(player.getLocation(), Sound.ENTITY_ILLUSIONER_CAST_SPELL,
+          // 1f, 1f);
           Integer index = betterMenu.findPlayer(player);
           if (index < 0) {
             List<String> THIS_LIST = List.of("BED", "SPAWN", "WARPS", "LAST DEATH", cancel_prompt);
@@ -467,15 +758,24 @@ public class magic_mirror implements Listener {
           if (p_menu.all_context.size() <= 1) {
             switch (p_menu.getAll_context().answer) {
               case "BED":
+                if (isEmpty(ev)) {
+                  return;
+                }
                 betterMenu.sendPrompt(2, List.of(confirm_prompt, cancel_prompt), player);
                 return;
               case "SPAWN":
+                if (isEmpty(ev)) {
+                  return;
+                }
                 betterMenu.sendPrompt(2, List.of(confirm_prompt, cancel_prompt), player);
                 return;
               case "WARPS":
                 betterMenu.sendPrompt(3, List.of("WARP TO", "WAIT FOR", cancel_prompt), player);
                 return;
               case "LAST DEATH":
+                if (isEmpty(ev)) {
+                  return;
+                }
                 betterMenu.sendPrompt(2, List.of(confirm_prompt, cancel_prompt), player);
                 return;
               case cancel_prompt:
@@ -518,6 +818,7 @@ public class magic_mirror implements Listener {
                     if (death_index == -1) {
                       // NOTE: this message does not show up because i am clearing the title when
                       // closing the menu
+                      betterMenu.closeMenu(player);
                       audience.sendActionBar(() -> Component.text("Long Live").color(NamedTextColor.RED));
                       player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
                     } else {
@@ -541,6 +842,9 @@ public class magic_mirror implements Listener {
             switch (p_menu.getAll_context().answer) {
               case "WARP TO":
                 // TODO: list all players in the wait list
+                if (isEmpty(ev)) {
+                  return;
+                }
                 List<String> the_players = new ArrayList<>();
                 for (Player waiting_players : betterMenu.wait_list) {
                   the_players.add(waiting_players.getName().toUpperCase());
@@ -729,23 +1033,24 @@ public class magic_mirror implements Listener {
       }
     }
 
-    ItemStack item = player.getInventory().getItemInMainHand();
-    // ItemStack bottle = new ItemStack(Material.GLASS_BOTTLE);
-    ItemStack xp_bottle = new ItemStack(Material.EXPERIENCE_BOTTLE);
-    int min = 1;
-    int max = 5;
-    int random_int = new Random().nextInt(max - min + 1) + min;
-    if (random_int == 3) {
-      if (item.getType().equals(Material.GLASS_BOTTLE)) {
-        player.sendMessage("Seems like i may be able to scrape some xp off and place it in this bottle.");
-        return;
-      }
-      if (item.equals(xp_bottle)) {
-        player.sendMessage(
-            "If i crouch and punch myself with this bottle i can get all the xp out, without wasting a drop.");
-        return;
-      }
-    }
+    // ItemStack item = player.getInventory().getItemInMainHand();
+    // ItemStack xp_bottle = new ItemStack(Material.EXPERIENCE_BOTTLE);
+    // int min = 1;
+    // int max = 5;
+    // int random_int = new Random().nextInt(max - min + 1) + min;
+    // if (random_int == 3) {
+    // if (item.getType().equals(Material.GLASS_BOTTLE)) {
+    // player.sendMessage("Seems like i may be able to scrape some xp off and place
+    // it in this bottle.");
+    // return;
+    // }
+    // if (item.equals(xp_bottle)) {
+    // player.sendMessage(
+    // "If i crouch and punch myself with this bottle i can get all the xp out,
+    // without wasting a drop.");
+    // return;
+    // }
+    // }
   }
 
   @EventHandler
