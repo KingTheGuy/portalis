@@ -20,9 +20,11 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
 import org.bukkit.World;
+import org.bukkit.block.data.type.Light;
 import org.bukkit.entity.Enderman;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -69,6 +71,7 @@ import com.destroystokyo.paper.event.block.AnvilDamagedEvent.DamageState;
 import com.destroystokyo.paper.event.player.PlayerElytraBoostEvent;
 import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent;
+import com.destroystokyo.paper.event.server.ServerTickStartEvent;
 import com.moandjiezana.toml.Toml;
 import com.moandjiezana.toml.TomlWriter;
 // import com.surv.menu;
@@ -125,14 +128,33 @@ public class magic_mirror implements Listener {
 
   public List<GlobalWarps> global_warps = new ArrayList<>();
   public List<PlayerWarps> player_warps = new ArrayList<>();
+  public List<delayTimer> delay_timer_list = new ArrayList<>();
 
-  public void addWarp(Location location) {
+  // TODO: implement this timmer thing
+  public class delayTimer {
+    String player;
+    int timer;
+
+    public void countDown() {
+      timer--;
+      if (timer > 0) {
+        delay_timer_list.remove(this);
+      }
+    }
+
+  }
+
+  public void addWarp(Location location, String player_name, String warp_name, Audience audience) {
     GlobalWarps warp_to_add = new GlobalWarps();
     warp_to_add.location = new Vector3();
     warp_to_add.location.X = location.getBlockX();
     warp_to_add.location.Y = location.getBlockY();
     warp_to_add.location.Z = location.getBlockZ();
     warp_to_add.dimension_name = location.getWorld().getName();
+    warp_to_add.creator = player_name;
+    // FIXME: this should take into account if the player is in creative mode. if
+    // they are dont add the prefix to the name.
+    warp_to_add.name = warp_name;
     for (GlobalWarps w : global_warps) {
       // System.out.printf("warps:\n\n");
       // System.out.printf("new: [%s]\n\n", warp_to_add.location.toString());
@@ -144,12 +166,21 @@ public class magic_mirror implements Listener {
         }
       }
     }
+    for (GlobalWarps w : global_warps) {
+      if (warp_name.equals(w.name)) {
+        Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
+            Sound.BLOCK_CONDUIT_DEACTIVATE, 1f, 1f);
+        audience.sendActionBar(
+            () -> Component.text(ChatColor.LIGHT_PURPLE + "Choose another name"));
+        return;
+      }
+    }
     global_warps.add(warp_to_add);
+    addPlayerWarp(location, player_name);
     saveGlobalWarpsToFile(global_warps_file);
-    // System.out.println("new location saved");
   }
 
-  public void addPlayerWarp(Location location, Player player) {
+  public void addPlayerWarp(Location location, String player) {
     // TODO(done): check if player is in the list
     // TODO: check if the player already has this warp spot
     GlobalWarps warp_to_add = new GlobalWarps();
@@ -161,38 +192,37 @@ public class magic_mirror implements Listener {
     // check if the warp has been created
     String found_player = null; // check if player had a list
     for (PlayerWarps pw : player_warps) {
-      if (pw.player_name.equals(player.getName())) {
-        System.out.println("found the player");
+      if (pw.player_name.equals(player)) {
+        // System.out.println("found the player");
         found_player = pw.player_name;
       } else {
-        System.out.println("did not find the player..");
+        // System.out.println("did not find the player..");
       }
     }
     for (GlobalWarps w : global_warps) {
       if (w.location.toString().equals(warp_to_add.location.toString())) {
         if (w.dimension_name.equals(warp_to_add.dimension_name)) {
-          System.out.println("found this location");
+          // System.out.println("found this location");
           // yes we have a warp spot here
           if (found_player == null) {
-            System.out.println("did not find the player, creating new list..");
+            // System.out.println("did not find the player, creating new list..");
             PlayerWarps new_player_warp = new PlayerWarps();
-            found_player = player.getName();
-            new_player_warp.player_name = player.getName();
+            found_player = player;
+            new_player_warp.player_name = player;
             player_warps.add(new_player_warp);
           }
           for (PlayerWarps pw : player_warps) {
             if (pw.player_name.equals(found_player)) {
-              System.out.println("player is in fact found");
+              // System.out.println("player is in fact found");
               for (GlobalWarps pww : pw.known_warps) {
                 if (w.location.toString().equals(pww.location.toString())) {
                   if (w.dimension_name.equals(pww.dimension_name)) {
-                    System.out.println("the player is already aware of this warp.");
+                    // System.out.println("the player is already aware of this warp.");
                     return;
                   }
                 }
               }
               pw.known_warps.add(w);
-              // player_warps.add(pw);
               savePlayerWarpsToFile(player_warps_file);
               break;
             }
@@ -220,6 +250,7 @@ public class magic_mirror implements Listener {
   }
 
   class GlobalWarps implements Serializable {
+    String creator;
     Vector3 location = new Vector3();
     String dimension_name;
     String name;
@@ -229,6 +260,100 @@ public class magic_mirror implements Listener {
       return String.format("[warp] <%s>, <%s>, <%s>\n", location, dimension_name, name);
 
     }
+
+    public void particlesAndLight() {
+      int min = 2;
+      int max = 8;
+      float x = (new Random().nextInt(max - min + 1) + min);
+      float y = (new Random().nextInt(max - min + 1) + min);
+      float z = (new Random().nextInt(max - min + 1) + min);
+      Location location = new Location(Bukkit.getWorld(this.dimension_name), this.location.X,
+          this.location.Y, this.location.Z);
+      Location location_above = new Location(Bukkit.getWorld(this.dimension_name), this.location.X,
+          this.location.Y + 1, this.location.Z);
+      if (location_above.getBlock().getType().equals(Material.AIR)) {
+        location_above.getBlock().setType(Material.LIGHT);
+        Light light_level = (Light) location_above.getBlock().getBlockData();
+        light_level.setLevel(8);
+        location_above.getBlock().setBlockData(light_level);
+      }
+      // location.getWorld().playSound(location, Sound.BLOCK_PORTAL_TRAVEL, 1,
+      // (float) 0.5);
+      // Bukkit.getWorld(location.getWorld().getUID()).spawnParticle(Particle.BUBBLE_POP,
+      // location.getBlockX() + (x / 10),
+      // location.getBlockY() + 1, location.getBlockZ() + (z / 10), 0);
+      Bukkit.getWorld(location.getWorld().getUID()).spawnParticle(Particle.END_ROD,
+          location.getBlockX() + (x / 10),
+          location.getBlockY() + 1.5, location.getBlockZ() + (z / 10), 0);
+    }
+
+    public void RemoveWarp() {
+      Location location = new Location(Bukkit.getWorld(this.dimension_name), this.location.X,
+          this.location.Y, this.location.Z);
+      Location location_above = new Location(Bukkit.getWorld(this.dimension_name), this.location.X,
+          this.location.Y + 1, this.location.Z);
+      if (location.getBlock().getType().equals(Material.LODESTONE)) {
+        if (location_above.getBlock().getType().equals(Material.LIGHT)) {
+          location_above.getBlock().setType(Material.AIR);
+        }
+      }
+      if (!location.getBlock().getType().equals(Material.LODESTONE)) {
+        warp_remove_list.add(this);
+      }
+    }
+  }
+
+  List<GlobalWarps> warp_remove_list = new ArrayList<>();
+
+  @EventHandler
+  public void tick(ServerTickStartEvent event) {
+    if (global_warps.size() > 0) {
+      if (event.getTickNumber() % 20 == 1) {
+        ToBeRemoved();
+      }
+    }
+  }
+
+  private void ToBeRemoved() {
+    for (GlobalWarps w : global_warps) {
+      w.RemoveWarp();
+      w.particlesAndLight(); // show some particles
+    }
+    for (GlobalWarps w : warp_remove_list) {
+      // System.out.println("warp has been removed.");
+      global_warps.remove(w);
+      saveGlobalWarpsToFile(global_warps_file);
+    }
+    warp_remove_list.clear();
+  }
+
+  public GlobalWarps findPlayerWarpInGlobalWarps(GlobalWarps player_warp) {
+    for (GlobalWarps w : global_warps) {
+      if (w.location.toString().equals(player_warp.location.toString())) {
+        if (w.dimension_name.equals(player_warp.dimension_name)) {
+          if (w.name != null) {
+            player_warp.name = w.name; // rename it
+          }
+          return w;
+        }
+      }
+    }
+    return null;
+  }
+
+  public GlobalWarps isThisAWarpLocation(Location location) {
+    Vector3 location_xyz = new Vector3();
+    location_xyz.X = location.blockX();
+    location_xyz.Y = location.blockY();
+    location_xyz.Z = location.blockZ();
+    for (GlobalWarps w : global_warps) {
+      if (w.location.toString().equals(location_xyz.toString())) {
+        if (w.dimension_name.equals(location.getWorld().getName().toString())) {
+          return w;
+        }
+      }
+    }
+    return null;
   }
 
   class PlayerWarps implements Serializable {
@@ -302,6 +427,7 @@ public class magic_mirror implements Listener {
         writer.write(String.format("\t-location:%s\n", w.location.toString()));
         writer.write(String.format("\t-dimension:%s\n", w.dimension_name));
         writer.write(String.format("\t-name:%s\n", w.name));
+        writer.write(String.format("\t-creator:%s\n", w.creator));
         writer.write("\n");
       }
       writer.close();
@@ -320,6 +446,7 @@ public class magic_mirror implements Listener {
           writer.write(String.format("\t\t-location:%s\n", w.location.toString()));
           writer.write(String.format("\t\t-dimension:%s\n", w.dimension_name));
           writer.write(String.format("\t\t-name:%s\n", w.name));
+          writer.write(String.format("\t\t-creator:%s\n", w.creator));
           writer.write("\n");
         }
         writer.write("\n");
@@ -337,6 +464,9 @@ public class magic_mirror implements Listener {
       GlobalWarps warp_from_file = new GlobalWarps();
       while ((line = reader.readLine()) != null) {
         String trimmed = line.trim();
+        if (trimmed.startsWith("[warp")) {
+          warp_from_file = new GlobalWarps();
+        }
         if (trimmed.startsWith("-location")) {
           String[] split = trimmed.split(":", -1);
           String[] xyz = split[1].split(",", -1);
@@ -357,6 +487,11 @@ public class magic_mirror implements Listener {
             warp_from_file.name = split[1];
           }
         }
+        if (trimmed.startsWith("-creator")) {
+          String[] split = trimmed.split(":", -1);
+          warp_from_file.creator = split[1];
+
+        }
         if (trimmed.isBlank()) {
           if (warp_from_file != null) {
             global_warps.add(warp_from_file);
@@ -371,21 +506,33 @@ public class magic_mirror implements Listener {
 
   }
 
-  // TODO: implement this
+  // FIXME: i just need to redo the loading and saving
   public void loadPlayerWarpsFromFile(String file) {
     try {
       BufferedReader reader = new BufferedReader(new FileReader(file));
       String line;
       PlayerWarps player_warp_from_file = new PlayerWarps();
       GlobalWarps warp = new GlobalWarps();
-      boolean last_line_empty = false;
       while ((line = reader.readLine()) != null) {
         String trimmed = line.trim();
         if (trimmed.startsWith("PLAYER:")) {
+          if (player_warp_from_file.player_name != null) {
+            player_warps.add(player_warp_from_file);
+            player_warp_from_file = new PlayerWarps();
+          }
           String[] split = trimmed.split(":", -1);
           player_warp_from_file.player_name = split[1];
-          System.out.println("loaded the name");
-          System.out.println(player_warp_from_file.player_name);
+          player_warp_from_file.known_warps = new ArrayList<GlobalWarps>();
+          // System.out.println("loaded the name");
+          // System.out.println(player_warp_from_file.player_name);
+        }
+        if (trimmed.startsWith("[warp")) {
+          // System.out.println("found a player's warp");
+          if (warp.dimension_name != null) {
+            player_warp_from_file.known_warps.add(warp);
+            // System.out.printf("found a warp spot: %s\n", warp);
+          }
+          warp = new GlobalWarps();
         }
         if (trimmed.startsWith("-location")) {
           String[] split = trimmed.split(":", -1);
@@ -407,24 +554,23 @@ public class magic_mirror implements Listener {
             warp.name = split[1];
           }
         }
-        if (trimmed.isBlank()) {
-          if (last_line_empty == true) {
-            if (player_warp_from_file.player_name != null) {
-              player_warps.add(player_warp_from_file);
-              player_warp_from_file = new PlayerWarps();
-            }
-            last_line_empty = false;
-          }
-          last_line_empty = true;
-          if (warp != null) {
-            System.out.printf("found a warp spot: %s\n", warp);
-            player_warp_from_file.known_warps.add(warp);
-            warp = new GlobalWarps();
-          }
+        if (trimmed.startsWith("-creator")) {
+          String[] split = trimmed.split(":", -1);
+          warp.creator = split[1];
+
         }
       }
+      if (player_warp_from_file.player_name != null) {
+        if (warp.dimension_name != null) {
+          player_warp_from_file.known_warps.add(warp);
+          warp = new GlobalWarps();
+        }
+        player_warps.add(player_warp_from_file);
+        player_warp_from_file = new PlayerWarps();
+      }
       reader.close();
-      System.out.printf("player warp spots: %s\n", player_warps.toString());
+      savePlayerWarpsToFile(player_warps_file); // TODO: remove this line
+      // System.out.printf("player warp spots: %s\n", player_warps.toString());
     } catch (IOException e) {
       System.out.println(e);
     }
@@ -527,7 +673,7 @@ public class magic_mirror implements Listener {
     // 1f);
   }
 
-  public boolean isEmpty(PlayerInteractEvent ev) {
+  public boolean isBookOutOfPages(PlayerInteractEvent ev) {
     Player player = ev.getPlayer();
     Audience audience = Audience.audience(player);
     NamespacedKey key = new NamespacedKey(magic.getPlugin(), "magic_mirror_use_data");
@@ -709,15 +855,46 @@ public class magic_mirror implements Listener {
     // on use Magic Mirror
     if (ev.getItem() != null) {
 
-      // TODO: This is for naming the lodestone
       if (ev.getItem().getType().equals(Material.NAME_TAG)) {
         ItemStack nametag = ev.getItem();
-        String nametag_name = nametag.displayName().toString();
-        // NamespacedKey tag_key = new NamespacedKey(magic.getPlugin(),
-        // "lodestone_name");
-        // PersistentDataContainer lodestone_data =
-        // ev.getClickedBlock().getWorld().getPersistentDataContainer();
-        // lodestone_data.set(tag_key, PersistentDataType.LIST, );
+        TextComponent textcom = (TextComponent) nametag.getItemMeta().displayName();
+        String nametag_name = textcom.content(); // .toString();
+        // System.out.println(nametag_name);
+        if (ev.getClickedBlock().equals(null)) {
+
+        }
+        if (ev.getClickedBlock().getType().equals(Material.LODESTONE)) {
+          Location location = ev.getClickedBlock().getLocation();
+          GlobalWarps warp = isThisAWarpLocation(ev.getClickedBlock().getLocation());
+          if (warp == null) {
+            addWarp(ev.getClickedBlock().getLocation(), ev.getPlayer().getName(), nametag_name, audience);
+            Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
+                Sound.BLOCK_CONDUIT_ACTIVATE, 1f, 1f);
+            audience.sendActionBar(
+                () -> Component.text("Warp created"));
+          } else {
+            if (warp.creator.equals(ev.getPlayer().getName())) {
+              boolean name_in_use = false;
+              for (GlobalWarps w : global_warps) {
+                if (nametag_name.equals(w.name)) {
+                  Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
+                      Sound.BLOCK_CONDUIT_DEACTIVATE, 1f, 1f);
+                  audience.sendActionBar(
+                      () -> Component.text(ChatColor.LIGHT_PURPLE + "Choose another name"));
+                  name_in_use = true;
+                  break;
+                }
+              }
+              if (!name_in_use) {
+                Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
+                    Sound.BLOCK_SMITHING_TABLE_USE, 1f, 1f);
+              }
+            } else {
+              audience.sendActionBar(
+                  () -> Component.text(String.format("Cannot rename. %s's Warp.", warp.creator)));
+            }
+          }
+        }
       }
 
       // FIXME: create a copy of the book and remove the persistanet data and then
@@ -734,16 +911,25 @@ public class magic_mirror implements Listener {
           if (ev.getClickedBlock() != null) {
             if (ev.getClickedBlock().getType().equals(Material.LODESTONE)) {
               // System.out.println("yes this is the lodestone");
-              addWarp(ev.getClickedBlock().getLocation());
-              addPlayerWarp(ev.getClickedBlock().getLocation(), ev.getPlayer());
+              // addWarp(ev.getClickedBlock().getLocation(), ev.getPlayer().getName());
+              GlobalWarps warp = isThisAWarpLocation(ev.getClickedBlock().getLocation());
+              if (warp != null) {
+                Location location = player.getLocation();
+                Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
+                    Sound.ENTITY_VILLAGER_WORK_CARTOGRAPHER, 1f, 1.5f);
+                // TODO: extent this message to also get the warp's name
+                audience.sendActionBar(
+                    () -> Component.text("Location added"));
+                addPlayerWarp(ev.getClickedBlock().getLocation(), ev.getPlayer().getName());
+                return;
+              }
             }
-            return;
           }
 
           // TODO: move this, the book should not use a use until the player teleports
 
-          final String confirm_prompt = "RIP OUT PAGE";
-          final String cancel_prompt = "CLOSE";
+          final String confirm_prompt = "RIP PAGE";
+          final String cancel_prompt = "CLOSE BOOK";
           // player.playSound(player.getLocation(), Sound.ENTITY_ILLUSIONER_CAST_SPELL,
           // 1f, 1f);
           Integer index = betterMenu.findPlayer(player);
@@ -756,24 +942,24 @@ public class magic_mirror implements Listener {
           PlayerWithMenu p_menu = betterMenu.player_with_menu.get(index);
           p_menu.playerChoose(ev);
           if (p_menu.all_context.size() <= 1) {
-            switch (p_menu.getAll_context().answer) {
+            switch (p_menu.getAll_context().answer.name) {
               case "BED":
-                if (isEmpty(ev)) {
+                if (isBookOutOfPages(ev)) {
                   return;
                 }
                 betterMenu.sendPrompt(2, List.of(confirm_prompt, cancel_prompt), player);
                 return;
               case "SPAWN":
-                if (isEmpty(ev)) {
+                if (isBookOutOfPages(ev)) {
                   return;
                 }
                 betterMenu.sendPrompt(2, List.of(confirm_prompt, cancel_prompt), player);
                 return;
               case "WARPS":
-                betterMenu.sendPrompt(3, List.of("WARP TO", "WAIT FOR", cancel_prompt), player);
+                betterMenu.sendPrompt(3, List.of("LOCATIONS", "WARP TO", "WAIT FOR", cancel_prompt), player);
                 return;
               case "LAST DEATH":
-                if (isEmpty(ev)) {
+                if (isBookOutOfPages(ev)) {
                   return;
                 }
                 betterMenu.sendPrompt(2, List.of(confirm_prompt, cancel_prompt), player);
@@ -784,9 +970,9 @@ public class magic_mirror implements Listener {
             }
           }
           if (p_menu.getAll_context().id == 2) {
-            switch (p_menu.getAll_context().answer) {
+            switch (p_menu.getAll_context().answer.name) {
               case confirm_prompt:
-                switch (p_menu.all_context.get(0).answer) {
+                switch (p_menu.all_context.get(0).answer.name) {
                   case "BED":
                     if (player.getBedSpawnLocation() == null) {
                       audience.sendActionBar(() -> Component.text("Where is my bed?").color(NamedTextColor.RED));
@@ -839,10 +1025,52 @@ public class magic_mirror implements Listener {
             }
           }
           if (p_menu.getAll_context().id == 3) {
-            switch (p_menu.getAll_context().answer) {
+            switch (p_menu.getAll_context().answer.name) {
+              case "LOCATIONS":
+                if (isBookOutOfPages(ev)) {
+                  return;
+                }
+                // for each player's warp compare to global warps, remove if needed, rename if
+                // needed.
+                List<String> prompt_list = new ArrayList<>();
+                List<GlobalWarps> to_remove = new ArrayList<>();
+                for (PlayerWarps pw : player_warps) {
+                  // System.out.printf("%s's warp size: %s\n", pw.player_name,
+                  // pw.known_warps.size());
+                  if (pw.player_name.equals(player.getName())) {
+                    // System.out.printf("%s has: %s warp locations", pw.player_name,
+                    // pw.known_warps.size());
+                    for (GlobalWarps w : pw.known_warps) {
+                      if (findPlayerWarpInGlobalWarps(w) == null) {
+                        to_remove.add(w);
+                        // System.out.println("seems like this warp spot getting removed from the
+                        // player's list.");
+                        // pw.known_warps.remove(w);
+                      } else {
+                        if (w.name != null) {
+                          prompt_list.add(w.name);
+                        } else {
+                          prompt_list.add(w.location.toString());
+
+                        }
+                      }
+                    }
+                    for (GlobalWarps w : to_remove) {
+                      pw.known_warps.remove(w);
+                    }
+                    break; // found the player
+                  }
+                }
+
+                prompt_list.add(cancel_prompt);
+                betterMenu.sendPrompt(6, prompt_list, player);
+                saveGlobalWarpsToFile(global_warps_file);
+                savePlayerWarpsToFile(player_warps_file);
+                return;
+
               case "WARP TO":
                 // TODO: list all players in the wait list
-                if (isEmpty(ev)) {
+                if (isBookOutOfPages(ev)) {
                   return;
                 }
                 List<String> the_players = new ArrayList<>();
@@ -865,14 +1093,15 @@ public class magic_mirror implements Listener {
           }
           if (p_menu.getAll_context().id == 4) {
             // FIXME: why is this not working?
-            switch (p_menu.getAll_context().answer) {
+            switch (p_menu.getAll_context().answer.name) {
               case cancel_prompt:
                 betterMenu.closeMenu(player);
                 return;
               default:
                 for (Player wait_player : betterMenu.wait_list) {
-                  System.out.printf("Player chose [%s]\n", p_menu.getAll_context().answer.toUpperCase());
-                  if (p_menu.getAll_context().answer.toUpperCase().equals(wait_player.getName().toUpperCase())) {
+                  // System.out.printf("Player chose [%s]\n",
+                  // p_menu.getAll_context().answer.name.toUpperCase());
+                  if (p_menu.getAll_context().answer.name.toUpperCase().equals(wait_player.getName().toUpperCase())) {
                     useBook(player);
                     player.teleport(wait_player);
                     betterMenu.closeMenu(player);
@@ -883,9 +1112,36 @@ public class magic_mirror implements Listener {
             }
           }
           if (p_menu.getAll_context().id == 5) {
-            switch (p_menu.getAll_context().answer) {
+            switch (p_menu.getAll_context().answer.name) {
               case cancel_prompt:
                 betterMenu.closeMenu(player);
+                return;
+            }
+          }
+          if (p_menu.getAll_context().id == 6) {
+            switch (p_menu.getAll_context().answer.name) {
+              case cancel_prompt:
+                betterMenu.closeMenu(player);
+                return;
+              default:
+                // System.out.println("ok so default it is.");
+                for (PlayerWarps pw : player_warps) {
+                  if (pw.player_name.equals(ev.getPlayer().getName())) {
+                    // System.out.println("found the player's stuff.");
+                    for (GlobalWarps w : pw.known_warps) {
+                      if (w.name.equals(p_menu.getAll_context().answer.name)) {
+                        // System.out.println("found the player's selected warp.");
+                        Location teleport_location = new Location(Bukkit.getWorld(w.dimension_name), w.location.X + 0.5,
+                            w.location.Y + 1, w.location.Z + 0.5);
+                        player.teleportAsync(teleport_location);
+                        teleportEffect(player);
+                        betterMenu.closeMenu(player);
+                        return;
+                      }
+                    }
+                    return;
+                  }
+                }
                 return;
             }
           }

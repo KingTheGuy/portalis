@@ -52,6 +52,9 @@ public class BetterMenu {
 			player_with_menu.get(index).all_context = null;
 			player_with_menu.remove(player_with_menu.get(index));
 			wait_list.remove(player);
+			Location location = player.getLocation();
+			Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
+					Sound.BLOCK_CHISELED_BOOKSHELF_PICKUP_ENCHANTED, 1f, 0.6f);
 		}
 	}
 
@@ -87,7 +90,8 @@ public class BetterMenu {
 	public class PlayerContext {
 		int id;
 		List<String> context;
-		String answer;
+		Answer answer = new Answer();
+		// String answer;
 		// ArrayList<String> list;
 
 		// public String getPrompt() {
@@ -99,6 +103,11 @@ public class BetterMenu {
 		// }
 	}
 
+	public class Answer {
+		String name;
+		Object obj;
+	}
+
 	public class PlayerWithMenu {
 		Player player;
 		String selection;
@@ -106,7 +115,7 @@ public class BetterMenu {
 		Integer page;
 		float initial_yaw;
 		int last_yaw_value;
-		int last_selection_value;
+		int last_selection_value = -1;
 		ArrayList<PlayerContext> all_context = new ArrayList<>();
 
 		// private List<String> menu_options = new ArrayList<>();
@@ -147,7 +156,7 @@ public class BetterMenu {
 			if (yaw < 0) {
 				yaw += 360;
 			}
-			System.out.printf("last Yaw: %s\n", yaw);
+			// System.out.printf("last Yaw: %s\n", yaw);
 			// 360/9
 			// System.out.printf("last Yaw: %s and switch\n", last_yaw_value);
 			// TODO: go back to between range system.
@@ -164,12 +173,11 @@ public class BetterMenu {
 					last_yaw_value = yaw;
 				}
 			}
-
 			int selected = last_selection_value;
 			if (selected > getAll_context().context.size() - 1) {
 				selected = 0;
 			}
-			if (yaw % 60 >= 30) {
+			if (yaw % 20 >= 5) {
 				// if (yaw % 40 >= 20) {
 				if (yaw > last_yaw_value) {
 					if (selected < getAll_context().context.size() - 1) {
@@ -184,17 +192,18 @@ public class BetterMenu {
 			if (last_yaw_value != yaw) {
 				last_yaw_value = yaw;
 			}
-			last_selection_value = selected;
 			selection = getAll_context().context.get(selected);
 			// NOTE: this next line should not be hard coded here
 			if (selection != selection_last) {
 				selection_last = getAll_context().context.get(selected);
+			}
+			if (selected != last_selection_value) {
 				// System.out.println("the page flip sound should be playing");
-
 				Location location = player.getLocation();
 				Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
 						Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
 			}
+			last_selection_value = selected;
 		}
 
 		public void playerChoose(PlayerInteractEvent ev) {
@@ -223,7 +232,7 @@ public class BetterMenu {
 					return; // this should not trigger a new page just update it so it should return here
 				}
 				p.selection = selection;
-				p.getAll_context().answer = selection;
+				p.getAll_context().answer.name = selection;
 			}
 		}
 	}
@@ -259,11 +268,18 @@ public class BetterMenu {
 		// audience.showTitle(Title.title(title, sub_title));
 		// audience.sendActionBar(
 		// () -> Component.text("< " + ChatColor.MAGIC + "0" + ChatColor.RESET + " >"));
+
+		// String text_bar = String
+		// .format(ChatColor.DARK_GRAY + "<<-" + ChatColor.AQUA + ChatColor.MAGIC + " 0
+		// " + ChatColor.DARK_GRAY + "->>");
 		// audience.sendActionBar(
-		// () -> Component.text(centerTextBar(has_menu_open)));
+		// () -> Component.text(text_bar));
+		// audience.sendActionBar(
+		// () -> Component.text(ChatColor.DARK_GRAY +
+		// formatListToString(has_menu_open.getAll_context().context,
+		// has_menu_open.selection)));
 		audience.sendActionBar(
-				() -> Component.text(formatListToString(has_menu_open.getAll_context().context,
-						has_menu_open.selection)));
+				() -> Component.text(centerTextBar(has_menu_open)));
 	}
 
 	public void playerSelection(PlayerMoveEvent ev) {
@@ -309,43 +325,30 @@ public class BetterMenu {
 		}
 	}
 
-	// public void addContext(PlayerWithMenu player) {
-	// PlayerContext new_context = new PlayerContext();
-	// new_context.prompt = player.selection;
-	// if (player.context.size() >= 1) {
-	// player.context.get(player.context.size() - 1).answer = player.selection;
-	// if (player.context.get(player.context.size() - 1).prompt ==
-	// new_context.prompt) {
-	// // we do not want copies
-	// return;
-	// }
-	// }
-	// player.context.add(new_context);
-	// }
 	public String centerTextBar(PlayerWithMenu has_menu_open) {
-		int bar_length = 40;
-		String text = formatListToString(has_menu_open.getAll_context().context,
+		int bar_length = 60;
+		if (has_menu_open.last_selection_value == -1) {
+			int size = has_menu_open.getAll_context().context.size();
+			has_menu_open.last_selection_value = Math.round(size / 2);
+			// System.out.printf("last selection value: %s\n",
+			// has_menu_open.last_selection_value);
+		}
+		String bar_text = formatListToString(has_menu_open.getAll_context().context,
 				has_menu_open.selection);
 		String word = has_menu_open.selection;
-		String new_text = new String();
-		// String str = text.substring(word_index);
+		String blank_space = new String();
 		for (int x = 0; x < (bar_length / 2); x++) {
-			new_text += " ";
+			blank_space += " ";
 		}
-		new_text += text;
-		int word_index = new_text.indexOf(word);
-		for (int x = 0; x < (bar_length / 2); x++) {
-			new_text += " ";
-		}
-		String final_text = new_text.substring(word_index - bar_length / 2 +
-				(word.length() / 2),
-				word_index + bar_length / 2 + (word.length() / 2));
-		// String final_text = new_text.substring(word_index - bar_length / 2,
-		// word_index + bar_length / 2);
+		// FIXME: there are times when the array will have multiples of the same
+		// string.. and not propperly center.
+		// one fix would be to prefix each option with a number..
+		int word_index = bar_text.indexOf(word);
+		bar_text = String.format("%s%s%s", blank_space, bar_text, blank_space);
+		String final_text = bar_text.substring(word_index + (word.length() / 2),
+				word_index + (word.length() / 2) + bar_length);
 
-		String text_bar = String.format(ChatColor.WHITE + "<" + ChatColor.GRAY + "%s" + ChatColor.WHITE + ">", final_text);
-		// System.out.println(text_bar.length());
-
+		String text_bar = String.format(ChatColor.DARK_GRAY + "< %s >", final_text);
 		return text_bar;
 	}
 
@@ -353,7 +356,8 @@ public class BetterMenu {
 		String action_list = new String();
 		for (int x = 0; x < list.size(); x++) {
 			if (list.get(x) == selection) {
-				action_list += String.format(ChatColor.GOLD + "[ %s ]" + ChatColor.GRAY, selection);
+				action_list += String.format(ChatColor.AQUA + "[ %s ]" + ChatColor.DARK_GRAY, selection);
+				// action_list += String.format("[ %s ]", selection);
 				continue;
 			}
 			if (x == 0) {
@@ -366,6 +370,7 @@ public class BetterMenu {
 				action_list += String.format(" %s ", list.get(x));
 			}
 		}
-		return String.format(ChatColor.GRAY + action_list);
+		// return String.format(ChatColor.GRAY + action_list);
+		return action_list;
 	}
 }
