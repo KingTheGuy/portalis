@@ -13,6 +13,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -44,9 +45,7 @@ public class BetterMenu {
 		Integer index = findPlayer(player);
 		if (index != -1) {
 			player.removePotionEffect(PotionEffectType.BLINDNESS);
-			// player.clearTitle();
 			Audience audience = Audience.audience(player);
-			// audience.clearTitle();
 			audience.sendActionBar(
 					() -> Component.text(""));
 			player_with_menu.get(index).all_context = null;
@@ -58,49 +57,10 @@ public class BetterMenu {
 		}
 	}
 
-	// public void openMenu(List<String> promp_list, Player player) {
-	// player.addPotionEffect(
-	// new PotionEffect(PotionEffectType.BLINDNESS, 600,
-	// 1).withAmbient(false).withParticles(false));
-	// Integer index = findPlayer(player);
-	// if (index == -1) {
-	// PlayerWithMenu new_player = new PlayerWithMenu();
-	// new_player.createPlayer(player);
-	// player_with_menu.add(new_player);
-	// new_player.selection = "MAIN";
-	// // addContext(new_player);
-	// index = findPlayer(player);
-	// }
-	// // FIXME: something with the promp list stuff is broken.
-	// PlayerWithMenu has_menu_open = player_with_menu.get(index);
-	// List<String> new_list = new ArrayList<>();
-	// for (int x = 0; x < promp_list.size(); x++) {
-	// new_list.add(promp_list.get(x));
-	// }
-	// has_menu_open.selection = new_list.get(0);
-	// new_list.add("CANCEL");
-
-	// has_menu_open.menu_options = new_list;
-	// Audience audience = Audience.audience(player);
-	// audience.sendActionBar(
-	// () -> Component.text(formatListToString(has_menu_open.getMenuOptions(),
-	// has_menu_open.selection)));
-	// }
-
 	public class PlayerContext {
 		int id;
 		List<String> context;
 		Answer answer = new Answer();
-		// String answer;
-		// ArrayList<String> list;
-
-		// public String getPrompt() {
-		// return prompt;
-		// }
-
-		// public String getAnswer() {
-		// return answer;
-		// }
 	}
 
 	public class Answer {
@@ -117,6 +77,7 @@ public class BetterMenu {
 		int last_yaw_value;
 		int last_selection_value = -1;
 		ArrayList<PlayerContext> all_context = new ArrayList<>();
+		ItemStack using_item;
 
 		// private List<String> menu_options = new ArrayList<>();
 
@@ -153,9 +114,13 @@ public class BetterMenu {
 
 			// int pitch = (int) player.getLocation().getPitch();
 			int yaw = (int) player.getLocation().getYaw();
+
+			// yaw = yaw & 360;
 			if (yaw < 0) {
 				yaw += 360;
 			}
+			// player.sendMessage(String.format("YAW: %s", yaw));
+
 			// System.out.printf("last Yaw: %s\n", yaw);
 			// 360/9
 			// System.out.printf("last Yaw: %s and switch\n", last_yaw_value);
@@ -177,7 +142,7 @@ public class BetterMenu {
 			if (selected > getAll_context().context.size() - 1) {
 				selected = 0;
 			}
-			if (yaw % 20 >= 5) {
+			if (yaw % 50 >= 8) {
 				// if (yaw % 40 >= 20) {
 				if (yaw > last_yaw_value) {
 					if (selected < getAll_context().context.size() - 1) {
@@ -193,6 +158,7 @@ public class BetterMenu {
 				last_yaw_value = yaw;
 			}
 			selection = getAll_context().context.get(selected);
+			System.out.printf("selection is: %s\n", selection);
 			// NOTE: this next line should not be hard coded here
 			if (selection != selection_last) {
 				selection_last = getAll_context().context.get(selected);
@@ -207,21 +173,31 @@ public class BetterMenu {
 		}
 
 		public void playerChoose(PlayerInteractEvent ev) {
-			if (ev.getPlayer().getInventory().getItemInMainHand() == null) {
-				return;
+			if (findPlayer(player) > -1) {
+				ev.setCancelled(true); // since the menu us open lets prevent breaking shit
+			} else {
+				if (ev.getPlayer().getInventory().getItemInMainHand() == null) {
+					return;
+				}
 			}
-			if (!ev.getHand().equals(EquipmentSlot.HAND)) {
-				return;
-			}
+
+			// if (ev.getPlayer().getInventory().getItemInMainHand() == null) {
+			// return;
+			// }
+			// if (!ev.getHand().equals(EquipmentSlot.HAND)) {
+			// return;
+			// }
 
 			Player player = ev.getPlayer();
 
-			if (player.getInventory().getItemInMainHand().isEmpty()) {
-				return;
-			}
-			if (!player.getInventory().getItemInMainHand().getType().equals(Item_Manager.magic_mirror_book.getType())) {
-				return;
-			}
+			// if (player.getInventory().getItemInMainHand().isEmpty()) {
+			// return;
+			// }
+			// if
+			// (!player.getInventory().getItemInMainHand().getType().equals(Item_Manager.magic_mirror_book.getType()))
+			// {
+			// return;
+			// }
 
 			for (PlayerWithMenu p : player_with_menu) {
 				if (!p.player.equals(player)) {
@@ -237,11 +213,12 @@ public class BetterMenu {
 		}
 	}
 
-	public void sendPrompt(int id, List<String> prompt_list, Player player) {
+	public void sendPrompt(int id, List<String> prompt_list, Player player, ItemStack item) {
 		Integer index = findPlayer(player);
 		if (index == -1) {
 			PlayerWithMenu new_player = new PlayerWithMenu();
 			new_player.createPlayer(player);
+			new_player.using_item = item;
 			player_with_menu.add(new_player);
 			// new_player.selection = prompt_list.get(0);
 		}
@@ -250,9 +227,7 @@ public class BetterMenu {
 		for (int x = 0; x < prompt_list.size(); x++) {
 			new_list.add(prompt_list.get(x));
 		}
-		// selection = new_list.get(0);
-		// new_list.add("CLOSE");
-		// has_menu_open.menu_options = new_list;
+
 		PlayerContext new_context = new PlayerContext();
 		new_context.id = id;
 		new_context.context = new_list;
@@ -261,23 +236,6 @@ public class BetterMenu {
 		player.addPotionEffect(
 				new PotionEffect(PotionEffectType.BLINDNESS, 1200, 1).withAmbient(false).withParticles(false));
 		Audience audience = Audience.audience(player);
-		// TextComponent sub_title = Component
-		// .text(formatListToString(has_menu_open.getAll_context().context,
-		// has_menu_open.selection));
-		// TextComponent title = Component.text("");
-		// audience.showTitle(Title.title(title, sub_title));
-		// audience.sendActionBar(
-		// () -> Component.text("< " + ChatColor.MAGIC + "0" + ChatColor.RESET + " >"));
-
-		// String text_bar = String
-		// .format(ChatColor.DARK_GRAY + "<<-" + ChatColor.AQUA + ChatColor.MAGIC + " 0
-		// " + ChatColor.DARK_GRAY + "->>");
-		// audience.sendActionBar(
-		// () -> Component.text(text_bar));
-		// audience.sendActionBar(
-		// () -> Component.text(ChatColor.DARK_GRAY +
-		// formatListToString(has_menu_open.getAll_context().context,
-		// has_menu_open.selection)));
 		audience.sendActionBar(
 				() -> Component.text(centerTextBar(has_menu_open)));
 	}
@@ -290,26 +248,10 @@ public class BetterMenu {
 			return;
 		}
 		PlayerWithMenu has_menu_open = player_with_menu.get(index);
+
 		has_menu_open.prompt_selections();
 
-		// using ACTIONBAR
-		// NOTE: this is the new format, need to apply it to everything else
-		// String action_list = new String();
-		// for (int x = 0; x < has_menu_open.getMenuOptions().size(); x++) {
-		// if (has_menu_open.getMenuOptions().get(x) == has_menu_open.selection) {
-		// action_list += String.format(ChatColor.GOLD + "[%s]" + ChatColor.WHITE,
-		// has_menu_open.selection);
-		// continue;
-		// }
-		// action_list += String.format(" %s ", has_menu_open.getMenuOptions().get(x));
-		// }
-		// String action_selections = action_list;
 		Audience audience = Audience.audience(player);
-		// TextComponent sub_title = Component
-		// .text(formatListToString(has_menu_open.getAll_context().context,
-		// has_menu_open.selection));
-		// TextComponent title = Component.text("");
-		// audience.showTitle(Title.title(title, sub_title));
 
 		audience.sendActionBar(
 				() -> Component.text(centerTextBar(has_menu_open)));
