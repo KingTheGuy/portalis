@@ -1,0 +1,13 @@
+arguments=--init-script /home/surv/.eclipse/32449737_linux_gtk_x86_64/configuration/org.eclipse.osgi/57/0/.cp/gradle/init/init.gradle
+auto.sync=false
+build.scans.enabled=false
+connection.gradle.distribution=GRADLE_DISTRIBUTION(WRAPPER)
+connection.project.dir=
+eclipse.preferences.version=1
+gradle.user.home=
+java.home=/nix/store/59flqcj6x3dxiwjavxkwrycamg0482yb-openjdk-21.0.3+9/lib/openjdk
+jvm.arguments=
+offline.mode=false
+override.workspace.settings=true
+show.console.view=true
+show.executions.view=true

@@ -67,14 +67,18 @@ import org.bukkit.potion.PotionEffectType;
 import org.jetbrains.annotations.NotNull;
 
 import com.surv.items.Item_Manager;
-
+import com.surv.menu.player_selection;
 import com.destroystokyo.paper.event.block.AnvilDamagedEvent.DamageState;
 import com.destroystokyo.paper.event.player.PlayerElytraBoostEvent;
 import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent;
 import com.destroystokyo.paper.event.server.ServerTickStartEvent;
-import com.moandjiezana.toml.Toml;
-import com.moandjiezana.toml.TomlWriter;
+import com.google.gson.Gson;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
+// import com.moandjiezana.toml.Toml;
+// import com.moandjiezana.toml.TomlWriter;
 // import com.surv.menu;
 import com.surv.BetterMenu.PlayerContext;
 import com.surv.BetterMenu.PlayerWithMenu;
@@ -123,20 +127,20 @@ public class magic_mirror implements Listener {
   // TODO: add a delay, on item use.. will cause some problems otherwise.
   // may need to change the confirmation on select to be crouch.
   // WHAT AM I DOING WRONG HERE?//
-  String global_warps_file = "global_warps.txt";
-  String player_warps_file = "player_warps.txt";
-  public List<player_deaths> deaths = new ArrayList<>();
+  String global_warps_file = "global_warps.json";
+  String player_warps_file = "player_warps.json";
+  public static List<player_deaths> deaths = new ArrayList<>();
 
-  public List<GlobalWarps> global_warps = new ArrayList<>();
-  public List<PlayerWarps> player_warps = new ArrayList<>();
-  public List<delayTimer> delay_timer_list = new ArrayList<>();
+  public static List<GlobalWarps> global_warps = new ArrayList<>();
+  public static List<PlayerWarps> player_warps = new ArrayList<>();
+  public static List<delayTimer> delay_timer_list = new ArrayList<>();
 
   // TODO: when a player warps to a location add then to the used_lode list
   // when they walk out of its location remove them from the list
   // TODO: when a player walk to a location of a warp open the warp locations menu
   // and add them to the used_lode list.
   // make sure they have "access" to the warp before opening the menu
-  public List<Player> just_used_lode_warp = new ArrayList<>();
+  public static List<Player> just_used_lode_warp = new ArrayList<>();
 
   // TODO: implement this timmer thing
   public class delayTimer {
@@ -158,7 +162,7 @@ public class magic_mirror implements Listener {
     return (int) Math.sqrt(x * x + z * z);
   }
 
-  public double get3DDistance(int x1, int y1, int z1, int x2, int y2, int z2) {
+  public static double get3DDistance(int x1, int y1, int z1, int x2, int y2, int z2) {
     int deltaX = x2 - x1;
     int deltaY = y2 - y1;
     int deltaZ = z2 - z1;
@@ -310,32 +314,39 @@ public class magic_mirror implements Listener {
     }
 
     public void PromptMenu() {
+      // System.out.println(this.dimension_name);
+      // Location location = new Location(Bukkit.getWorld(this.dimension_name),
+      // this.location.X,
+      // this.location.Y + 1, this.location.Z);
       Location location = new Location(Bukkit.getWorld(this.dimension_name), this.location.X,
           this.location.Y + 1, this.location.Z);
       Collection<Entity> entities = location.getNearbyEntities(location.getBlockX(), location.getBlockY(),
           location.getBlockZ());
-      entities.forEach(entity -> {
-        if (entity instanceof Player) {
-          if (get3DDistance(location.getBlockX(), location.getBlockY(), location.getBlockZ(),
-              entity.getLocation().getBlockX(), entity.getLocation().getBlockY(),
-              entity.getLocation().getBlockZ()) < 1) {
-            // System.out.println("yes this mf is close to a warp location");
-            boolean found = false;
-            for (Player player : just_used_lode_warp) {
-              if (player == (Player) entity) {
-                found = true;
-                break;
+      if (entities.size() > 0) {
+        entities.forEach(entity -> {
+          if (entity instanceof Player) {
+            // System.out.println(String.format("is location null? %s",location));
+            // System.out.println(String.format("is entity locatoin null? %s",location));
+            if (get3DDistance(location.getBlockX(), location.getBlockY(), location.getBlockZ(),
+                entity.getLocation().getBlockX(), entity.getLocation().getBlockY(),
+                entity.getLocation().getBlockZ()) < 1) {
+              // System.out.println("yes this mf is close to a warp location");
+              boolean found = false;
+              for (Player player : just_used_lode_warp) {
+                if (player == (Player) entity) {
+                  found = true;
+                  break;
+                }
               }
-            }
-            if (found == false) {
-              just_used_lode_warp.add((Player) entity);
-            }
-            // System.out.println(String.format("size: %s", just_used_lode_warp.size()));
+              if (found == false) {
+                just_used_lode_warp.add((Player) entity);
+              }
+              // System.out.println(String.format("size: %s", just_used_lode_warp.size()));
 
+            }
           }
-        }
-      });
-
+        });
+      }
     }
 
     public void RemoveWarp() {
@@ -543,14 +554,18 @@ public class magic_mirror implements Listener {
   public void saveGlobalWarpsToFile(String file) {
     try {
       BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-      for (GlobalWarps w : global_warps) {
-        writer.write("[warp]\n");
-        writer.write(String.format("\t-location:%s\n", w.location.toString()));
-        writer.write(String.format("\t-dimension:%s\n", w.dimension_name));
-        writer.write(String.format("\t-name:%s\n", w.name));
-        writer.write(String.format("\t-creator:%s\n", w.creator));
-        writer.write("\n");
-      }
+      Gson gson = new Gson();
+      String json = gson.toJson(global_warps);
+      // System.out.println(json);
+      // for (GlobalWarps w : global_warps) {
+      // writer.write("[warp]\n");
+      // writer.write(String.format("\t-location:%s\n", w.location.toString()));
+      // writer.write(String.format("\t-dimension:%s\n", w.dimension_name));
+      // writer.write(String.format("\t-name:%s\n", w.name));
+      // writer.write(String.format("\t-creator:%s\n", w.creator));
+      // writer.write("\n");
+      // }
+      writer.write(json);
       writer.close();
     } catch (IOException e) {
       System.out.println(e);
@@ -560,18 +575,22 @@ public class magic_mirror implements Listener {
   public void savePlayerWarpsToFile(String file) {
     try {
       BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-      for (PlayerWarps pw : player_warps) {
-        writer.write(String.format("PLAYER:%s\n", pw.player_name));
-        for (GlobalWarps w : pw.known_warps) {
-          writer.write("\t[warp]\n");
-          writer.write(String.format("\t\t-location:%s\n", w.location.toString()));
-          writer.write(String.format("\t\t-dimension:%s\n", w.dimension_name));
-          writer.write(String.format("\t\t-name:%s\n", w.name));
-          writer.write(String.format("\t\t-creator:%s\n", w.creator));
-          writer.write("\n");
-        }
-        writer.write("\n");
-      }
+      Gson gson = new Gson();
+      String json = gson.toJson(player_warps);
+      // System.out.println(json);
+      // for (PlayerWarps pw : player_warps) {
+      // writer.write(String.format("PLAYER:%s\n", pw.player_name));
+      // for (GlobalWarps w : pw.known_warps) {
+      // writer.write("\t[warp]\n");
+      // writer.write(String.format("\t\t-location:%s\n", w.location.toString()));
+      // writer.write(String.format("\t\t-dimension:%s\n", w.dimension_name));
+      // writer.write(String.format("\t\t-name:%s\n", w.name));
+      // writer.write(String.format("\t\t-creator:%s\n", w.creator));
+      // writer.write("\n");
+      // }
+      // writer.write("\n");
+      // }
+      writer.write(json);
       writer.close();
     } catch (IOException e) {
       System.out.println(e);
@@ -580,46 +599,55 @@ public class magic_mirror implements Listener {
 
   public void loadGlobalWarpsFromFile(String file) {
     try {
-      BufferedReader reader = new BufferedReader(new FileReader(file));
-      String line;
-      GlobalWarps warp_from_file = new GlobalWarps();
-      while ((line = reader.readLine()) != null) {
-        String trimmed = line.trim();
-        if (trimmed.startsWith("[warp")) {
-          warp_from_file = new GlobalWarps();
-        }
-        if (trimmed.startsWith("-location")) {
-          String[] split = trimmed.split(":", -1);
-          String[] xyz = split[1].split(",", -1);
-          warp_from_file.location = new Vector3();
-          warp_from_file.location.X = Integer.parseInt(xyz[0]);
-          warp_from_file.location.Y = Integer.parseInt(xyz[1]);
-          warp_from_file.location.Z = Integer.parseInt(xyz[2]);
-        }
-        if (trimmed.startsWith("-dimension")) {
-          String[] split = trimmed.split(":", -1);
-          warp_from_file.dimension_name = split[1];
-        }
-        if (trimmed.startsWith("-name")) {
-          String[] split = trimmed.split(":", -1);
-          if (split[1] == "null") {
-            warp_from_file.name = null;
-          } else {
-            warp_from_file.name = split[1];
-          }
-        }
-        if (trimmed.startsWith("-creator")) {
-          String[] split = trimmed.split(":", -1);
-          warp_from_file.creator = split[1];
+      Gson gson = new Gson();
+      JsonReader reader = new JsonReader(new FileReader(file));
+      // BufferedReader reader = new BufferedReader(new FileReader(file));
+      // String line;
+      Type listOfMyClassObject = new TypeToken<List<GlobalWarps>>() {
+      }.getType();
 
-        }
-        if (trimmed.isBlank()) {
-          if (warp_from_file != null) {
-            global_warps.add(warp_from_file);
-            warp_from_file = new GlobalWarps();
-          }
-        }
+      List<GlobalWarps> warps = gson.fromJson(reader, listOfMyClassObject);
+      for (GlobalWarps w : warps) {
+        global_warps.add(w);
       }
+      // GlobalWarps warp_from_file = new GlobalWarps();
+      // while ((line = reader.readLine()) != null) {
+      // String trimmed = line.trim();
+      // if (trimmed.startsWith("[warp")) {
+      // warp_from_file = new GlobalWarps();
+      // }
+      // if (trimmed.startsWith("-location")) {
+      // String[] split = trimmed.split(":", -1);
+      // String[] xyz = split[1].split(",", -1);
+      // warp_from_file.location = new Vector3();
+      // warp_from_file.location.X = Integer.parseInt(xyz[0]);
+      // warp_from_file.location.Y = Integer.parseInt(xyz[1]);
+      // warp_from_file.location.Z = Integer.parseInt(xyz[2]);
+      // }
+      // if (trimmed.startsWith("-dimension")) {
+      // String[] split = trimmed.split(":", -1);
+      // warp_from_file.dimension_name = split[1];
+      // }
+      // if (trimmed.startsWith("-name")) {
+      // String[] split = trimmed.split(":", -1);
+      // if (split[1] == "null") {
+      // warp_from_file.name = null;
+      // } else {
+      // warp_from_file.name = split[1];
+      // }
+      // }
+      // if (trimmed.startsWith("-creator")) {
+      // String[] split = trimmed.split(":", -1);
+      // warp_from_file.creator = split[1];
+
+      // }
+      // if (trimmed.isBlank()) {
+      // if (warp_from_file != null) {
+      // global_warps.add(warp_from_file);
+      // warp_from_file = new GlobalWarps();
+      // }
+      // }
+      // }
       reader.close();
     } catch (IOException e) {
       System.out.println(e);
@@ -630,65 +658,73 @@ public class magic_mirror implements Listener {
   // FIXME: i just need to redo the loading and saving
   public void loadPlayerWarpsFromFile(String file) {
     try {
-      BufferedReader reader = new BufferedReader(new FileReader(file));
-      String line;
-      PlayerWarps player_warp_from_file = new PlayerWarps();
-      // PlayerWarps player_warp_from_file;
-      GlobalWarps warp = new GlobalWarps();
-      while ((line = reader.readLine()) != null) {
-        String trimmed = line.trim();
-        // start here
-        if (trimmed.startsWith("PLAYER:")) {
-          // this means that player has some usefull data that i shold save
-          if (player_warp_from_file.known_warps.size() > 0) {
-            player_warps.add(player_warp_from_file);
-            player_warp_from_file = new PlayerWarps();
-          }
-          player_warp_from_file = new PlayerWarps();
-          String[] split = trimmed.split(":", -1);
-          player_warp_from_file.player_name = split[1];
-          player_warp_from_file.known_warps = new ArrayList<GlobalWarps>();
-        }
-        if (trimmed.startsWith("[warp")) {
-          warp = new GlobalWarps();
-        }
-        if (trimmed.startsWith("-location")) {
-          String[] split = trimmed.split(":", -1);
-          String[] xyz = split[1].split(",", -1);
-          warp.location = new Vector3();
-          warp.location.X = Integer.parseInt(xyz[0]);
-          warp.location.Y = Integer.parseInt(xyz[1]);
-          warp.location.Z = Integer.parseInt(xyz[2]);
-        }
-        if (trimmed.startsWith("-dimension")) {
-          String[] split = trimmed.split(":", -1);
-          warp.dimension_name = split[1];
-        }
-        if (trimmed.startsWith("-name")) {
-          String[] split = trimmed.split(":", -1);
-          if (split[1] == "null") {
-            warp.name = null;
-          } else {
-            warp.name = split[1];
-          }
-        }
-        if (trimmed.startsWith("-creator")) {
-          String[] split = trimmed.split(":", -1);
-          warp.creator = split[1];
-        }
-        // add the new warp to the player's
-        if (trimmed.isEmpty()) {
-          if (warp != null) {
-            player_warp_from_file.known_warps.add(warp);
-            warp = null;
-          }
-        }
+      Gson gson = new Gson();
+      JsonReader reader = new JsonReader(new FileReader(file));
+      // player_warps = gson.fromJson(reader, PlayerWarps.class);
+      Type listOfMyClassObject = new TypeToken<List<PlayerWarps>>() {
+      }.getType();
+      List<PlayerWarps> warps = gson.fromJson(reader, listOfMyClassObject);
+      for (PlayerWarps w : warps) {
+        player_warps.add(w);
       }
-      if (player_warp_from_file.known_warps.size() > 0) {
-        player_warps.add(player_warp_from_file);
-      }
+      // String line;
+      // PlayerWarps player_warp_from_file = new PlayerWarps();
+      // // PlayerWarps player_warp_from_file;
+      // GlobalWarps warp = new GlobalWarps();
+      // while ((line = reader.readLine()) != null) {
+      // String trimmed = line.trim();
+      // // start here
+      // if (trimmed.startsWith("PLAYER:")) {
+      // // this means that player has some usefull data that i shold save
+      // if (player_warp_from_file.known_warps.size() > 0) {
+      // player_warps.add(player_warp_from_file);
+      // player_warp_from_file = new PlayerWarps();
+      // }
+      // player_warp_from_file = new PlayerWarps();
+      // String[] split = trimmed.split(":", -1);
+      // player_warp_from_file.player_name = split[1];
+      // player_warp_from_file.known_warps = new ArrayList<GlobalWarps>();
+      // }
+      // if (trimmed.startsWith("[warp")) {
+      // warp = new GlobalWarps();
+      // }
+      // if (trimmed.startsWith("-location")) {
+      // String[] split = trimmed.split(":", -1);
+      // String[] xyz = split[1].split(",", -1);
+      // warp.location = new Vector3();
+      // warp.location.X = Integer.parseInt(xyz[0]);
+      // warp.location.Y = Integer.parseInt(xyz[1]);
+      // warp.location.Z = Integer.parseInt(xyz[2]);
+      // }
+      // if (trimmed.startsWith("-dimension")) {
+      // String[] split = trimmed.split(":", -1);
+      // warp.dimension_name = split[1];
+      // }
+      // if (trimmed.startsWith("-name")) {
+      // String[] split = trimmed.split(":", -1);
+      // if (split[1] == "null") {
+      // warp.name = null;
+      // } else {
+      // warp.name = split[1];
+      // }
+      // }
+      // if (trimmed.startsWith("-creator")) {
+      // String[] split = trimmed.split(":", -1);
+      // warp.creator = split[1];
+      // }
+      // // add the new warp to the player's
+      // if (trimmed.isEmpty()) {
+      // if (warp != null) {
+      // player_warp_from_file.known_warps.add(warp);
+      // warp = null;
+      // }
+      // }
+      // }
+      // if (player_warp_from_file.known_warps.size() > 0) {
+      // player_warps.add(player_warp_from_file);
+      // }
       reader.close();
-      savePlayerWarpsToFile(player_warps_file); // TODO: remove this line
+      // savePlayerWarpsToFile(player_warps_file); // TODO: remove this line
       // System.out.printf("player warp spots: %s\n", player_warps.toString());
     } catch (IOException e) {
       System.out.println(e);
@@ -964,7 +1000,7 @@ public class magic_mirror implements Listener {
                       Sound.ENTITY_VILLAGER_WORK_CARTOGRAPHER, SoundCategory.BLOCKS, 1f, 1.5f);
                   // TODO: extent this message to also get the warp's name
                   audience.sendActionBar(
-                      () -> Component.text("Location added"));
+                      () -> Component.text(String.format("added [%s] to known locations", warp.name)));
                   addPlayerWarp(ev.getClickedBlock().getLocation(), ev.getPlayer().getName());
                   return;
                 }
