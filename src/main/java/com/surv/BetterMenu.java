@@ -32,7 +32,7 @@ public class BetterMenu {
 	ArrayList<PlayerWithMenu> player_with_menu = new ArrayList<>();
 	List<Player> wait_list = new ArrayList<>();
 
-	public Integer findPlayer(Player player) {
+	public Integer hasMenuOpen(Player player) {
 		for (PlayerWithMenu p : player_with_menu) {
 			if (p.player.equals(player)) {
 				return player_with_menu.indexOf(p);
@@ -42,7 +42,7 @@ public class BetterMenu {
 	}
 
 	public void closeMenu(Player player) {
-		Integer index = findPlayer(player);
+		Integer index = hasMenuOpen(player);
 		if (index != -1) {
 			player.removePotionEffect(PotionEffectType.BLINDNESS);
 			Audience audience = Audience.audience(player);
@@ -173,7 +173,7 @@ public class BetterMenu {
 		}
 
 		public void playerChoose(PlayerInteractEvent ev) {
-			if (findPlayer(player) > -1) {
+			if (hasMenuOpen(player) > -1) {
 				ev.setCancelled(true); // since the menu us open lets prevent breaking shit
 			} else {
 				if (ev.getPlayer().getInventory().getItemInMainHand() == null) {
@@ -214,7 +214,7 @@ public class BetterMenu {
 	}
 
 	public void sendPrompt(int id, List<String> prompt_list, Player player, ItemStack item) {
-		Integer index = findPlayer(player);
+		Integer index = hasMenuOpen(player);
 		if (index == -1) {
 			PlayerWithMenu new_player = new PlayerWithMenu();
 			new_player.createPlayer(player);
@@ -222,7 +222,7 @@ public class BetterMenu {
 			player_with_menu.add(new_player);
 			// new_player.selection = prompt_list.get(0);
 		}
-		PlayerWithMenu has_menu_open = player_with_menu.get(findPlayer(player));
+		PlayerWithMenu has_menu_open = player_with_menu.get(hasMenuOpen(player));
 		List<String> new_list = new ArrayList<>();
 		for (int x = 0; x < prompt_list.size(); x++) {
 			new_list.add(prompt_list.get(x));
@@ -243,7 +243,7 @@ public class BetterMenu {
 	public void playerSelection(PlayerMoveEvent ev) {
 		Player player = ev.getPlayer();
 
-		Integer index = findPlayer(ev.getPlayer());
+		Integer index = hasMenuOpen(ev.getPlayer());
 		if (index == -1) {
 			return;
 		}

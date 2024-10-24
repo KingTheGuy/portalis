@@ -49,7 +49,7 @@ public class Item_Manager {
 		createMagicMirrorRecipe();
 		refillMagicMirrorRecipe();
 		createStoneCutterRecipe();
-		createSpawnBook();
+		// createSpawnBook();
 		createCoin();
 	}
 
@@ -223,68 +223,68 @@ public class Item_Manager {
 		// TODO: add "Netherack > Red Sand at Stonecutter"
 	}
 
-	private static void createSpawnBook() {
-		ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
-		ItemMeta meta = book.getItemMeta();
-		BookMeta bookMeta = (BookMeta) meta;
-		BookMetaBuilder builder = bookMeta.toBuilder();
-		// bookMeta.displayName(Component.text("Leaving Spawn & You"));
-		builder.title(Component.text("Leaving Spawn & You"));
-		builder.author(Component.text("DustyGuard"));
-		List<Component> pages = new ArrayList<>();
-		pages.add(
-				Component.text("Hey there newcomer, ")
-						.append(Component.text("Welcome to Dusty.\n\n"))
-						.append(Component.text("First off you should "))
-						.append(Component.text("know that reading "))
-						.append(Component.text("the board at spawn "))
-						.append(Component.text("is manditory, not "))
-						.append(Component.text("doing so would be "))
-						.append(Component.text("very bad for your "))
-						.append(Component.text("overall health. Note "))
-						.append(Component.text("that you will not "))
-						.append(Component.text("be able to interact "))
-						.append(Component.text("with the world if "))
-						.append(Component.text("you don't read it.")));
-		pages.add(
-				Component.text("So do make sure you ")
-						.append(Component.text("read the board.\n\n"))
-						.append(Component.text("At this point "))
-						.append(Component.text("let's assume you've "))
-						.append(Component.text("read the board "))
-						.append(Component.text("and are able to "))
-						.append(Component.text("interact with the "))
-						.append(Component.text("world. Please try "))
-						.append(Component.text("not to build your "))
-						.append(Component.text("base anywhere "))
-						.append(Component.text("near spawn. "))
+	// private static void createSpawnBook() {
+	// 	ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
+	// 	ItemMeta meta = book.getItemMeta();
+	// 	BookMeta bookMeta = (BookMeta) meta;
+	// 	BookMetaBuilder builder = bookMeta.toBuilder();
+	// 	// bookMeta.displayName(Component.text("Leaving Spawn & You"));
+	// 	builder.title(Component.text("Leaving Spawn & You"));
+	// 	builder.author(Component.text("DustyGuard"));
+	// 	List<Component> pages = new ArrayList<>();
+	// 	pages.add(
+	// 			Component.text("Hey there newcomer, ")
+	// 					.append(Component.text("Welcome to Dusty.\n\n"))
+	// 					.append(Component.text("First off you should "))
+	// 					.append(Component.text("know that reading "))
+	// 					.append(Component.text("the board at spawn "))
+	// 					.append(Component.text("is manditory, not "))
+	// 					.append(Component.text("doing so would be "))
+	// 					.append(Component.text("very bad for your "))
+	// 					.append(Component.text("overall health. Note "))
+	// 					.append(Component.text("that you will not "))
+	// 					.append(Component.text("be able to interact "))
+	// 					.append(Component.text("with the world if "))
+	// 					.append(Component.text("you don't read it.")));
+	// 	pages.add(
+	// 			Component.text("So do make sure you ")
+	// 					.append(Component.text("read the board.\n\n"))
+	// 					.append(Component.text("At this point "))
+	// 					.append(Component.text("let's assume you've "))
+	// 					.append(Component.text("read the board "))
+	// 					.append(Component.text("and are able to "))
+	// 					.append(Component.text("interact with the "))
+	// 					.append(Component.text("world. Please try "))
+	// 					.append(Component.text("not to build your "))
+	// 					.append(Component.text("base anywhere "))
+	// 					.append(Component.text("near spawn. "))
 
-		);
-		pages.add(
-				Component.text("Go at least 1k blocks ")
-						.append(Component.text("away from spawn to "))
-						.append(Component.text("start building your "))
-						.append(Component.text("base. Lets say you "))
-						.append(Component.text("happen to stumble "))
-						.append(Component.text("upon the Shopping "))
-						.append(Component.text("District located "))
-						.append(Component.text("right outside of "))
-						.append(Component.text("spawn.. Do not break "))
-						.append(Component.text("any trees there, do "))
-						.append(Component.text("not build your base ")));
-		pages.add(
-				Component.text("there, that area ")
-						.append(Component.text("is meant for player "))
-						.append(Component.text("shops only.\n\n "))
+	// 	);
+	// 	pages.add(
+	// 			Component.text("Go at least 1k blocks ")
+	// 					.append(Component.text("away from spawn to "))
+	// 					.append(Component.text("start building your "))
+	// 					.append(Component.text("base. Lets say you "))
+	// 					.append(Component.text("happen to stumble "))
+	// 					.append(Component.text("upon the Shopping "))
+	// 					.append(Component.text("District located "))
+	// 					.append(Component.text("right outside of "))
+	// 					.append(Component.text("spawn.. Do not break "))
+	// 					.append(Component.text("any trees there, do "))
+	// 					.append(Component.text("not build your base ")));
+	// 	pages.add(
+	// 			Component.text("there, that area ")
+	// 					.append(Component.text("is meant for player "))
+	// 					.append(Component.text("shops only.\n\n "))
 
-						.append(Component.text("That is all for now, "))
-						.append(Component.text("hope you enjoy your "))
-						.append(Component.text("stay. "))
+	// 					.append(Component.text("That is all for now, "))
+	// 					.append(Component.text("hope you enjoy your "))
+	// 					.append(Component.text("stay. "))
 
-		);
-		builder.pages(pages);
-		bookMeta = builder.build();
-		book.setItemMeta(bookMeta);
-		spawn_book = book;
-	}
+	// 	);
+	// 	builder.pages(pages);
+	// 	bookMeta = builder.build();
+	// 	book.setItemMeta(bookMeta);
+	// 	spawn_book = book;
+	// }
 }

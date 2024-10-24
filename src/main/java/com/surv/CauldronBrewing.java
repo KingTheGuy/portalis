@@ -264,13 +264,6 @@ public class CauldronBrewing implements Listener {
 		remove_list.clear();
 	}
 
-	// NOTE: this should also be looking for the Y axis
-	public int getDistance(int x1, int z1, int x2, int z2) {
-		int z = x2 - x1;
-		int x = z2 - z1;
-		return (int) Math.sqrt(x * x + z * z);
-	}
-
 	@EventHandler
 	public void onServerStart(ServerLoadEvent event) {
 		init_recipes();
@@ -373,8 +366,12 @@ public class CauldronBrewing implements Listener {
 			if (entity instanceof Item) {
 				Item entity_item = (Item) entity;
 				ItemStack item = entity_item.getItemStack();
-				if (getDistance(location.getBlockX(), location.getBlockZ(), entity.getLocation().getBlockX(),
-						entity.getLocation().getBlockZ()) > cauldron_radius) {
+				// if (getDistance(location.getBlockX(), location.getBlockZ(), entity.getLocation().getBlockX(),
+				// 		entity.getLocation().getBlockZ()) > cauldron_radius) {
+				// 	return;
+				// }
+				if (Utils.get3DDistance(location.getBlockX(),location.getBlockY(), location.getBlockZ(), entity.getLocation().getBlockX(),
+						entity.getLocation().getBlockY(),entity.getLocation().getBlockZ()) > cauldron_radius) {
 					return;
 				}
 				if (recipe.last_item.isSimilar(item)) {
@@ -430,8 +427,8 @@ public class CauldronBrewing implements Listener {
 				if (cauldron.mixed == true) {
 					return;
 				}
-				if (getDistance(location.getBlockX(), location.getBlockZ(), entity.getLocation().getBlockX(),
-						entity.getLocation().getBlockZ()) > cauldron_radius) {
+				if (Utils.get3DDistance(location.getBlockX(),location.getBlockY(), location.getBlockZ(), entity.getLocation().getBlockX(),
+						entity.getLocation().getBlockY(),entity.getLocation().getBlockZ()) > cauldron_radius) {
 					return;
 				}
 				if (!recipeContainsIngridient(item)) {

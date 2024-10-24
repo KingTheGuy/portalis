@@ -2,3 +2,5 @@ target/
 TODO.md
 build/
 bin/
+.gradle/
+.gradle

@@ -44,6 +44,7 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
@@ -68,6 +69,9 @@ import org.jetbrains.annotations.NotNull;
 
 import com.surv.items.Item_Manager;
 import com.surv.menu.player_selection;
+
+import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
+
 import com.destroystokyo.paper.event.block.AnvilDamagedEvent.DamageState;
 import com.destroystokyo.paper.event.player.PlayerElytraBoostEvent;
 import com.destroystokyo.paper.event.player.PlayerJumpEvent;
@@ -140,7 +144,15 @@ public class magic_mirror implements Listener {
   // TODO: when a player walk to a location of a warp open the warp locations menu
   // and add them to the used_lode list.
   // make sure they have "access" to the warp before opening the menu
-  public static List<Player> just_used_lode_warp = new ArrayList<>();
+  public static List<UsedWarp> just_used_lode_warp = new ArrayList<>();
+
+  public class UsedWarp {
+    Player player;
+    String warp_name;
+    //nvm should not do this here?? because the the tp sound also needs to play for when using the MM. so i makes not sense to have the "logic" in seperate places.
+    // boolean at_destinatoin; //TODO: once the player's location changes to the destination (at which point play the tp sound)
+    boolean off_lodestone; //TODO: once at_destination is true and the player steps off the their new location (at which point them menu can be prompt again)
+  }
 
   // TODO: implement this timmer thing
   public class delayTimer {
@@ -154,19 +166,6 @@ public class magic_mirror implements Listener {
       }
     }
 
-  }
-
-  public int getDistance(int x1, int z1, int x2, int z2) {
-    int z = x2 - x1;
-    int x = z2 - z1;
-    return (int) Math.sqrt(x * x + z * z);
-  }
-
-  public static double get3DDistance(int x1, int y1, int z1, int x2, int y2, int z2) {
-    int deltaX = x2 - x1;
-    int deltaY = y2 - y1;
-    int deltaZ = z2 - z1;
-    return Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
   }
 
   public void addWarp(Location location, String player_name, String warp_name, Audience audience) {
@@ -327,19 +326,22 @@ public class magic_mirror implements Listener {
           if (entity instanceof Player) {
             // System.out.println(String.format("is location null? %s",location));
             // System.out.println(String.format("is entity locatoin null? %s",location));
-            if (get3DDistance(location.getBlockX(), location.getBlockY(), location.getBlockZ(),
+            if (Utils.get3DDistance(location.getBlockX(), location.getBlockY(), location.getBlockZ(),
                 entity.getLocation().getBlockX(), entity.getLocation().getBlockY(),
                 entity.getLocation().getBlockZ()) < 1) {
               // System.out.println("yes this mf is close to a warp location");
               boolean found = false;
-              for (Player player : just_used_lode_warp) {
-                if (player == (Player) entity) {
+              for (UsedWarp used_w : just_used_lode_warp) {
+                if (used_w.player == (Player) entity) {
                   found = true;
                   break;
                 }
               }
               if (found == false) {
-                just_used_lode_warp.add((Player) entity);
+                UsedWarp new_user = new UsedWarp();
+                new_user.player = (Player) entity;
+                new_user.warp_name = this.name;
+                just_used_lode_warp.add(new_user);
               }
               // System.out.println(String.format("size: %s", just_used_lode_warp.size()));
 
@@ -380,19 +382,19 @@ public class magic_mirror implements Listener {
         // check if the player has a lode warp beneath them
         if (just_used_lode_warp.size() > 0) {
           boolean on_warp = false;
-          for (Player player : just_used_lode_warp) {
+          for (UsedWarp used_w : just_used_lode_warp) {
             // System.out.println("yes this is running");
-            if (player.getLocation().subtract(0, 1, 0).getBlock().getType().equals(Material.LODESTONE)) {
-              if (!player.getInventory().getItemInMainHand().isEmpty()) {
-                Audience audience = Audience.audience(player);
-                audience.sendActionBar(() -> Component.text("empty your hand").color(NamedTextColor.AQUA));
-                betterMenu.closeMenu(player);
-                return;
-              }
+            if (used_w.player.getLocation().subtract(0, 1, 0).getBlock().getType().equals(Material.LODESTONE)) {
+              // if (!used_w.player.getInventory().getItemInMainHand().isEmpty()) {
+              //   Audience audience = Audience.audience(used_w.player);
+              //   audience.sendActionBar(() -> Component.text("empty your hand").color(NamedTextColor.AQUA));
+              //   betterMenu.closeMenu(used_w.player);
+              //   return;
+              // }
               on_warp = true;
               // for each player's warp compare to global warps, remove if needed, rename if
               // needed.
-              Integer index = betterMenu.findPlayer(player);
+              Integer index = betterMenu.hasMenuOpen(used_w.player);
               if (index > -1) {
                 return;
               }
@@ -401,7 +403,7 @@ public class magic_mirror implements Listener {
               for (PlayerWarps pw : player_warps) {
                 // System.out.printf("%s's warp size: %s\n", pw.player_name,
                 // pw.known_warps.size());
-                if (pw.player_name.equals(player.getName())) {
+                if (pw.player_name.equals(used_w.player.getName())) {
                   // System.out.printf("%s has: %s warp locations", pw.player_name,
                   // pw.known_warps.size());
                   for (GlobalWarps w : pw.known_warps) {
@@ -411,11 +413,15 @@ public class magic_mirror implements Listener {
                       // player's list.");
                       // pw.known_warps.remove(w);
                     } else {
-                      if (w.name != null) {
-                        prompt_list.add(w.name);
+                      if (w.name == used_w.warp_name) {
+                        
                       } else {
-                        prompt_list.add(w.location.toString());
+                        if (w.name != null) {
+                          prompt_list.add(w.name);
+                        } else {
+                          prompt_list.add(w.location.toString());
 
+                        }                      
                       }
                     }
                   }
@@ -425,23 +431,21 @@ public class magic_mirror implements Listener {
                   break; // found the player
                 }
               }
-
               prompt_list.add("CLOSE");
-              betterMenu.sendPrompt(6, prompt_list, player, null);
+              betterMenu.sendPrompt(6, prompt_list, used_w.player, null);
               saveGlobalWarpsToFile(global_warps_file);
               savePlayerWarpsToFile(player_warps_file);
               return;
             }
             if (on_warp == false) {
-              just_used_lode_warp.remove(player);
-              betterMenu.closeMenu(player);
+              just_used_lode_warp.remove(used_w);
+              betterMenu.closeMenu(used_w.player);
               // System.out.println("removed the player from the list");
               on_warp = true;
               break;
             }
           }
         }
-
       }
     }
   }
@@ -833,7 +837,7 @@ public class magic_mirror implements Listener {
     item.lore(lore);
   }
 
-  public void teleportEffect(Player player, Location location) {
+  public void teleportEffectSound(Player player, Location location) {
     Bukkit.getWorld(location.getWorld().getUID()).playSound(location, Sound.ENTITY_SHULKER_TELEPORT,
         SoundCategory.BLOCKS, 1f, 1f);
     player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
@@ -910,7 +914,7 @@ public class magic_mirror implements Listener {
       }
     }
 
-    if (betterMenu.findPlayer(player) > -1) {
+    if (betterMenu.hasMenuOpen(player) > -1) {
       ev.setCancelled(true); // since the menu us open lets prevent breaking shit
       if (ev.getPlayer().getInventory().getItemInMainHand().isEmpty()) {
       }
@@ -1017,12 +1021,12 @@ public class magic_mirror implements Listener {
     final String cancel_prompt = "CLOSE BOOK";
     // player.playSound(player.getLocation(), Sound.ENTITY_ILLUSIONER_CAST_SPELL,
     // 1f, 1f);
-    Integer index = betterMenu.findPlayer(player);
+    Integer index = betterMenu.hasMenuOpen(player);
     if (index < 0) {
       List<String> THIS_LIST = List.of("BED", "SPAWN", "WARPS", "LAST DEATH", cancel_prompt);
       // List<String> THIS_LIST = List.of("JUST", "SOME", "NEW", "LIST");
       betterMenu.sendPrompt(1, THIS_LIST, player, Item_Manager.magic_mirror_book);
-      index = betterMenu.findPlayer(player);
+      index = betterMenu.hasMenuOpen(player);
     }
     PlayerWithMenu p_menu = betterMenu.player_with_menu.get(index);
     p_menu.playerChoose(ev);
@@ -1061,25 +1065,25 @@ public class magic_mirror implements Listener {
         case confirm_prompt:
           switch (p_menu.all_context.get(0).answer.name) {
             case "BED":
-              if (player.getBedSpawnLocation() == null) {
+              if (player.getBedLocation() == null) {
                 audience.sendActionBar(() -> Component.text("Where is my bed?").color(NamedTextColor.RED));
                 player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
               } else {
-                teleportEffect(player, player.getLocation());
-                player.teleportAsync(player.getBedSpawnLocation());
+                teleportEffectSound(player, player.getLocation());
+                player.teleportAsync(player.getBedLocation());
                 betterMenu.closeMenu(player);
                 // System.out.println("\n\n\tYES BOOK IS BEING USED\n\n");
                 useBook(player);
-                teleportEffect(player, player.getBedSpawnLocation());
+                teleportEffectSound(player, player.getBedLocation());
               }
               betterMenu.closeMenu(player);
               return;
             case "SPAWN":
-              teleportEffect(player, player.getLocation());
+              teleportEffectSound(player, player.getLocation());
               player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
               betterMenu.closeMenu(player);
               useBook(player);
-              teleportEffect(player, Bukkit.getWorld("world").getSpawnLocation());
+              teleportEffectSound(player, Bukkit.getWorld("world").getSpawnLocation());
               betterMenu.closeMenu(player);
               return;
             case "LAST DEATH":
@@ -1096,11 +1100,11 @@ public class magic_mirror implements Listener {
                 audience.sendActionBar(() -> Component.text("Long Live").color(NamedTextColor.RED));
                 player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
               } else {
-                teleportEffect(player, player.getLocation());
+                teleportEffectSound(player, player.getLocation());
                 player.teleportAsync(deaths.get(death_index).loc);
                 betterMenu.closeMenu(player);
                 useBook(player);
-                teleportEffect(player, deaths.get(death_index).loc);
+                teleportEffectSound(player, deaths.get(death_index).loc);
               }
               return;
             case "WARPS":
@@ -1191,11 +1195,11 @@ public class magic_mirror implements Listener {
             // p_menu.getAll_context().answer.name.toUpperCase());
             if (p_menu.getAll_context().answer.name.toUpperCase().equals(wait_player.getName().toUpperCase())) {
               useBook(player);
-              teleportEffect(player, player.getLocation());
+              teleportEffectSound(player, player.getLocation());
               player.teleport(wait_player);
               betterMenu.closeMenu(player);
               betterMenu.closeMenu(wait_player);
-              teleportEffect(player, wait_player.getLocation());
+              teleportEffectSound(player, wait_player.getLocation());
               return;
             }
           }
@@ -1228,10 +1232,10 @@ public class magic_mirror implements Listener {
                   Location teleport_location = new Location(Bukkit.getWorld(w.dimension_name), w.location.X + 0.5,
                       w.location.Y + 1, w.location.Z + 0.5);
                   player.teleportAsync(teleport_location);
-                  teleportEffect(player, player.getLocation());
+                  teleportEffectSound(player, player.getLocation());
                   betterMenu.closeMenu(player);
                   useBook(player);
-                  teleportEffect(player, teleport_location);
+                  teleportEffectSound(player, teleport_location);
                   return;
                 }
               }
@@ -1241,10 +1245,10 @@ public class magic_mirror implements Listener {
           return;
       }
     }
-    // }
-    // }
-    // }
-
+    // prevent the player from breaking shit
+    if (betterMenu.hasMenuOpen(player) > -1) {
+        ev.setCancelled(true);
+    }
   }
 
   @EventHandler
@@ -1270,6 +1274,10 @@ public class magic_mirror implements Listener {
         villager.setRecipes(new_villager_recipes);
       }
     }
+    // prevent the player from breaking shit
+    if (betterMenu.hasMenuOpen(event.getPlayer()) > -1) {
+        event.setCancelled(true);
+    }
   }
 
   // @EventHandler
@@ -1284,7 +1292,17 @@ public class magic_mirror implements Listener {
   // event.setCancelled(true);
   // }
   // }
+  // @EventHandler
+  // public void onPlayerAttack(PrePlayerAttackEntityEvent event) {
+  //   // prevent the player from breaking shit
+  //   for (UsedWarp usedWarp : just_used_lode_warp) {
+  //     if (usedWarp.player.getName() == event.getPlayer().getName()) {
+  //       event.setCancelled(true);
+  //     }
+  //   }
+  // }
 
+  //NOTE: this should not be part of this plugin
   // Breaks the player's elytra if hit by the dragon
   @EventHandler
   public void onPlayerHit(EntityDamageByEntityEvent event) {
@@ -1307,25 +1325,25 @@ public class magic_mirror implements Listener {
     }
   }
 
-  @EventHandler
-  public void onPlayerJoin(PlayerJoinEvent event) {
-    NamespacedKey key = new NamespacedKey(magic.getPlugin(), "aquired_spawn_book");
-    Player player = event.getPlayer();
-    PersistentDataContainer player_container = player.getPersistentDataContainer();
-    Set<NamespacedKey> continer_data = player_container.getKeys();
-    for (NamespacedKey k : continer_data) {
-      if (k.equals(key)) {
-        // System.out.print("found the key, no book for you\n");
-        // magic.getPlugin().getComponentLogger().debug("found the key, no book for
-        // you\n");
-        magic.getPlugin().getComponentLogger().info(Component.text("found the key, no book for you"));
-        return;
-      }
-    }
-    player_container.set(key, PersistentDataType.INTEGER, 1);
-    event.getPlayer().getInventory().addItem(Item_Manager.spawn_book);
+  // @EventHandler
+  // public void onPlayerJoin(PlayerJoinEvent event) {
+  //   NamespacedKey key = new NamespacedKey(magic.getPlugin(), "aquired_spawn_book");
+  //   Player player = event.getPlayer();
+  //   PersistentDataContainer player_container = player.getPersistentDataContainer();
+  //   Set<NamespacedKey> continer_data = player_container.getKeys();
+  //   for (NamespacedKey k : continer_data) {
+  //     if (k.equals(key)) {
+  //       // System.out.print("found the key, no book for you\n");
+  //       // magic.getPlugin().getComponentLogger().debug("found the key, no book for
+  //       // you\n");
+  //       magic.getPlugin().getComponentLogger().info(Component.text("found the key, no book for you"));
+  //       return;
+  //     }
+  //   }
+  //   player_container.set(key, PersistentDataType.INTEGER, 1);
+  //   event.getPlayer().getInventory().addItem(Item_Manager.spawn_book);
 
-  }
+  // }
 
   // NOTE: hitting enderman to gain magic mirror has been removed
   // @EventHandler
@@ -1427,4 +1445,23 @@ public class magic_mirror implements Listener {
     }
   }
 
+  @EventHandler
+  public void onPrepareItemCraft(PrepareItemCraftEvent event) {
+    // Get the crafting matrix
+    ItemStack[] matrix = event.getInventory().getMatrix();
+
+    // Check each item in the matrix
+    for (ItemStack item : matrix) {
+      if (item != null) {
+        ItemStack one_item = item;
+        one_item.setAmount(1);
+        if (one_item.equals(Item_Manager.coin)) {
+          // If the item with the certain data value is found, prevent crafting
+          event.getInventory().setResult(new ItemStack(Material.AIR));
+          break;
+        }
+      }
+
+    }
+  }
 }
