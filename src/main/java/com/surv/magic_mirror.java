@@ -149,9 +149,13 @@ public class magic_mirror implements Listener {
   public class UsedWarp {
     Player player;
     String warp_name;
-    //nvm should not do this here?? because the the tp sound also needs to play for when using the MM. so i makes not sense to have the "logic" in seperate places.
-    // boolean at_destinatoin; //TODO: once the player's location changes to the destination (at which point play the tp sound)
-    boolean off_lodestone; //TODO: once at_destination is true and the player steps off the their new location (at which point them menu can be prompt again)
+    // nvm should not do this here?? because the the tp sound also needs to play for
+    // when using the MM. so i makes not sense to have the "logic" in seperate
+    // places.
+    // boolean at_destinatoin; //TODO: once the player's location changes to the
+    // destination (at which point play the tp sound)
+    boolean off_lodestone; // TODO: once at_destination is true and the player steps off the their new
+                           // location (at which point them menu can be prompt again)
   }
 
   // TODO: implement this timmer thing
@@ -205,7 +209,7 @@ public class magic_mirror implements Listener {
   }
 
   public void addPlayerWarp(Location location, String player) {
-    // TODO(done): check if player is in the list
+    // TODO(done): check if player is in the list (what list?)
     // TODO: check if the player already has this warp spot
     GlobalWarps warp_to_add = new GlobalWarps();
     warp_to_add.location = new Vector3();
@@ -226,8 +230,8 @@ public class magic_mirror implements Listener {
     for (GlobalWarps w : global_warps) {
       if (w.location.toString().equals(warp_to_add.location.toString())) {
         if (w.dimension_name.equals(warp_to_add.dimension_name)) {
-          // System.out.println("found this location");
-          // yes we have a warp spot here
+
+          // check if player is in warp add them
           if (found_player == null) {
             // System.out.println("did not find the player, creating new list..");
             PlayerWarps new_player_warp = new PlayerWarps();
@@ -386,10 +390,11 @@ public class magic_mirror implements Listener {
             // System.out.println("yes this is running");
             if (used_w.player.getLocation().subtract(0, 1, 0).getBlock().getType().equals(Material.LODESTONE)) {
               // if (!used_w.player.getInventory().getItemInMainHand().isEmpty()) {
-              //   Audience audience = Audience.audience(used_w.player);
-              //   audience.sendActionBar(() -> Component.text("empty your hand").color(NamedTextColor.AQUA));
-              //   betterMenu.closeMenu(used_w.player);
-              //   return;
+              // Audience audience = Audience.audience(used_w.player);
+              // audience.sendActionBar(() -> Component.text("empty your
+              // hand").color(NamedTextColor.AQUA));
+              // betterMenu.closeMenu(used_w.player);
+              // return;
               // }
               on_warp = true;
               // for each player's warp compare to global warps, remove if needed, rename if
@@ -414,14 +419,14 @@ public class magic_mirror implements Listener {
                       // pw.known_warps.remove(w);
                     } else {
                       if (w.name == used_w.warp_name) {
-                        
+
                       } else {
                         if (w.name != null) {
                           prompt_list.add(w.name);
                         } else {
                           prompt_list.add(w.location.toString());
 
-                        }                      
+                        }
                       }
                     }
                   }
@@ -1000,6 +1005,27 @@ public class magic_mirror implements Listener {
                 GlobalWarps warp = isThisAWarpLocation(ev.getClickedBlock().getLocation());
                 if (warp != null) {
                   Location location = player.getLocation();
+                  for (PlayerWarps pw : player_warps) {
+                    if (pw.player_name.equals(player.getName())) {
+                      System.out.println("yes this is the same player");
+                      for (GlobalWarps pWarp : pw.known_warps) {
+                        System.out.println("yes we have warps");
+                        if (pWarp.name.equals(warp.name)) {
+                          System.out.println("yes same name");
+                          if (pWarp.dimension_name.equals(warp.dimension_name)) {
+                          System.out.println("yes same dimension");
+                            pw.known_warps.remove(pWarp);
+                            Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
+                                Sound.ENTITY_VILLAGER_WORK_CARTOGRAPHER, SoundCategory.BLOCKS, 1f, 1.5f);
+                            audience.sendActionBar(
+                                () -> Component.text(String.format("removed [%s] from known locations", pWarp.name)));
+                            return;                           
+                          }
+                        }
+                      }
+                      break;
+                    }
+                  }
                   Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
                       Sound.ENTITY_VILLAGER_WORK_CARTOGRAPHER, SoundCategory.BLOCKS, 1f, 1.5f);
                   // TODO: extent this message to also get the warp's name
@@ -1247,7 +1273,7 @@ public class magic_mirror implements Listener {
     }
     // prevent the player from breaking shit
     if (betterMenu.hasMenuOpen(player) > -1) {
-        ev.setCancelled(true);
+      ev.setCancelled(true);
     }
   }
 
@@ -1276,7 +1302,7 @@ public class magic_mirror implements Listener {
     }
     // prevent the player from breaking shit
     if (betterMenu.hasMenuOpen(event.getPlayer()) > -1) {
-        event.setCancelled(true);
+      event.setCancelled(true);
     }
   }
 
@@ -1294,15 +1320,15 @@ public class magic_mirror implements Listener {
   // }
   // @EventHandler
   // public void onPlayerAttack(PrePlayerAttackEntityEvent event) {
-  //   // prevent the player from breaking shit
-  //   for (UsedWarp usedWarp : just_used_lode_warp) {
-  //     if (usedWarp.player.getName() == event.getPlayer().getName()) {
-  //       event.setCancelled(true);
-  //     }
-  //   }
+  // // prevent the player from breaking shit
+  // for (UsedWarp usedWarp : just_used_lode_warp) {
+  // if (usedWarp.player.getName() == event.getPlayer().getName()) {
+  // event.setCancelled(true);
+  // }
+  // }
   // }
 
-  //NOTE: this should not be part of this plugin
+  // NOTE: this should not be part of this plugin
   // Breaks the player's elytra if hit by the dragon
   @EventHandler
   public void onPlayerHit(EntityDamageByEntityEvent event) {
@@ -1327,21 +1353,24 @@ public class magic_mirror implements Listener {
 
   // @EventHandler
   // public void onPlayerJoin(PlayerJoinEvent event) {
-  //   NamespacedKey key = new NamespacedKey(magic.getPlugin(), "aquired_spawn_book");
-  //   Player player = event.getPlayer();
-  //   PersistentDataContainer player_container = player.getPersistentDataContainer();
-  //   Set<NamespacedKey> continer_data = player_container.getKeys();
-  //   for (NamespacedKey k : continer_data) {
-  //     if (k.equals(key)) {
-  //       // System.out.print("found the key, no book for you\n");
-  //       // magic.getPlugin().getComponentLogger().debug("found the key, no book for
-  //       // you\n");
-  //       magic.getPlugin().getComponentLogger().info(Component.text("found the key, no book for you"));
-  //       return;
-  //     }
-  //   }
-  //   player_container.set(key, PersistentDataType.INTEGER, 1);
-  //   event.getPlayer().getInventory().addItem(Item_Manager.spawn_book);
+  // NamespacedKey key = new NamespacedKey(magic.getPlugin(),
+  // "aquired_spawn_book");
+  // Player player = event.getPlayer();
+  // PersistentDataContainer player_container =
+  // player.getPersistentDataContainer();
+  // Set<NamespacedKey> continer_data = player_container.getKeys();
+  // for (NamespacedKey k : continer_data) {
+  // if (k.equals(key)) {
+  // // System.out.print("found the key, no book for you\n");
+  // // magic.getPlugin().getComponentLogger().debug("found the key, no book for
+  // // you\n");
+  // magic.getPlugin().getComponentLogger().info(Component.text("found the key, no
+  // book for you"));
+  // return;
+  // }
+  // }
+  // player_container.set(key, PersistentDataType.INTEGER, 1);
+  // event.getPlayer().getInventory().addItem(Item_Manager.spawn_book);
 
   // }
 
