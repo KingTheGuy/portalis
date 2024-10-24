@@ -41,6 +41,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
+import org.bukkit.event.hanging.HangingBreakEvent.RemoveCause;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -81,6 +82,8 @@ import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
+import java.rmi.Remote;
+
 // import com.moandjiezana.toml.Toml;
 // import com.moandjiezana.toml.TomlWriter;
 // import com.surv.menu;
@@ -149,6 +152,7 @@ public class magic_mirror implements Listener {
   public class UsedWarp {
     Player player;
     String warp_name;
+    Location loc;
     // nvm should not do this here?? because the the tp sound also needs to play for
     // when using the MM. so i makes not sense to have the "logic" in seperate
     // places.
@@ -208,6 +212,24 @@ public class magic_mirror implements Listener {
     saveGlobalWarpsToFile(global_warps_file);
   }
 
+  List<UsedWarp> just_warped = new ArrayList<>();
+  public void playerLocationChanged() {
+    List<UsedWarp> to_remove = new ArrayList<>();
+    for (UsedWarp used_warp: just_warped) {
+      if (!used_warp.loc.equals(used_warp.player.getLocation())) {
+        // System.out.println(String.format("was at %s, played sound at %s",used_warp.loc,used_warp.player.getLocation()));
+        teleportEffectSound(used_warp.player, used_warp.player.getLocation());
+
+        // just_warped.remove(used_warp);       
+        to_remove.add(used_warp);
+      }
+    }
+    for (UsedWarp remove_this: to_remove) {
+      just_warped.remove(remove_this);
+    }
+    // System.out.println(String.format("just_warped size: %s",just_warped.size()));
+  }
+  
   public void addPlayerWarp(Location location, String player) {
     // TODO(done): check if player is in the list (what list?)
     // TODO: check if the player already has this warp spot
@@ -378,6 +400,7 @@ public class magic_mirror implements Listener {
     if (global_warps.size() > 0) {
       if (event.getTickNumber() % 10 == 1) {
         ToBeRemoved();
+        playerLocationChanged();
       }
       if (event.getTickNumber() % 10 == 1) {
         for (GlobalWarps w : global_warps) {
@@ -843,9 +866,25 @@ public class magic_mirror implements Listener {
   }
 
   public void teleportEffectSound(Player player, Location location) {
+    boolean in_just_warped = false;
+    for (UsedWarp p: just_warped) {
+      if (p.player.getName().equals(player.getName())) {
+        in_just_warped = true;       
+        break;
+      }
+    }
+    if (in_just_warped == false) {
+      UsedWarp new_warping_player = new UsedWarp();
+      new_warping_player.player = player;
+      new_warping_player.loc = location;
+      just_warped.add(new_warping_player);
+    }
+    //play this for everyone
     Bukkit.getWorld(location.getWorld().getUID()).playSound(location, Sound.ENTITY_SHULKER_TELEPORT,
         SoundCategory.BLOCKS, 1f, 1f);
+    //play this just for the player
     player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+
     // Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
     // Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
     // Bukkit.getWorld(location.getWorld().getUID());
@@ -1007,13 +1046,13 @@ public class magic_mirror implements Listener {
                   Location location = player.getLocation();
                   for (PlayerWarps pw : player_warps) {
                     if (pw.player_name.equals(player.getName())) {
-                      System.out.println("yes this is the same player");
+                      // System.out.println("yes this is the same player");
                       for (GlobalWarps pWarp : pw.known_warps) {
-                        System.out.println("yes we have warps");
+                        // System.out.println("yes we have warps");
                         if (pWarp.name.equals(warp.name)) {
-                          System.out.println("yes same name");
+                          // System.out.println("yes same name");
                           if (pWarp.dimension_name.equals(warp.dimension_name)) {
-                          System.out.println("yes same dimension");
+                          // System.out.println("yes same dimension");
                             pw.known_warps.remove(pWarp);
                             Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
                                 Sound.ENTITY_VILLAGER_WORK_CARTOGRAPHER, SoundCategory.BLOCKS, 1f, 1.5f);
@@ -1100,7 +1139,7 @@ public class magic_mirror implements Listener {
                 betterMenu.closeMenu(player);
                 // System.out.println("\n\n\tYES BOOK IS BEING USED\n\n");
                 useBook(player);
-                teleportEffectSound(player, player.getBedLocation());
+                // teleportEffectSound(player, player.getBedLocation());
               }
               betterMenu.closeMenu(player);
               return;
@@ -1109,7 +1148,7 @@ public class magic_mirror implements Listener {
               player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
               betterMenu.closeMenu(player);
               useBook(player);
-              teleportEffectSound(player, Bukkit.getWorld("world").getSpawnLocation());
+              // teleportEffectSound(player, Bukkit.getWorld("world").getSpawnLocation());
               betterMenu.closeMenu(player);
               return;
             case "LAST DEATH":
@@ -1130,7 +1169,7 @@ public class magic_mirror implements Listener {
                 player.teleportAsync(deaths.get(death_index).loc);
                 betterMenu.closeMenu(player);
                 useBook(player);
-                teleportEffectSound(player, deaths.get(death_index).loc);
+                // teleportEffectSound(player, deaths.get(death_index).loc);
               }
               return;
             case "WARPS":
@@ -1225,7 +1264,7 @@ public class magic_mirror implements Listener {
               player.teleport(wait_player);
               betterMenu.closeMenu(player);
               betterMenu.closeMenu(wait_player);
-              teleportEffectSound(player, wait_player.getLocation());
+              // teleportEffectSound(player, wait_player.getLocation());
               return;
             }
           }
@@ -1261,7 +1300,7 @@ public class magic_mirror implements Listener {
                   teleportEffectSound(player, player.getLocation());
                   betterMenu.closeMenu(player);
                   useBook(player);
-                  teleportEffectSound(player, teleport_location);
+                  // teleportEffectSound(player, teleport_location);
                   return;
                 }
               }

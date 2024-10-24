@@ -158,7 +158,7 @@ public class BetterMenu {
 				last_yaw_value = yaw;
 			}
 			selection = getAll_context().context.get(selected);
-			System.out.printf("selection is: %s\n", selection);
+			// System.out.printf("selection is: %s\n", selection);
 			// NOTE: this next line should not be hard coded here
 			if (selection != selection_last) {
 				selection_last = getAll_context().context.get(selected);
