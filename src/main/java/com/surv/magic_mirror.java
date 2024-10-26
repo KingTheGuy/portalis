@@ -393,7 +393,7 @@ public class magic_mirror implements Listener {
     }
   }
 
-  List<GlobalWarps> warp_remove_list = new ArrayList<>();
+  static List<GlobalWarps> warp_remove_list = new ArrayList<>();
 
   @EventHandler
   public void tick(ServerTickStartEvent event) {
@@ -938,6 +938,7 @@ public class magic_mirror implements Listener {
             player.getInventory().removeItem(new ItemStack(Material.GLASS_BOTTLE));
             player.getInventory().addItem(new ItemStack(Material.EXPERIENCE_BOTTLE));
             player.playSound(player.getLocation(), Sound.BLOCK_BEEHIVE_DRIP, 1f, 1f);
+            player.playSound(player.getLocation(), Sound.ITEM_BOTTLE_FILL_DRAGONBREATH, 1f, 1f);
           } else {
             audience.sendActionBar(() -> Component.text(ChatColor.RED + "Need 10xp levels"));
             player.playSound(player.getLocation(), Sound.BLOCK_GRINDSTONE_USE, 1f, 1f);
@@ -950,7 +951,9 @@ public class magic_mirror implements Listener {
           player.setLevel(xp + 10);
           player.getInventory().addItem(new ItemStack(Material.GLASS_BOTTLE));
           player.getInventory().removeItem(new ItemStack(Material.EXPERIENCE_BOTTLE));
-          player.playSound(player.getLocation(), Sound.AMBIENT_UNDERWATER_EXIT, 0.5f, 1f);
+          // player.playSound(player.getLocation(), Sound.AMBIENT_UNDERWATER_EXIT, 0.5f, 1f);
+          player.playSound(player.getLocation(), Sound.ITEM_BOTTLE_EMPTY, 1f, 1f);
+
           player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1f);
           ev.setCancelled(true);
 
@@ -1130,16 +1133,16 @@ public class magic_mirror implements Listener {
         case confirm_prompt:
           switch (p_menu.all_context.get(0).answer.name) {
             case "BED":
-              if (player.getBedLocation() == null) {
+              if (player.getBedSpawnLocation() == null) {
                 audience.sendActionBar(() -> Component.text("Where is my bed?").color(NamedTextColor.RED));
                 player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
               } else {
                 teleportEffectSound(player, player.getLocation());
-                player.teleportAsync(player.getBedLocation());
+                player.teleportAsync(player.getBedSpawnLocation());
                 betterMenu.closeMenu(player);
                 // System.out.println("\n\n\tYES BOOK IS BEING USED\n\n");
                 useBook(player);
-                // teleportEffectSound(player, player.getBedLocation());
+                // teleportEffectSound(player, player.getBedSpawnLocation());
               }
               betterMenu.closeMenu(player);
               return;
@@ -1521,7 +1524,7 @@ public class magic_mirror implements Listener {
     // Check each item in the matrix
     for (ItemStack item : matrix) {
       if (item != null) {
-        ItemStack one_item = item;
+        ItemStack one_item = item.clone();
         one_item.setAmount(1);
         if (one_item.equals(Item_Manager.coin)) {
           // If the item with the certain data value is found, prevent crafting

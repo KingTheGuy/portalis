@@ -33,6 +33,7 @@ import com.surv.magic;
 
 import io.papermc.paper.potion.PotionMix;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 public class Item_Manager {
 
@@ -64,9 +65,9 @@ public class Item_Manager {
 	private static void createCoin() {
 		ItemStack item = new ItemStack(Material.GOLD_NUGGET, 1);
 		ItemMeta meta = item.getItemMeta();
-		meta.displayName(Component.text("Coin"));
+		meta.displayName(Component.text("Coin").color(NamedTextColor.GOLD));
 		List<Component> lore = new ArrayList<>();
-		lore.add(Component.text(String.format("for trading")));
+		lore.add(Component.text(String.format("for trading")).color(NamedTextColor.YELLOW));
 		meta.lore(lore);
 		meta.addEnchant(Enchantment.LUCK, 1, false);
 		meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
