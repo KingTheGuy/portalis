@@ -360,7 +360,7 @@ public class magic_mirror implements Listener {
               for (UsedWarp used_w : just_used_lode_warp) {
                 if (used_w.player == (Player) entity) {
                   found = true;
-                  break;
+                  continue;
                 }
               }
               if (found == false) {
@@ -401,17 +401,16 @@ public class magic_mirror implements Listener {
       if (event.getTickNumber() % 10 == 1) {
         ToBeRemoved();
         playerLocationChanged();
-      }
-      if (event.getTickNumber() % 10 == 1) {
         for (GlobalWarps w : global_warps) {
           w.PromptMenu();
         }
         // check if the player has a lode warp beneath them
         if (just_used_lode_warp.size() > 0) {
           boolean on_warp = false;
-          for (UsedWarp used_w : just_used_lode_warp) {
+          List<UsedWarp> remove_this = new ArrayList<>();
+          for (UsedWarp player_used_warp : just_used_lode_warp) {
             // System.out.println("yes this is running");
-            if (used_w.player.getLocation().subtract(0, 1, 0).getBlock().getType().equals(Material.LODESTONE)) {
+            if (player_used_warp.player.getLocation().subtract(0, 1, 0).getBlock().getType().equals(Material.LODESTONE)) {
               // if (!used_w.player.getInventory().getItemInMainHand().isEmpty()) {
               // Audience audience = Audience.audience(used_w.player);
               // audience.sendActionBar(() -> Component.text("empty your
@@ -422,56 +421,61 @@ public class magic_mirror implements Listener {
               on_warp = true;
               // for each player's warp compare to global warps, remove if needed, rename if
               // needed.
-              Integer index = betterMenu.hasMenuOpen(used_w.player);
+              Integer index = betterMenu.hasMenuOpen(player_used_warp.player);
               if (index > -1) {
-                return;
+                continue;
               }
               List<String> prompt_list = new ArrayList<>();
               List<GlobalWarps> to_remove = new ArrayList<>();
-              for (PlayerWarps pw : player_warps) {
+              for (PlayerWarps player_know_warp : player_warps) {
                 // System.out.printf("%s's warp size: %s\n", pw.player_name,
                 // pw.known_warps.size());
-                if (pw.player_name.equals(used_w.player.getName())) {
+                if (player_know_warp.player_name.equals(player_used_warp.player.getName())) {
                   // System.out.printf("%s has: %s warp locations", pw.player_name,
                   // pw.known_warps.size());
-                  for (GlobalWarps w : pw.known_warps) {
-                    if (findPlayerWarpInGlobalWarps(w) == null) {
-                      to_remove.add(w);
+                  for (GlobalWarps player_global_warps : player_know_warp.known_warps) {
+                    if (findPlayerWarpInGlobalWarps(player_global_warps) == null) {
+                      to_remove.add(player_global_warps);
                       // System.out.println("seems like this warp spot getting removed from the
                       // player's list.");
                       // pw.known_warps.remove(w);
                     } else {
-                      if (w.name == used_w.warp_name) {
+                      if (player_global_warps.name == player_used_warp.warp_name) {
 
                       } else {
-                        if (w.name != null) {
-                          prompt_list.add(w.name);
+                        if (player_global_warps.name != null) {
+                          prompt_list.add(player_global_warps.name);
                         } else {
-                          prompt_list.add(w.location.toString());
+                          prompt_list.add(player_global_warps.location.toString());
 
                         }
                       }
                     }
                   }
                   for (GlobalWarps w : to_remove) {
-                    pw.known_warps.remove(w);
+                    player_know_warp.known_warps.remove(w);
                   }
-                  break; // found the player
+                  continue; // found the player
                 }
               }
-              prompt_list.add("CLOSE");
-              betterMenu.sendPrompt(6, prompt_list, used_w.player, null);
+              // prompt_list.add("CLOSE");
+              betterMenu.sendPrompt(6, prompt_list, player_used_warp.player, null);
               saveGlobalWarpsToFile(global_warps_file);
               savePlayerWarpsToFile(player_warps_file);
-              return;
+              continue;
             }
-            if (on_warp == false) {
-              just_used_lode_warp.remove(used_w);
-              betterMenu.closeMenu(used_w.player);
-              // System.out.println("removed the player from the list");
-              on_warp = true;
-              break;
-            }
+            // if (on_warp == false) {
+            //   // just_used_lode_warp.remove(player_used_warp);
+              remove_this.add(player_used_warp);
+            //   betterMenu.closeMenu(player_used_warp.player);
+            //   // System.out.println("removed the player from the list");
+              // on_warp = true;
+            //   break;
+            // }
+          }
+          for (UsedWarp removeing_usedWarp : remove_this) {
+            betterMenu.closeMenu(removeing_usedWarp.player);
+            just_used_lode_warp.remove(removeing_usedWarp);
           }
         }
       }
@@ -580,6 +584,12 @@ public class magic_mirror implements Listener {
   public void onLeave(PlayerQuitEvent ev) {
     Player player = ev.getPlayer();
     betterMenu.closeMenu(player);
+    UsedWarp remove_this = new UsedWarp();
+    for (UsedWarp p : just_used_lode_warp)
+    if (just_used_lode_warp.contains(p)) {
+      remove_this = p;
+    }
+    just_used_lode_warp.remove(remove_this);
     // new_prompt.closeMenu(player);
   }
 
@@ -883,7 +893,8 @@ public class magic_mirror implements Listener {
     Bukkit.getWorld(location.getWorld().getUID()).playSound(location, Sound.ENTITY_SHULKER_TELEPORT,
         SoundCategory.BLOCKS, 1f, 1f);
     //play this just for the player
-    player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+    // player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+    player.playSound(player.getLocation(), Sound.ENTITY_ENDER_EYE_DEATH, 1f, 1f);
 
     // Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
     // Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);

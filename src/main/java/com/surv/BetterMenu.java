@@ -1,6 +1,7 @@
 package com.surv;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,6 +47,8 @@ public class BetterMenu {
 		if (index != -1) {
 			player.removePotionEffect(PotionEffectType.BLINDNESS);
 			Audience audience = Audience.audience(player);
+			// audience.showTitle(Title.title(Component.text(""),Component.text("")));
+			// title(audience, "");
 			audience.sendActionBar(
 					() -> Component.text(""));
 			player_with_menu.get(index).all_context = null;
@@ -76,6 +79,8 @@ public class BetterMenu {
 		float initial_yaw;
 		int last_yaw_value;
 		int last_selection_value = -1;
+		int tick = 0;
+		int tick_offset = 3;
 		ArrayList<PlayerContext> all_context = new ArrayList<>();
 		ItemStack using_item;
 
@@ -113,6 +118,7 @@ public class BetterMenu {
 			// }
 
 			// int pitch = (int) player.getLocation().getPitch();
+			Location location = player.getLocation();
 			int yaw = (int) player.getLocation().getYaw();
 
 			// yaw = yaw & 360;
@@ -146,17 +152,33 @@ public class BetterMenu {
 				// if (yaw % 40 >= 20) {
 				if (yaw > last_yaw_value) {
 					if (selected < getAll_context().context.size() - 1) {
-						selected++;
+						Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
+								Sound.ITEM_SPYGLASS_USE, 0.5f, 1f);
+						tick++;
 					}
 				} else if (yaw < last_yaw_value) {
 					if (selected > 0) {
-						selected--;
+						Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
+								Sound.ITEM_SPYGLASS_USE, 0.5f, 1f);
+						tick--;
 					}
+				}
+			}
+			if (tick >= (tick_offset * 2)) {
+				tick = 1;
+				if (selected < getAll_context().context.size() - 1) {
+					selected++;
+				}
+			} else if (tick <= 0) {
+				tick = tick_offset*2-1;
+				if (selected > 0) {
+					selected--;
 				}
 			}
 			if (last_yaw_value != yaw) {
 				last_yaw_value = yaw;
 			}
+			// System.out.println(String.format("menu_tick at %s", tick));
 			selection = getAll_context().context.get(selected);
 			// System.out.printf("selection is: %s\n", selection);
 			// NOTE: this next line should not be hard coded here
@@ -165,7 +187,6 @@ public class BetterMenu {
 			}
 			if (selected != last_selection_value) {
 				// System.out.println("the page flip sound should be playing");
-				Location location = player.getLocation();
 				Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
 						Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
 			}
@@ -238,6 +259,12 @@ public class BetterMenu {
 		Audience audience = Audience.audience(player);
 		audience.sendActionBar(
 				() -> Component.text(centerTextBar(has_menu_open)));
+		// title(audience, has_menu_open);
+		// audience.showTitle(Title.title(Component.text(""),Component.text(centerTextBar(has_menu_open))));
+	}
+
+	public void title(Audience audience,PlayerWithMenu msg) {	
+		audience.showTitle(Title.title(Component.text(""),Component.text(centerTextBar(msg)),Title.Times.times(Duration.ofSeconds(0), Duration.ofSeconds(1), Duration.ofSeconds(1))));
 	}
 
 	public void playerSelection(PlayerMoveEvent ev) {
@@ -255,6 +282,8 @@ public class BetterMenu {
 
 		audience.sendActionBar(
 				() -> Component.text(centerTextBar(has_menu_open)));
+		// audience.showTitle(Title.title(Component.text(""),Component.text(centerTextBar(has_menu_open)),Title.Times.times(Duration.ofSeconds(0), Duration.ofSeconds(0), Duration.ofSeconds(0))));
+		// title(audience, has_menu_open);
 
 		boolean hasBlindness = false;
 		for (PotionEffect effect : player.getActivePotionEffects()) {
@@ -275,7 +304,7 @@ public class BetterMenu {
 			// System.out.printf("last selection value: %s\n",
 			// has_menu_open.last_selection_value);
 		}
-		String bar_text = formatListToString(has_menu_open.getAll_context().context,
+		String bar_text = formatListToString(has_menu_open,has_menu_open.getAll_context().context,
 				has_menu_open.selection);
 		String word = has_menu_open.selection;
 		String blank_space = new String();
@@ -294,12 +323,28 @@ public class BetterMenu {
 		return text_bar;
 	}
 
-	public String formatListToString(List<String> list, String selection) {
+	public String formatListToString(PlayerWithMenu pWithMenu,List<String> list, String selection) {
 		String action_list = new String();
 		for (int x = 0; x < list.size(); x++) {
 			if (list.get(x) == selection) {
-				action_list += String.format(ChatColor.AQUA + "[ %s ]" + ChatColor.DARK_GRAY, selection);
-				// action_list += String.format("[ %s ]", selection);
+				//NOTE: or maybe just have the dots change color
+				// action_list += String.format(ChatColor.AQUA + "[ %s ]" + ChatColor.DARK_GRAY, selection);
+				if (pWithMenu.tick == 1) {
+					action_list += String.format(ChatColor.AQUA + "(([ %s ]...." + ChatColor.DARK_GRAY, selection);
+				} else if (pWithMenu.tick == 2) {
+					action_list += String.format(ChatColor.AQUA + "..([ %s ]...." + ChatColor.DARK_GRAY, selection);
+				} else if (pWithMenu.tick == 3) {
+					action_list += String.format(ChatColor.AQUA + "....[ %s ]...." + ChatColor.DARK_GRAY, selection);
+				} else if (pWithMenu.tick == 4) {
+					action_list += String.format(ChatColor.AQUA + "....[ %s ]).." + ChatColor.DARK_GRAY, selection);
+				} else if (pWithMenu.tick == 5) {
+					action_list += String.format(ChatColor.AQUA + "....[ %s ]))" + ChatColor.DARK_GRAY, selection);
+				} else {
+					action_list += String.format(ChatColor.AQUA + "[ %s ]" + ChatColor.DARK_GRAY, selection);
+				}
+
+				
+
 				continue;
 			}
 			if (x == 0) {
