@@ -2,6 +2,15 @@
 
 ## how to use Magic Mirror & lore
 
+Use this book to warp around.
+
+Warping with this book
+will consume a page..
+
+---
+
+### how it works
+
 _I'll fill this in at some point._
 
 ---
@@ -35,23 +44,65 @@ _in crafting table_
 
 _in crafting table_
 
-> top (X|X|X)
-> center (X|X|X)
-> bottom ( |M| )
+> (I|I|I) top
+> (I|I|I) center
+> (_|M|_) bottom
 
 - I [Infused paper](#infused-paper)
 - M [Magic Mirror](#magic-mirror)
 
 ---
 
-### how it works
+### warping to other book users
 
-_I'll fill this in at some point._
+to warp to other users you'll
+have to ask them select
+`wait_for` within the book's
+menu.
+
+while they wait you need to
+select `warp_to`. if all is
+done correctly they plyer you
+want to warp_to should appear
+as an option.
+
+warping to user will consume a
+page from the requesting user.
 
 ---
 
 ## how to use cauldron
 
 Simply place a `cauldron` on top of a lit `campfire`
+and toss in the ingredients.
+
+---
+
+### Custom warp locations
+
+#### Creating
+
+Placing down a lodestone and
+using a name_tag on it will
+create a warp at that spot for
+you to warp to whenever.
+
+#### Saving location
+
+if you happen to find an
+active lodestone and would
+like to save it for yourself
+you can use your book on it,
+saving its location.
+
+#### Using
+
+Stepping on any active
+lodestone will open a warp
+menu showing you all other
+locations that you have
+saved. Warping from lodestone
+to lodestone will cost you
+nothing.
 
 ---

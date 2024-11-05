@@ -10,6 +10,7 @@ import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
@@ -28,7 +29,7 @@ import net.md_5.bungee.api.ChatColor;
 
 //TODO: getPlayer should expect and integer, should change all uses to check if returning a -1
 
-public class BetterMenu {
+public class BetterMenu implements Listener {
 
 	ArrayList<PlayerWithMenu> player_with_menu = new ArrayList<>();
 	List<Player> wait_list = new ArrayList<>();
@@ -170,7 +171,7 @@ public class BetterMenu {
 					selected++;
 				}
 			} else if (tick <= 0) {
-				tick = tick_offset*2-1;
+				tick = tick_offset * 2 - 1;
 				if (selected > 0) {
 					selected--;
 				}
@@ -193,7 +194,8 @@ public class BetterMenu {
 			last_selection_value = selected;
 		}
 
-		public void playerChoose(PlayerInteractEvent ev) {
+		// NOTE(to self): this is not an actualy event
+		public void playerChooseSelection(PlayerInteractEvent ev) {
 			if (hasMenuOpen(player) > -1) {
 				ev.setCancelled(true); // since the menu us open lets prevent breaking shit
 			} else {
@@ -202,23 +204,7 @@ public class BetterMenu {
 				}
 			}
 
-			// if (ev.getPlayer().getInventory().getItemInMainHand() == null) {
-			// return;
-			// }
-			// if (!ev.getHand().equals(EquipmentSlot.HAND)) {
-			// return;
-			// }
-
 			Player player = ev.getPlayer();
-
-			// if (player.getInventory().getItemInMainHand().isEmpty()) {
-			// return;
-			// }
-			// if
-			// (!player.getInventory().getItemInMainHand().getType().equals(Item_Manager.magic_mirror_book.getType()))
-			// {
-			// return;
-			// }
 
 			for (PlayerWithMenu p : player_with_menu) {
 				if (!p.player.equals(player)) {
@@ -230,7 +216,10 @@ public class BetterMenu {
 				}
 				p.selection = selection;
 				p.getAll_context().answer.name = selection;
+				// System.out.println("should be showing some text now.");
 			}
+			// sendPrompt(0, List.of("scroll left and right"), player,
+			// Item_Manager.magic_mirror_book);
 		}
 	}
 
@@ -256,18 +245,16 @@ public class BetterMenu {
 
 		player.addPotionEffect(
 				new PotionEffect(PotionEffectType.BLINDNESS, 1200, 1).withAmbient(false).withParticles(false));
-		Audience audience = Audience.audience(player);
-		audience.sendActionBar(
-				() -> Component.text(centerTextBar(has_menu_open)));
+		// Audience audience = Audience.audience(player);
+		// audience.sendActionBar(
+		// 		() -> Component.text(centerTextBar(has_menu_open)));
+		sendTextToBar(player, has_menu_open,false);
+		// has_menu_open.prompt_selections();
 		// title(audience, has_menu_open);
 		// audience.showTitle(Title.title(Component.text(""),Component.text(centerTextBar(has_menu_open))));
 	}
 
-	public void title(Audience audience,PlayerWithMenu msg) {	
-		audience.showTitle(Title.title(Component.text(""),Component.text(centerTextBar(msg)),Title.Times.times(Duration.ofSeconds(0), Duration.ofSeconds(1), Duration.ofSeconds(1))));
-	}
-
-	public void playerSelection(PlayerMoveEvent ev) {
+	public void playerRefreshPrompt(PlayerMoveEvent ev) {
 		Player player = ev.getPlayer();
 
 		Integer index = hasMenuOpen(ev.getPlayer());
@@ -278,12 +265,11 @@ public class BetterMenu {
 
 		has_menu_open.prompt_selections();
 
-		Audience audience = Audience.audience(player);
+		// Audience audience = Audience.audience(player);
 
-		audience.sendActionBar(
-				() -> Component.text(centerTextBar(has_menu_open)));
-		// audience.showTitle(Title.title(Component.text(""),Component.text(centerTextBar(has_menu_open)),Title.Times.times(Duration.ofSeconds(0), Duration.ofSeconds(0), Duration.ofSeconds(0))));
-		// title(audience, has_menu_open);
+		// audience.sendActionBar(
+		// 		() -> Component.text(centerTextBar(has_menu_open)));
+		sendTextToBar(player, has_menu_open,false);
 
 		boolean hasBlindness = false;
 		for (PotionEffect effect : player.getActivePotionEffects()) {
@@ -296,68 +282,145 @@ public class BetterMenu {
 		}
 	}
 
+	public void sendTextToBar(Player player, PlayerWithMenu p_with_m, boolean as_title) {
+		Audience audience = Audience.audience(player);
+		if (as_title) {
+			audience.showTitle(Title.title(Component.text(""), Component.text(centerTextBar(p_with_m)),
+					Title.Times.times(Duration.ofSeconds(0), Duration.ofSeconds(1), Duration.ofSeconds(1))));
+			return;
+		}
+
+		audience.sendActionBar(
+				() -> Component.text(centerTextBar(p_with_m)));
+	}
+
 	public String centerTextBar(PlayerWithMenu has_menu_open) {
-		int bar_length = 60;
+		int bar_size = 55;
+		// int bar_size = 25;
+		String word = has_menu_open.selection;
+		int word_size = word.length();
+
+		String blank_space = new String();
+		for (int x = 0; x < bar_size; x++) {
+			blank_space += " ";
+		}
+
+		// String text_bar = formatListToString(has_menu_open,
+		// has_menu_open.getAll_context().context,
+		// has_menu_open.selection);
+		// String text_bar =
+		// String.format("%s",has_menu_open.getAll_context().context.toString());
+		String text_bar = String.join("  ", has_menu_open.getAll_context().context);
+		PlayerContext cnt = has_menu_open.getAll_context();
+		// String context = has_menu_open.getAll_context().context.get(cnt.size()-1);
+		String context = "MAIN";
+		int cnt_size = has_menu_open.all_context.size();
+		if (cnt_size > 1) {
+			context = has_menu_open.all_context.get(cnt_size - 2).answer.name;
+		}
+		// if (has_menu_open.all_context.get(has_menu_open.all_context.size() - 2) !=
+		// null) {
+		// }
 		if (has_menu_open.last_selection_value == -1) {
 			int size = has_menu_open.getAll_context().context.size();
 			has_menu_open.last_selection_value = Math.round(size / 2);
 			// System.out.printf("last selection value: %s\n",
 			// has_menu_open.last_selection_value);
 		}
-		String bar_text = formatListToString(has_menu_open,has_menu_open.getAll_context().context,
-				has_menu_open.selection);
-		String word = has_menu_open.selection;
-		String blank_space = new String();
-		for (int x = 0; x < (bar_length / 2); x++) {
-			blank_space += " ";
+
+		text_bar = String.format("%s%s%s", blank_space, text_bar, blank_space);
+		if (text_bar.length() <= 0) {
+			return String.format(ChatColor.DARK_GRAY + "< %s >", colorText(has_menu_open.tick, "Scroll LEFT & RIGHT"));
 		}
-		// FIXME: there are times when the array will have multiples of the same
-		// string.. and not propperly center.
-		// one fix would be to prefix each option with a number..
-		int word_index = bar_text.indexOf(word);
-		bar_text = String.format("%s%s%s", blank_space, bar_text, blank_space);
-		String final_text = bar_text.substring(word_index + (word.length() / 2),
-				word_index + (word.length() / 2) + bar_length);
+		int word_index = text_bar.indexOf(word);
+		if (word_index <= 0) {
+			return String.format(ChatColor.DARK_GRAY + "< %s >", colorText(has_menu_open.tick, "Scroll LEFT & RIGHT"));
+		}
 
-		String text_bar = String.format(ChatColor.DARK_GRAY + "< %s >", final_text);
-		return text_bar;
-	}
+		// String final_text = text_bar.substring(word_index + (word.length() / 2),
+		// word_index + (word.length() / 2) + bar_length);
 
-	public String formatListToString(PlayerWithMenu pWithMenu,List<String> list, String selection) {
-		String action_list = new String();
-		for (int x = 0; x < list.size(); x++) {
-			if (list.get(x) == selection) {
-				//NOTE: or maybe just have the dots change color
-				// action_list += String.format(ChatColor.AQUA + "[ %s ]" + ChatColor.DARK_GRAY, selection);
-				if (pWithMenu.tick == 1) {
-					action_list += String.format(ChatColor.AQUA + "(([ %s ]...." + ChatColor.DARK_GRAY, selection);
-				} else if (pWithMenu.tick == 2) {
-					action_list += String.format(ChatColor.AQUA + "..([ %s ]...." + ChatColor.DARK_GRAY, selection);
-				} else if (pWithMenu.tick == 3) {
-					action_list += String.format(ChatColor.AQUA + "....[ %s ]...." + ChatColor.DARK_GRAY, selection);
-				} else if (pWithMenu.tick == 4) {
-					action_list += String.format(ChatColor.AQUA + "....[ %s ]).." + ChatColor.DARK_GRAY, selection);
-				} else if (pWithMenu.tick == 5) {
-					action_list += String.format(ChatColor.AQUA + "....[ %s ]))" + ChatColor.DARK_GRAY, selection);
-				} else {
-					action_list += String.format(ChatColor.AQUA + "[ %s ]" + ChatColor.DARK_GRAY, selection);
-				}
+		String first = new String();
+		String last = new String();
 
-				
+		String[] bar_split = text_bar.split(word);
 
-				continue;
-			}
-			if (x == 0) {
-				action_list += String.format("%s ", list.get(x));
+		int start_index = bar_split[0].length() - bar_size / 2 - 1 + (word_size / 2);
+		for (int x = 0; x <= bar_size / 2 - (word_size / 2); x++) {
+			first = String.format("%s%s", first, text_bar.charAt(start_index));
+			start_index++;
+		}
+		int add_this = 0;
+		if (word_size % 2 == 0) {
+			add_this++;
+		}
+		start_index = word_index + word_size;
+		for (int x = 0; x <= bar_size / 2 - (word_size / 2) + add_this; x++) {
+			last = String.format("%s%s", last, text_bar.charAt(start_index));
+			start_index++;
+		}
 
-			} else if (x == list.size()) {
-				action_list += String.format(" %s", list.get(x));
-
+		if (has_menu_open.tick > has_menu_open.tick_offset) {
+			String extra = new String();
+			if (has_menu_open.tick == 4) {
+				extra = String.format("%s%s", extra, " ");
+				first = first.substring(1, first.length());
 			} else {
-				action_list += String.format(" %s ", list.get(x));
+				extra = String.format("%s%s", extra, "  ");
+				first = first.substring(2, first.length());
 			}
+			last = String.format("%s%s", last, extra);
 		}
-		// return String.format(ChatColor.GRAY + action_list);
-		return action_list;
+		if (has_menu_open.tick < has_menu_open.tick_offset) {
+			String extra = new String();
+			if (has_menu_open.tick == 2) {
+				extra = String.format("%s%s", extra, " ");
+				last = last.substring(0, last.length() - 1);
+			} else {
+				extra = String.format("%s%s", extra, "  ");
+				last = last.substring(0, last.length() - 2);
+			}
+			first = String.format("%s%s", extra, first);
+		}
+		// if (has_menu_open.tick < has_menu_open.tick_offset) {
+		// String extra = new String();
+		// for (int x = 0; x<has_menu_open.tick_offset*2;x++) {
+		// extra = String.format("%s%s",extra,"-");
+		// last = last.substring(0,last.length()-1);
+		// }
+		// first = String.format("%s%s",extra,first);
+		// }
+		boolean use_menu_name = false;
+		if (use_menu_name == true) {
+			return String.format(ChatColor.DARK_GRAY + "%s: < %s%s%s >", context, first, colorText(has_menu_open.tick, word),
+					last);
+			
+		}
+		return String.format(ChatColor.DARK_GRAY + "< %s%s%s >", first, colorText(has_menu_open.tick, word),
+					last);
 	}
+
+	public String colorText(int tick, String text) {
+		if (tick == 1) {
+			return String.format(ChatColor.AQUA + "(([ %s ]. ." +
+					ChatColor.DARK_GRAY, text);
+		} else if (tick == 2) {
+			return String.format(ChatColor.AQUA + ". ([ %s ]. ." +
+					ChatColor.DARK_GRAY, text);
+		} else if (tick == 3) {
+			return String.format(ChatColor.AQUA + ". .[ %s ]. ." +
+					ChatColor.DARK_GRAY, text);
+		} else if (tick == 4) {
+			return String.format(ChatColor.AQUA + ". .[ %s ]) ." +
+					ChatColor.DARK_GRAY, text);
+		} else if (tick == 5) {
+			return String.format(ChatColor.AQUA + ". .[ %s ]))" +
+					ChatColor.DARK_GRAY, text);
+		}
+		// return String.format(ChatColor.AQUA + "[ %s ]" +
+		// 		ChatColor.DARK_GRAY, text);
+
+		return String.format(ChatColor.AQUA + "%s" + ChatColor.DARK_GRAY, text);
+	}
+
 }

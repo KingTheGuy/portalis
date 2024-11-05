@@ -23,6 +23,7 @@ public class magic extends JavaPlugin {
     Item_Manager.init();
     // magic_sccheduler = getServer().getScheduler();
     getServer().getPluginManager().registerEvents(new magic_mirror(), this);
+    // getServer().getPluginManager().registerEvents(new BetterMenu(), this);
     getServer().getPluginManager().registerEvents(new CauldronBrewing(), this);
     getServer().getConsoleSender().sendMessage("Magic Mirror loaded");
   }

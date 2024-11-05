@@ -16,7 +16,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -60,8 +59,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Merchant;
 import org.bukkit.inventory.MerchantInventory;
 import org.bukkit.inventory.MerchantRecipe;
+import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.BookMeta.BookMetaBuilder;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
@@ -97,6 +98,8 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.md_5.bungee.api.ChatColor;
 
 //DOING//
 //TODO: particle minecraft:soul after at teleport
@@ -213,23 +216,25 @@ public class magic_mirror implements Listener {
   }
 
   List<UsedWarp> just_warped = new ArrayList<>();
+
   public void playerLocationChanged() {
     List<UsedWarp> to_remove = new ArrayList<>();
-    for (UsedWarp used_warp: just_warped) {
+    for (UsedWarp used_warp : just_warped) {
       if (!used_warp.loc.equals(used_warp.player.getLocation())) {
-        // System.out.println(String.format("was at %s, played sound at %s",used_warp.loc,used_warp.player.getLocation()));
+        // System.out.println(String.format("was at %s, played sound at
+        // %s",used_warp.loc,used_warp.player.getLocation()));
         teleportEffectSound(used_warp.player, used_warp.player.getLocation());
 
-        // just_warped.remove(used_warp);       
+        // just_warped.remove(used_warp);
         to_remove.add(used_warp);
       }
     }
-    for (UsedWarp remove_this: to_remove) {
+    for (UsedWarp remove_this : to_remove) {
       just_warped.remove(remove_this);
     }
     // System.out.println(String.format("just_warped size: %s",just_warped.size()));
   }
-  
+
   public void addPlayerWarp(Location location, String player) {
     // TODO(done): check if player is in the list (what list?)
     // TODO: check if the player already has this warp spot
@@ -410,7 +415,8 @@ public class magic_mirror implements Listener {
           List<UsedWarp> remove_this = new ArrayList<>();
           for (UsedWarp player_used_warp : just_used_lode_warp) {
             // System.out.println("yes this is running");
-            if (player_used_warp.player.getLocation().subtract(0, 1, 0).getBlock().getType().equals(Material.LODESTONE)) {
+            if (player_used_warp.player.getLocation().subtract(0, 1, 0).getBlock().getType()
+                .equals(Material.LODESTONE)) {
               // if (!used_w.player.getInventory().getItemInMainHand().isEmpty()) {
               // Audience audience = Audience.audience(used_w.player);
               // audience.sendActionBar(() -> Component.text("empty your
@@ -465,12 +471,12 @@ public class magic_mirror implements Listener {
               continue;
             }
             // if (on_warp == false) {
-            //   // just_used_lode_warp.remove(player_used_warp);
-              remove_this.add(player_used_warp);
-            //   betterMenu.closeMenu(player_used_warp.player);
-            //   // System.out.println("removed the player from the list");
-              // on_warp = true;
-            //   break;
+            // // just_used_lode_warp.remove(player_used_warp);
+            remove_this.add(player_used_warp);
+            // betterMenu.closeMenu(player_used_warp.player);
+            // // System.out.println("removed the player from the list");
+            // on_warp = true;
+            // break;
             // }
           }
           for (UsedWarp removeing_usedWarp : remove_this) {
@@ -586,9 +592,9 @@ public class magic_mirror implements Listener {
     betterMenu.closeMenu(player);
     UsedWarp remove_this = new UsedWarp();
     for (UsedWarp p : just_used_lode_warp)
-    if (just_used_lode_warp.contains(p)) {
-      remove_this = p;
-    }
+      if (just_used_lode_warp.contains(p)) {
+        remove_this = p;
+      }
     just_used_lode_warp.remove(remove_this);
     // new_prompt.closeMenu(player);
   }
@@ -792,7 +798,7 @@ public class magic_mirror implements Listener {
 
   @EventHandler
   public void onPlayerMove(PlayerMoveEvent ev) {
-    betterMenu.playerSelection(ev);
+    betterMenu.playerRefreshPrompt(ev);
   }
 
   // public void saveToFile() {
@@ -877,9 +883,9 @@ public class magic_mirror implements Listener {
 
   public void teleportEffectSound(Player player, Location location) {
     boolean in_just_warped = false;
-    for (UsedWarp p: just_warped) {
+    for (UsedWarp p : just_warped) {
       if (p.player.getName().equals(player.getName())) {
-        in_just_warped = true;       
+        in_just_warped = true;
         break;
       }
     }
@@ -889,10 +895,10 @@ public class magic_mirror implements Listener {
       new_warping_player.loc = location;
       just_warped.add(new_warping_player);
     }
-    //play this for everyone
+    // play this for everyone
     Bukkit.getWorld(location.getWorld().getUID()).playSound(location, Sound.ENTITY_SHULKER_TELEPORT,
         SoundCategory.BLOCKS, 1f, 1f);
-    //play this just for the player
+    // play this just for the player
     // player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
     player.playSound(player.getLocation(), Sound.ENTITY_ENDER_EYE_DEATH, 1f, 1f);
 
@@ -937,6 +943,11 @@ public class magic_mirror implements Listener {
     Action action = ev.getAction();
     Audience audience = Audience.audience(player);
 
+    // if (ev.getClickedBlock().getType().equals(Material.LODESTONE)) {
+    //   ItemStack book = new ItemStack(Material.WRITABLE_BOOK);
+    //   player.openBook(book);
+    // }
+
     // TODO: min level of xp needed to store is 10 levels.. should also give back 10
     // levels
     { // Bottled xp
@@ -947,7 +958,8 @@ public class magic_mirror implements Listener {
             player.setLevel(xp - 10);
             // item.setType(Material.EXPERIENCE_BOTTLE);
             player.getInventory().removeItem(new ItemStack(Material.GLASS_BOTTLE));
-            player.getInventory().addItem(new ItemStack(Material.EXPERIENCE_BOTTLE));
+
+            player.getWorld().dropItem(player.getLocation(), new ItemStack(Material.EXPERIENCE_BOTTLE));
             player.playSound(player.getLocation(), Sound.BLOCK_BEEHIVE_DRIP, 1f, 1f);
             player.playSound(player.getLocation(), Sound.ITEM_BOTTLE_FILL_DRAGONBREATH, 1f, 1f);
           } else {
@@ -960,9 +972,11 @@ public class magic_mirror implements Listener {
         if (player.isSneaking()) {
           int xp = player.getLevel();
           player.setLevel(xp + 10);
-          player.getInventory().addItem(new ItemStack(Material.GLASS_BOTTLE));
+          // player.getInventory().addItem(new ItemStack(Material.GLASS_BOTTLE));
+          player.getWorld().dropItem(player.getLocation(), new ItemStack(Material.GLASS_BOTTLE));
           player.getInventory().removeItem(new ItemStack(Material.EXPERIENCE_BOTTLE));
-          // player.playSound(player.getLocation(), Sound.AMBIENT_UNDERWATER_EXIT, 0.5f, 1f);
+          // player.playSound(player.getLocation(), Sound.AMBIENT_UNDERWATER_EXIT, 0.5f,
+          // 1f);
           player.playSound(player.getLocation(), Sound.ITEM_BOTTLE_EMPTY, 1f, 1f);
 
           player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1f);
@@ -1028,23 +1042,16 @@ public class magic_mirror implements Listener {
           }
           return;
         } else {
-          ItemStack hand_item = new ItemStack(ev.getItem());
-          ItemStack magic_mirror_no_data = new ItemStack(Item_Manager.magic_mirror_book);
-          ItemMeta magic_meta = magic_mirror_no_data.getItemMeta();
-
-          ItemStack c_hand_item = hand_item.clone();
-          c_hand_item.setItemMeta(magic_meta);
-          if (!c_hand_item.equals(magic_mirror_no_data)) {
-            return;
-          }
-          hand_item.setItemMeta(magic_meta);
-
-          // if (itemType.equals(Item_Manager.magic_mirror_book.getType())) {
+          // if (!item.getItemMeta().displayName().equals(Item_Manager.magic_mirror_book.getItemMeta().displayName())) {
+          //   return;
           // }
           NamespacedKey key = new NamespacedKey(magic.getPlugin(), "magic_mirror_use_data");
           ItemMeta meta = ev.getItem().getItemMeta();
           PersistentDataContainer container = meta.getPersistentDataContainer();
           Integer cur_value = container.get(key, PersistentDataType.INTEGER);
+          if (cur_value == null) {
+            return;
+          }
           if (cur_value != null) {
             ev.setCancelled(true); // prevent other iteractions
 
@@ -1066,13 +1073,13 @@ public class magic_mirror implements Listener {
                         if (pWarp.name.equals(warp.name)) {
                           // System.out.println("yes same name");
                           if (pWarp.dimension_name.equals(warp.dimension_name)) {
-                          // System.out.println("yes same dimension");
+                            // System.out.println("yes same dimension");
                             pw.known_warps.remove(pWarp);
                             Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
                                 Sound.ENTITY_VILLAGER_WORK_CARTOGRAPHER, SoundCategory.BLOCKS, 1f, 1.5f);
                             audience.sendActionBar(
                                 () -> Component.text(String.format("removed [%s] from known locations", pWarp.name)));
-                            return;                           
+                            return;
                           }
                         }
                       }
@@ -1102,13 +1109,13 @@ public class magic_mirror implements Listener {
     // 1f, 1f);
     Integer index = betterMenu.hasMenuOpen(player);
     if (index < 0) {
-      List<String> THIS_LIST = List.of("BED", "SPAWN", "WARPS", "LAST DEATH", cancel_prompt);
+      List<String> THIS_LIST = List.of("BED", "SPAWN", "WARPS", "LAST DEATH", "INFO", cancel_prompt);
       // List<String> THIS_LIST = List.of("JUST", "SOME", "NEW", "LIST");
       betterMenu.sendPrompt(1, THIS_LIST, player, Item_Manager.magic_mirror_book);
       index = betterMenu.hasMenuOpen(player);
     }
     PlayerWithMenu p_menu = betterMenu.player_with_menu.get(index);
-    p_menu.playerChoose(ev);
+    p_menu.playerChooseSelection(ev);
     if (p_menu.all_context.size() <= 1) {
       // System.out.println("\n\n\tlets make sure this is still running\n");
       switch (p_menu.getAll_context().answer.name) {
@@ -1133,6 +1140,102 @@ public class magic_mirror implements Listener {
             return;
           }
           betterMenu.sendPrompt(2, List.of(confirm_prompt, cancel_prompt), player, Item_Manager.magic_mirror_book);
+          return;
+        case "INFO":
+          betterMenu.closeMenu(player);
+          // BookMeta bookMeta = new BookMeta();
+          // ItemStack book_item = new ItemStack(Material.WRITTEN_BOOK);
+          // ItemMeta meta = book_item.getItemMeta();
+          // BookMeta book_Meta = (BookMeta) meta;
+          ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
+
+          // Get the book's meta data
+          BookMeta bookMeta = (BookMeta) book.getItemMeta();
+
+          // Set the book's title and author
+          bookMeta.setTitle("-----");
+          bookMeta.setAuthor("OLRAK");
+
+
+          // Add some pages to the book
+          bookMeta.addPages(
+            Component.text("Table of Contents:\n\n").decorate(TextDecoration.BOLD)
+              .append(Component.text(
+                """
+                [pg. 3] Strange book
+                [pg. 4] Infused-paper
+                [pg. 5] Refilling the book
+                [pg. 6] use cauldron
+                [pg. 7] Warping to other book users
+                [pg. 9] Custom warp locations
+                """).decorate(TextDecoration.ITALIC).decoration(TextDecoration.BOLD,false))
+            ,
+            Component.text("")
+              .append(Component.text("Stange\n\n").decorate(TextDecoration.BOLD))
+              .append(Component.text("Use this book to warp around.\n\n"))
+              .append(Component.text("Warping with this book\n"))
+              .append(Component.text("will consume a page..\n"))
+            ,
+            Component.text("")
+              .append(Component.text("infused-paper:\n\n").decorate(TextDecoration.BOLD))
+              .append(Component.text("ingredients tossed into a cauldron\n\n").decorate(TextDecoration.ITALIC))
+              .append(Component.text("- 1x ender pearl\n"))
+              .append(Component.text("- 1x spider eye\n"))
+              .append(Component.text("- 1x dandelion\n\n"))
+              .append(Component.text("lastly toss in:\n\n"))
+              .append(Component.text("- 6x paper\n"))
+            ,
+            Component.text("")
+              .append(Component.text("refilling the magic mirror:\n\n").decorate(TextDecoration.BOLD))
+              .append(Component.text("in crafting table\n\n").decorate(TextDecoration.ITALIC))
+              .append(Component.text("(I|I|I) top   \n"))
+              .append(Component.text("(I|I|I) center\n"))
+              .append(Component.text("(_|M|_) bottom\n\n"))
+              .append(Component.text("- (I) Infused paper\n"))
+              .append(Component.text("- (M) Magic Mirror\n"))
+            ,
+            Component.text("")
+              .append(Component.text("How to use cauldron:\n").decorate(TextDecoration.BOLD))
+              .append(Component.text(
+                """
+                Simply place a `cauldron` on
+                 top of a lit `campfire`
+                and toss in the ingredients.
+                """).decoration(TextDecoration.BOLD,false))
+            ,
+            Component.text("Warping to other book users\n\n").decorate(TextDecoration.BOLD)
+              .append(Component.text(
+                """
+                To warp to other users you'll have to ask them select `wait_for` within the book's menu.
+                """).decoration(TextDecoration.BOLD,false))
+            ,
+            Component.text("Custom warp locations\n\n").decorate(TextDecoration.BOLD)
+              .append(Component.text("Creating\n\n").decorate(TextDecoration.BOLD))
+              .append(Component.text(
+                """
+                Placing down a lodestone and using a name_tag on it will create a warp at that spot for you to warp to whenever.
+                """).decoration(TextDecoration.BOLD,false))
+            ,
+            Component.text("Saving location\n\n").decorate(TextDecoration.BOLD)
+              .append(Component.text(
+                """
+                If you happen to find an active lodestone and would like to save it for yourself you can use your book on it, saving its location.
+                """).decoration(TextDecoration.BOLD,false))
+            ,
+            Component.text("Using\n\n").decorate(TextDecoration.BOLD)
+              .append(Component.text(
+                """
+                Stepping on any active lodestone will open a warp menu showing you all other locations that you have saved..                 
+                Warping from lodestone to lodestone will cost you nothing.
+                """).decoration(TextDecoration.BOLD,false))
+            );
+          // .append(Component.text(""))
+          // Set the book's meta data
+          book.setItemMeta(bookMeta);
+
+          // Open the book for the player
+          player.openBook(book);
+
           return;
         case cancel_prompt:
           betterMenu.closeMenu(player);
@@ -1383,26 +1486,26 @@ public class magic_mirror implements Listener {
 
   // NOTE: this should not be part of this plugin
   // Breaks the player's elytra if hit by the dragon
-  @EventHandler
-  public void onPlayerHit(EntityDamageByEntityEvent event) {
-    Entity entity = event.getEntity();
-    Entity damager = event.getDamager();
-    if (damager.getType() == EntityType.ENDER_DRAGON) {
-      if (entity instanceof Player) {
-        Player player = (Player) event.getEntity();
-        ItemStack chest = player.getInventory().getChestplate();
-        if (chest == null) {
-          return;
-        }
-        if (chest.getType() == Material.ELYTRA) {
-          Damageable damageable = (Damageable) chest.getItemMeta();
-          damageable.setDamage(chest.getType().getMaxDurability());
-          chest.setItemMeta(damageable);
-          player.updateInventory();
-        }
-      }
-    }
-  }
+  // @EventHandler
+  // public void onPlayerHit(EntityDamageByEntityEvent event) {
+  //   Entity entity = event.getEntity();
+  //   Entity damager = event.getDamager();
+  //   if (damager.getType() == EntityType.ENDER_DRAGON) {
+  //     if (entity instanceof Player) {
+  //       Player player = (Player) event.getEntity();
+  //       ItemStack chest = player.getInventory().getChestplate();
+  //       if (chest == null) {
+  //         return;
+  //       }
+  //       if (chest.getType() == Material.ELYTRA) {
+  //         Damageable damageable = (Damageable) chest.getItemMeta();
+  //         damageable.setDamage(chest.getType().getMaxDurability());
+  //         chest.setItemMeta(damageable);
+  //         player.updateInventory();
+  //       }
+  //     }
+  //   }
+  // }
 
   // @EventHandler
   // public void onPlayerJoin(PlayerJoinEvent event) {
