@@ -1,78 +1,35 @@
 package com.surv;
 
-import java.io.Serializable;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerToggleSneakEvent;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-
-import com.surv.items.Item_Manager;
-
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.title.Title;
 import net.md_5.bungee.api.ChatColor;
 
-//TODO: getPlayer should expect and integer, should change all uses to check if returning a -1
+public class DialMenu implements Listener {
 
-public class BetterMenu implements Listener {
-
-	ArrayList<PlayerWithMenu> player_with_menu = new ArrayList<>();
+	ArrayList<PlayerDialMenu> player_with_menu = new ArrayList<>();
 	List<Player> wait_list = new ArrayList<>();
 
-	public Integer hasMenuOpen(Player player) {
-		for (PlayerWithMenu p : player_with_menu) {
-			if (p.player.equals(player)) {
-				return player_with_menu.indexOf(p);
-			}
-		}
-		return -1;
-	}
-
-	public void closeMenu(Player player) {
-		Integer index = hasMenuOpen(player);
-		if (index != -1) {
-			player.removePotionEffect(PotionEffectType.BLINDNESS);
-			Audience audience = Audience.audience(player);
-			// audience.showTitle(Title.title(Component.text(""),Component.text("")));
-			// title(audience, "");
-			audience.sendActionBar(
-					() -> Component.text(""));
-			player_with_menu.get(index).all_context = null;
-			player_with_menu.remove(player_with_menu.get(index));
-			wait_list.remove(player);
-			Location location = player.getLocation();
-			Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
-					Sound.BLOCK_CHISELED_BOOKSHELF_PICKUP_ENCHANTED, 1f, 0.6f);
-		}
-	}
-
-	public class PlayerContext {
+	public class DialContext {
 		int id;
-		List<String> context;
-		Answer answer = new Answer();
+		List<String> selection_options;
+		String answer = new String();
 	}
 
-	public class Answer {
-		String name;
-		Object obj;
-	}
-
-	public class PlayerWithMenu {
+	public class PlayerDialMenu {
 		Player player;
 		String selection;
 		String selection_last;
@@ -82,22 +39,15 @@ public class BetterMenu implements Listener {
 		int last_selection_value = -1;
 		int tick = 0;
 		int tick_offset = 3;
-		ArrayList<PlayerContext> all_context = new ArrayList<>();
+		ArrayList<DialContext> all_context = new ArrayList<>();
 		ItemStack using_item;
 
-		// private List<String> menu_options = new ArrayList<>();
-
-		public PlayerContext getAll_context() {
+		public DialContext getListOfContext() {
 			return all_context.get(all_context.size() - 1);
 		}
 
-		// public List<String> getMenuOptions() {
-		// return menu_options;
-		// }
-
 		public void createPlayer(Player the_player) {
 			this.player = the_player;
-			// this.all_context = new ArrayList<PlayerToggleSneakEvent>();
 			this.selection = "";
 			this.selection_last = "";
 			this.initial_yaw = the_player.getLocation().getYaw();
@@ -110,7 +60,7 @@ public class BetterMenu implements Listener {
 		 * @param options a list of strings for the player to choose from
 		 * @param player  the player
 		 */
-		public void prompt_selections() {
+		public void moveDial() {
 			// NOTE: this should not need to have player passed in
 			// Integer index = getPlayer(player);
 			// PlayerWithMenu has_menu_open = player_with_menu.get(index);
@@ -146,13 +96,13 @@ public class BetterMenu implements Listener {
 				}
 			}
 			int selected = last_selection_value;
-			if (selected > getAll_context().context.size() - 1) {
+			if (selected > getListOfContext().selection_options.size() - 1) {
 				selected = 0;
 			}
 			if (yaw % 50 >= 8) {
 				// if (yaw % 40 >= 20) {
 				if (yaw > last_yaw_value) {
-					if (selected < getAll_context().context.size() - 1) {
+					if (selected < getListOfContext().selection_options.size() - 1) {
 						Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
 								Sound.ITEM_SPYGLASS_USE, 0.5f, 1f);
 						tick++;
@@ -167,7 +117,7 @@ public class BetterMenu implements Listener {
 			}
 			if (tick >= (tick_offset * 2)) {
 				tick = 1;
-				if (selected < getAll_context().context.size() - 1) {
+				if (selected < getListOfContext().selection_options.size() - 1) {
 					selected++;
 				}
 			} else if (tick <= 0) {
@@ -180,11 +130,20 @@ public class BetterMenu implements Listener {
 				last_yaw_value = yaw;
 			}
 			// System.out.println(String.format("menu_tick at %s", tick));
-			selection = getAll_context().context.get(selected);
+			if (selected <= -1) {
+				// selection = getListOfContext().selection_options.get(getListOfContext().selection_options.size()/2);
+				// return;
+			} else {
+				selection = getListOfContext().selection_options.get(selected);
+			}
 			// System.out.printf("selection is: %s\n", selection);
 			// NOTE: this next line should not be hard coded here
 			if (selection != selection_last) {
-				selection_last = getAll_context().context.get(selected);
+				if (selected <=-1) {
+					selection_last = getListOfContext().selection_options.get(getListOfContext().selection_options.size()/2);
+				} else {
+					selection_last = getListOfContext().selection_options.get(selected);
+				}
 			}
 			if (selected != last_selection_value) {
 				// System.out.println("the page flip sound should be playing");
@@ -196,7 +155,7 @@ public class BetterMenu implements Listener {
 
 		// NOTE(to self): this is not an actualy event
 		public void playerChooseSelection(PlayerInteractEvent ev) {
-			if (hasMenuOpen(player) > -1) {
+			if (getPlayer(player) > -1) {
 				ev.setCancelled(true); // since the menu us open lets prevent breaking shit
 			} else {
 				if (ev.getPlayer().getInventory().getItemInMainHand() == null) {
@@ -206,7 +165,7 @@ public class BetterMenu implements Listener {
 
 			Player player = ev.getPlayer();
 
-			for (PlayerWithMenu p : player_with_menu) {
+			for (PlayerDialMenu p : player_with_menu) {
 				if (!p.player.equals(player)) {
 					continue;
 				}
@@ -215,7 +174,7 @@ public class BetterMenu implements Listener {
 					return; // this should not trigger a new page just update it so it should return here
 				}
 				p.selection = selection;
-				p.getAll_context().answer.name = selection;
+				p.getListOfContext().answer = selection;
 				// System.out.println("should be showing some text now.");
 			}
 			// sendPrompt(0, List.of("scroll left and right"), player,
@@ -223,53 +182,79 @@ public class BetterMenu implements Listener {
 		}
 	}
 
-	public void sendPrompt(int id, List<String> prompt_list, Player player, ItemStack item) {
-		Integer index = hasMenuOpen(player);
+	public Integer getPlayer(Player player) {
+		for (PlayerDialMenu p : player_with_menu) {
+			if (p.player.equals(player)) {
+				return player_with_menu.indexOf(p);
+			}
+		}
+		return -1;
+	}
+
+	public void closeMenu(Player player) {
+		Integer index = getPlayer(player);
+		if (index != -1) {
+			player.removePotionEffect(PotionEffectType.BLINDNESS);
+			Audience audience = Audience.audience(player);
+			// audience.showTitle(Title.title(Component.text(""),Component.text("")));
+			// title(audience, "");
+			audience.sendActionBar(
+					() -> Component.text(""));
+			player_with_menu.get(index).all_context = null;
+			player_with_menu.remove(player_with_menu.get(index));
+			wait_list.remove(player);
+			Location location = player.getLocation();
+			Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
+					Sound.BLOCK_CHISELED_BOOKSHELF_PICKUP_ENCHANTED, 1f, 0.6f);
+		}
+	}
+	public void removeLastDialMenu(Player player) {
+		Integer index = getPlayer(player);
+		if (index <= -1) {
+			return;
+		}
+		PlayerDialMenu has_menu_open = player_with_menu.get(getPlayer(player));
+		has_menu_open.all_context.remove(has_menu_open.all_context.size()-1);
+		sendActionbar(player, has_menu_open, false);
+		refreshDialMenu(player);
+	}
+
+	public void sendDialMenu(int id, List<String> prompt_list, Player player, ItemStack item) {
+		Integer index = getPlayer(player);
 		if (index == -1) {
-			PlayerWithMenu new_player = new PlayerWithMenu();
+			PlayerDialMenu new_player = new PlayerDialMenu();
 			new_player.createPlayer(player);
 			new_player.using_item = item;
 			player_with_menu.add(new_player);
 			// new_player.selection = prompt_list.get(0);
 		}
-		PlayerWithMenu has_menu_open = player_with_menu.get(hasMenuOpen(player));
+		PlayerDialMenu has_menu_open = player_with_menu.get(getPlayer(player));
 		List<String> new_list = new ArrayList<>();
 		for (int x = 0; x < prompt_list.size(); x++) {
 			new_list.add(prompt_list.get(x));
 		}
 
-		PlayerContext new_context = new PlayerContext();
+		DialContext new_context = new DialContext();
 		new_context.id = id;
-		new_context.context = new_list;
+		new_context.selection_options = new_list;
 		has_menu_open.all_context.add(new_context);
 
 		player.addPotionEffect(
 				new PotionEffect(PotionEffectType.BLINDNESS, 1200, 1).withAmbient(false).withParticles(false));
-		// Audience audience = Audience.audience(player);
-		// audience.sendActionBar(
-		// 		() -> Component.text(centerTextBar(has_menu_open)));
-		sendTextToBar(player, has_menu_open,false);
-		// has_menu_open.prompt_selections();
-		// title(audience, has_menu_open);
-		// audience.showTitle(Title.title(Component.text(""),Component.text(centerTextBar(has_menu_open))));
+		has_menu_open.moveDial();
+		refreshDialMenu(player);
+		// sendActionbar(player, has_menu_open, false);
 	}
 
-	public void playerRefreshPrompt(PlayerMoveEvent ev) {
-		Player player = ev.getPlayer();
-
-		Integer index = hasMenuOpen(ev.getPlayer());
+	public void refreshDialMenu(Player player) {
+		Integer index = getPlayer(player);
 		if (index == -1) {
 			return;
 		}
-		PlayerWithMenu has_menu_open = player_with_menu.get(index);
+		PlayerDialMenu has_menu_open = player_with_menu.get(index);
 
-		has_menu_open.prompt_selections();
-
-		// Audience audience = Audience.audience(player);
-
-		// audience.sendActionBar(
-		// 		() -> Component.text(centerTextBar(has_menu_open)));
-		sendTextToBar(player, has_menu_open,false);
+		has_menu_open.moveDial();
+		sendActionbar(player, has_menu_open, false);
 
 		boolean hasBlindness = false;
 		for (PotionEffect effect : player.getActivePotionEffects()) {
@@ -282,7 +267,7 @@ public class BetterMenu implements Listener {
 		}
 	}
 
-	public void sendTextToBar(Player player, PlayerWithMenu p_with_m, boolean as_title) {
+		public void sendActionbar(Player player, PlayerDialMenu p_with_m, boolean as_title) {
 		Audience audience = Audience.audience(player);
 		if (as_title) {
 			audience.showTitle(Title.title(Component.text(""), Component.text(centerTextBar(p_with_m)),
@@ -294,10 +279,13 @@ public class BetterMenu implements Listener {
 				() -> Component.text(centerTextBar(p_with_m)));
 	}
 
-	public String centerTextBar(PlayerWithMenu has_menu_open) {
+	public String centerTextBar(PlayerDialMenu has_menu_open) {
 		int bar_size = 55;
 		// int bar_size = 25;
 		String word = has_menu_open.selection;
+		if (word == "") {
+			word = has_menu_open.getListOfContext().selection_options.get(has_menu_open.getListOfContext().selection_options.size()/2);
+		}
 		int word_size = word.length();
 
 		String blank_space = new String();
@@ -310,32 +298,32 @@ public class BetterMenu implements Listener {
 		// has_menu_open.selection);
 		// String text_bar =
 		// String.format("%s",has_menu_open.getAll_context().context.toString());
-		String text_bar = String.join("  ", has_menu_open.getAll_context().context);
-		PlayerContext cnt = has_menu_open.getAll_context();
+		String text_bar = String.join("  ", has_menu_open.getListOfContext().selection_options);
+		DialContext cnt = has_menu_open.getListOfContext();
 		// String context = has_menu_open.getAll_context().context.get(cnt.size()-1);
 		String context = "MAIN";
 		int cnt_size = has_menu_open.all_context.size();
 		if (cnt_size > 1) {
-			context = has_menu_open.all_context.get(cnt_size - 2).answer.name;
+			context = has_menu_open.all_context.get(cnt_size - 2).answer;
 		}
 		// if (has_menu_open.all_context.get(has_menu_open.all_context.size() - 2) !=
 		// null) {
 		// }
 		if (has_menu_open.last_selection_value == -1) {
-			int size = has_menu_open.getAll_context().context.size();
+			int size = has_menu_open.getListOfContext().selection_options.size();
 			has_menu_open.last_selection_value = Math.round(size / 2);
 			// System.out.printf("last selection value: %s\n",
 			// has_menu_open.last_selection_value);
 		}
 
 		text_bar = String.format("%s%s%s", blank_space, text_bar, blank_space);
-		if (text_bar.length() <= 0) {
-			return String.format(ChatColor.DARK_GRAY + "< %s >", colorText(has_menu_open.tick, "Scroll LEFT & RIGHT"));
-		}
+		// if (text_bar.length() <= 0) {
+		// 	return String.format(ChatColor.DARK_GRAY + "< %s >", colorText(has_menu_open.tick, "Scroll LEFT & RIGHT"));
+		// }
 		int word_index = text_bar.indexOf(word);
-		if (word_index <= 0) {
-			return String.format(ChatColor.DARK_GRAY + "< %s >", colorText(has_menu_open.tick, "Scroll LEFT & RIGHT"));
-		}
+		// if (word_index <= 0) {
+		// 	return String.format(ChatColor.DARK_GRAY + "< %s >", colorText(has_menu_open.tick, "Scroll LEFT & RIGHT"));
+		// }
 
 		// String final_text = text_bar.substring(word_index + (word.length() / 2),
 		// word_index + (word.length() / 2) + bar_length);
@@ -382,22 +370,15 @@ public class BetterMenu implements Listener {
 			}
 			first = String.format("%s%s", extra, first);
 		}
-		// if (has_menu_open.tick < has_menu_open.tick_offset) {
-		// String extra = new String();
-		// for (int x = 0; x<has_menu_open.tick_offset*2;x++) {
-		// extra = String.format("%s%s",extra,"-");
-		// last = last.substring(0,last.length()-1);
-		// }
-		// first = String.format("%s%s",extra,first);
-		// }
+
 		boolean use_menu_name = false;
 		if (use_menu_name == true) {
 			return String.format(ChatColor.DARK_GRAY + "%s: < %s%s%s >", context, first, colorText(has_menu_open.tick, word),
 					last);
-			
+
 		}
 		return String.format(ChatColor.DARK_GRAY + "< %s%s%s >", first, colorText(has_menu_open.tick, word),
-					last);
+				last);
 	}
 
 	public String colorText(int tick, String text) {
@@ -417,8 +398,6 @@ public class BetterMenu implements Listener {
 			return String.format(ChatColor.AQUA + ". .[ %s ]))" +
 					ChatColor.DARK_GRAY, text);
 		}
-		// return String.format(ChatColor.AQUA + "[ %s ]" +
-		// 		ChatColor.DARK_GRAY, text);
 
 		return String.format(ChatColor.AQUA + "%s" + ChatColor.DARK_GRAY, text);
 	}

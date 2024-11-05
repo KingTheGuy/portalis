@@ -1,5 +1,6 @@
 package com.surv;
 
+import java.awt.DisplayMode;
 import java.awt.image.BufferedImageOp;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -88,8 +89,8 @@ import java.rmi.Remote;
 // import com.moandjiezana.toml.Toml;
 // import com.moandjiezana.toml.TomlWriter;
 // import com.surv.menu;
-import com.surv.BetterMenu.PlayerContext;
-import com.surv.BetterMenu.PlayerWithMenu;
+import com.surv.DialMenu.DialContext;
+import com.surv.DialMenu.PlayerDialMenu;
 
 import net.kyori.adventure.Adventure;
 // import com.destroystokyo.paper.event.player.PlayerJumpEvent;
@@ -427,7 +428,7 @@ public class magic_mirror implements Listener {
               on_warp = true;
               // for each player's warp compare to global warps, remove if needed, rename if
               // needed.
-              Integer index = betterMenu.hasMenuOpen(player_used_warp.player);
+              Integer index = dialMenu.getPlayer(player_used_warp.player);
               if (index > -1) {
                 continue;
               }
@@ -465,7 +466,7 @@ public class magic_mirror implements Listener {
                 }
               }
               // prompt_list.add("CLOSE");
-              betterMenu.sendPrompt(6, prompt_list, player_used_warp.player, null);
+              dialMenu.sendDialMenu(6, prompt_list, player_used_warp.player, null);
               saveGlobalWarpsToFile(global_warps_file);
               savePlayerWarpsToFile(player_warps_file);
               continue;
@@ -480,7 +481,7 @@ public class magic_mirror implements Listener {
             // }
           }
           for (UsedWarp removeing_usedWarp : remove_this) {
-            betterMenu.closeMenu(removeing_usedWarp.player);
+            dialMenu.closeMenu(removeing_usedWarp.player);
             just_used_lode_warp.remove(removeing_usedWarp);
           }
         }
@@ -584,12 +585,12 @@ public class magic_mirror implements Listener {
   // HUH//
   // menu prompt = new menu();
   // Menu_updated new_prompt = new Menu_updated();
-  BetterMenu betterMenu = new BetterMenu();
+  DialMenu dialMenu = new DialMenu();
 
   @EventHandler
   public void onLeave(PlayerQuitEvent ev) {
     Player player = ev.getPlayer();
-    betterMenu.closeMenu(player);
+    dialMenu.closeMenu(player);
     UsedWarp remove_this = new UsedWarp();
     for (UsedWarp p : just_used_lode_warp)
       if (just_used_lode_warp.contains(p)) {
@@ -798,7 +799,7 @@ public class magic_mirror implements Listener {
 
   @EventHandler
   public void onPlayerMove(PlayerMoveEvent ev) {
-    betterMenu.playerRefreshPrompt(ev);
+    dialMenu.refreshDialMenu(ev.getPlayer());
   }
 
   // public void saveToFile() {
@@ -920,7 +921,7 @@ public class magic_mirror implements Listener {
     PersistentDataContainer container = meta.getPersistentDataContainer();
     Integer cur_value = container.get(key, PersistentDataType.INTEGER);
     if (cur_value == 0) {
-      betterMenu.closeMenu(player);
+      dialMenu.closeMenu(player);
       audience.sendActionBar(() -> Component.text("out of pages").color(NamedTextColor.RED));
       player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
       return true;
@@ -944,8 +945,8 @@ public class magic_mirror implements Listener {
     Audience audience = Audience.audience(player);
 
     // if (ev.getClickedBlock().getType().equals(Material.LODESTONE)) {
-    //   ItemStack book = new ItemStack(Material.WRITABLE_BOOK);
-    //   player.openBook(book);
+    // ItemStack book = new ItemStack(Material.WRITABLE_BOOK);
+    // player.openBook(book);
     // }
 
     // TODO: min level of xp needed to store is 10 levels.. should also give back 10
@@ -986,7 +987,7 @@ public class magic_mirror implements Listener {
       }
     }
 
-    if (betterMenu.hasMenuOpen(player) > -1) {
+    if (dialMenu.getPlayer(player) > -1) {
       ev.setCancelled(true); // since the menu us open lets prevent breaking shit
       if (ev.getPlayer().getInventory().getItemInMainHand().isEmpty()) {
       }
@@ -1042,8 +1043,10 @@ public class magic_mirror implements Listener {
           }
           return;
         } else {
-          // if (!item.getItemMeta().displayName().equals(Item_Manager.magic_mirror_book.getItemMeta().displayName())) {
-          //   return;
+          // if
+          // (!item.getItemMeta().displayName().equals(Item_Manager.magic_mirror_book.getItemMeta().displayName()))
+          // {
+          // return;
           // }
           NamespacedKey key = new NamespacedKey(magic.getPlugin(), "magic_mirror_use_data");
           ItemMeta meta = ev.getItem().getItemMeta();
@@ -1104,45 +1107,82 @@ public class magic_mirror implements Listener {
     }
 
     final String confirm_prompt = "RIP PAGE";
+    final String go_back_prompt = "GO BACK";
     final String cancel_prompt = "CLOSE BOOK";
     // player.playSound(player.getLocation(), Sound.ENTITY_ILLUSIONER_CAST_SPELL,
     // 1f, 1f);
-    Integer index = betterMenu.hasMenuOpen(player);
+    Integer index = dialMenu.getPlayer(player);
     if (index < 0) {
       List<String> THIS_LIST = List.of("BED", "SPAWN", "WARPS", "LAST DEATH", "INFO", cancel_prompt);
       // List<String> THIS_LIST = List.of("JUST", "SOME", "NEW", "LIST");
-      betterMenu.sendPrompt(1, THIS_LIST, player, Item_Manager.magic_mirror_book);
-      index = betterMenu.hasMenuOpen(player);
+      dialMenu.sendDialMenu(1, THIS_LIST, player, Item_Manager.magic_mirror_book);
+      index = dialMenu.getPlayer(player);
     }
-    PlayerWithMenu p_menu = betterMenu.player_with_menu.get(index);
+    PlayerDialMenu p_menu = dialMenu.player_with_menu.get(index);
     p_menu.playerChooseSelection(ev);
     if (p_menu.all_context.size() <= 1) {
       // System.out.println("\n\n\tlets make sure this is still running\n");
-      switch (p_menu.getAll_context().answer.name) {
+      switch (p_menu.getListOfContext().answer) {
         case "BED":
           if (isBookOutOfPages(ev)) {
             return;
           }
-          betterMenu.sendPrompt(2, List.of(confirm_prompt, cancel_prompt), player, Item_Manager.magic_mirror_book);
+          if (player.getBedSpawnLocation() == null) {
+            audience.sendActionBar(() -> Component.text("Where is my bed?").color(NamedTextColor.RED));
+            player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
+          } else {
+            teleportEffectSound(player, player.getLocation());
+            player.teleportAsync(player.getBedSpawnLocation());
+            dialMenu.closeMenu(player);
+            // System.out.println("\n\n\tYES BOOK IS BEING USED\n\n");
+            useBook(player);
+            // teleportEffectSound(player, player.getBedSpawnLocation());
+          }
+          dialMenu.closeMenu(player);
+          // dialMenu.sendDialMenu(2, List.of(confirm_prompt, cancel_prompt), player,
+          // Item_Manager.magic_mirror_book);
           return;
         case "SPAWN":
           if (isBookOutOfPages(ev)) {
             return;
           }
-          betterMenu.sendPrompt(2, List.of(confirm_prompt, cancel_prompt), player, Item_Manager.magic_mirror_book);
+          teleportEffectSound(player, player.getLocation());
+          player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
+          dialMenu.closeMenu(player);
+          useBook(player);
+          // teleportEffectSound(player, Bukkit.getWorld("world").getSpawnLocation());
+          dialMenu.closeMenu(player);
           return;
         case "WARPS":
-          betterMenu.sendPrompt(3, List.of("LOCATIONS", "WARP TO", "WAIT FOR", cancel_prompt), player,
+          dialMenu.sendDialMenu(3, List.of("LOCATIONS", "WARP TO", "WAIT FOR",go_back_prompt, cancel_prompt), player,
               Item_Manager.magic_mirror_book);
           return;
         case "LAST DEATH":
           if (isBookOutOfPages(ev)) {
             return;
           }
-          betterMenu.sendPrompt(2, List.of(confirm_prompt, cancel_prompt), player, Item_Manager.magic_mirror_book);
+          int death_index = -1;
+          for (player_deaths d : deaths) {
+            if (d.name == player) {
+              death_index = deaths.indexOf(d);
+            }
+          }
+          if (death_index == -1) {
+            // NOTE: this message does not show up because i am clearing the title when
+            // closing the menu
+            dialMenu.closeMenu(player);
+            audience.sendActionBar(() -> Component.text("Long Live").color(NamedTextColor.RED));
+            player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
+          } else {
+            teleportEffectSound(player, player.getLocation());
+            player.teleportAsync(deaths.get(death_index).loc);
+            dialMenu.closeMenu(player);
+            useBook(player);
+            // teleportEffectSound(player, deaths.get(death_index).loc);
+          }
           return;
         case "INFO":
-          betterMenu.closeMenu(player);
+          dialMenu.closeMenu(player);
           // BookMeta bookMeta = new BookMeta();
           // ItemStack book_item = new ItemStack(Material.WRITTEN_BOOK);
           // ItemMeta meta = book_item.getItemMeta();
@@ -1156,79 +1196,72 @@ public class magic_mirror implements Listener {
           bookMeta.setTitle("-----");
           bookMeta.setAuthor("OLRAK");
 
-
           // Add some pages to the book
           bookMeta.addPages(
-            Component.text("Table of Contents:\n\n").decorate(TextDecoration.BOLD)
-              .append(Component.text(
-                """
-                [pg. 3] Strange book
-                [pg. 4] Infused-paper
-                [pg. 5] Refilling the book
-                [pg. 6] use cauldron
-                [pg. 7] Warping to other book users
-                [pg. 9] Custom warp locations
-                """).decorate(TextDecoration.ITALIC).decoration(TextDecoration.BOLD,false))
-            ,
-            Component.text("")
-              .append(Component.text("Stange\n\n").decorate(TextDecoration.BOLD))
-              .append(Component.text("Use this book to warp around.\n\n"))
-              .append(Component.text("Warping with this book\n"))
-              .append(Component.text("will consume a page..\n"))
-            ,
-            Component.text("")
-              .append(Component.text("infused-paper:\n\n").decorate(TextDecoration.BOLD))
-              .append(Component.text("ingredients tossed into a cauldron\n\n").decorate(TextDecoration.ITALIC))
-              .append(Component.text("- 1x ender pearl\n"))
-              .append(Component.text("- 1x spider eye\n"))
-              .append(Component.text("- 1x dandelion\n\n"))
-              .append(Component.text("lastly toss in:\n\n"))
-              .append(Component.text("- 6x paper\n"))
-            ,
-            Component.text("")
-              .append(Component.text("refilling the magic mirror:\n\n").decorate(TextDecoration.BOLD))
-              .append(Component.text("in crafting table\n\n").decorate(TextDecoration.ITALIC))
-              .append(Component.text("(I|I|I) top   \n"))
-              .append(Component.text("(I|I|I) center\n"))
-              .append(Component.text("(_|M|_) bottom\n\n"))
-              .append(Component.text("- (I) Infused paper\n"))
-              .append(Component.text("- (M) Magic Mirror\n"))
-            ,
-            Component.text("")
-              .append(Component.text("How to use cauldron:\n").decorate(TextDecoration.BOLD))
-              .append(Component.text(
-                """
-                Simply place a `cauldron` on
-                 top of a lit `campfire`
-                and toss in the ingredients.
-                """).decoration(TextDecoration.BOLD,false))
-            ,
-            Component.text("Warping to other book users\n\n").decorate(TextDecoration.BOLD)
-              .append(Component.text(
-                """
-                To warp to other users you'll have to ask them select `wait_for` within the book's menu.
-                """).decoration(TextDecoration.BOLD,false))
-            ,
-            Component.text("Custom warp locations\n\n").decorate(TextDecoration.BOLD)
-              .append(Component.text("Creating\n\n").decorate(TextDecoration.BOLD))
-              .append(Component.text(
-                """
-                Placing down a lodestone and using a name_tag on it will create a warp at that spot for you to warp to whenever.
-                """).decoration(TextDecoration.BOLD,false))
-            ,
-            Component.text("Saving location\n\n").decorate(TextDecoration.BOLD)
-              .append(Component.text(
-                """
-                If you happen to find an active lodestone and would like to save it for yourself you can use your book on it, saving its location.
-                """).decoration(TextDecoration.BOLD,false))
-            ,
-            Component.text("Using\n\n").decorate(TextDecoration.BOLD)
-              .append(Component.text(
-                """
-                Stepping on any active lodestone will open a warp menu showing you all other locations that you have saved..                 
-                Warping from lodestone to lodestone will cost you nothing.
-                """).decoration(TextDecoration.BOLD,false))
-            );
+              Component.text("Table of Contents:\n\n").decorate(TextDecoration.BOLD)
+                  .append(Component.text(
+                      """
+                          [pg. 3] Strange book
+                          [pg. 4] Infused-paper
+                          [pg. 5] Refilling the book
+                          [pg. 6] use cauldron
+                          [pg. 7] Warping to other book users
+                          [pg. 9] Custom warp locations
+                          """).decorate(TextDecoration.ITALIC).decoration(TextDecoration.BOLD, false)),
+              Component.text("")
+                  .append(Component.text("Stange\n\n").decorate(TextDecoration.BOLD))
+                  .append(Component.text("Use this book to warp around.\n\n"))
+                  .append(Component.text("Warping with this book\n"))
+                  .append(Component.text("will consume a page..\n")),
+              Component.text("")
+                  .append(Component.text("infused-paper:\n\n").decorate(TextDecoration.BOLD))
+                  .append(Component.text("ingredients tossed into a cauldron\n\n").decorate(TextDecoration.ITALIC))
+                  .append(Component.text("- 1x ender pearl\n"))
+                  .append(Component.text("- 1x spider eye\n"))
+                  .append(Component.text("- 1x dandelion\n\n"))
+                  .append(Component.text("lastly toss in:\n\n"))
+                  .append(Component.text("- 6x paper\n")),
+              Component.text("")
+                  .append(Component.text("refilling the magic mirror:\n\n").decorate(TextDecoration.BOLD))
+                  .append(Component.text("in crafting table\n\n").decorate(TextDecoration.ITALIC))
+                  .append(Component.text("(I|I|I) top   \n"))
+                  .append(Component.text("(I|I|I) center\n"))
+                  .append(Component.text("(_|M|_) bottom\n\n"))
+                  .append(Component.text("- (I) Infused paper\n"))
+                  .append(Component.text("- (M) Magic Mirror\n")),
+              Component.text("")
+                  .append(Component.text("How to use cauldron:\n").decorate(TextDecoration.BOLD))
+                  .append(Component.text(
+                      """
+                          Simply place a `cauldron` on
+                           top of a lit `campfire`
+                          and toss in the ingredients.
+                          """).decoration(TextDecoration.BOLD, false)),
+              Component.text("Warping to other book users\n\n").decorate(TextDecoration.BOLD)
+                  .append(Component.text(
+                      """
+                          To warp to other users you'll have to ask them select `wait_for` within the book's menu.
+                          """).decoration(TextDecoration.BOLD, false)),
+              Component.text("Custom warp locations\n\n").decorate(TextDecoration.BOLD)
+                  .append(Component.text("Creating\n\n").decorate(TextDecoration.BOLD))
+                  .append(Component.text(
+                      """
+                          Placing down a lodestone and using a name_tag on it will create a warp at that spot for you to warp to whenever.
+                          """)
+                      .decoration(TextDecoration.BOLD, false)),
+              Component.text("Saving location\n\n").decorate(TextDecoration.BOLD)
+                  .append(Component.text(
+                      """
+                          If you happen to find an active lodestone and would like to save it for yourself you can use your book on it, saving its location.
+                          """)
+                      .decoration(TextDecoration.BOLD, false)),
+              Component.text("Using\n\n").decorate(TextDecoration.BOLD)
+                  .append(Component.text(
+                      """
+                          Stepping on any active lodestone will open a warp menu showing you all other locations that you have saved..
+                          Warping from lodestone to lodestone will cost you nothing.
+                          """)
+                      .decoration(TextDecoration.BOLD, false)));
           // .append(Component.text(""))
           // Set the book's meta data
           book.setItemMeta(bookMeta);
@@ -1238,68 +1271,28 @@ public class magic_mirror implements Listener {
 
           return;
         case cancel_prompt:
-          betterMenu.closeMenu(player);
+          dialMenu.closeMenu(player);
           return;
       }
     }
-    if (p_menu.getAll_context().id == 2) {
-      switch (p_menu.getAll_context().answer.name) {
+    if (p_menu.getListOfContext().id == 2) {
+      switch (p_menu.getListOfContext().answer) {
         case confirm_prompt:
-          switch (p_menu.all_context.get(0).answer.name) {
-            case "BED":
-              if (player.getBedSpawnLocation() == null) {
-                audience.sendActionBar(() -> Component.text("Where is my bed?").color(NamedTextColor.RED));
-                player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
-              } else {
-                teleportEffectSound(player, player.getLocation());
-                player.teleportAsync(player.getBedSpawnLocation());
-                betterMenu.closeMenu(player);
-                // System.out.println("\n\n\tYES BOOK IS BEING USED\n\n");
-                useBook(player);
-                // teleportEffectSound(player, player.getBedSpawnLocation());
-              }
-              betterMenu.closeMenu(player);
-              return;
-            case "SPAWN":
-              teleportEffectSound(player, player.getLocation());
-              player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
-              betterMenu.closeMenu(player);
-              useBook(player);
-              // teleportEffectSound(player, Bukkit.getWorld("world").getSpawnLocation());
-              betterMenu.closeMenu(player);
-              return;
-            case "LAST DEATH":
-              int death_index = -1;
-              for (player_deaths d : deaths) {
-                if (d.name == player) {
-                  death_index = deaths.indexOf(d);
-                }
-              }
-              if (death_index == -1) {
-                // NOTE: this message does not show up because i am clearing the title when
-                // closing the menu
-                betterMenu.closeMenu(player);
-                audience.sendActionBar(() -> Component.text("Long Live").color(NamedTextColor.RED));
-                player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
-              } else {
-                teleportEffectSound(player, player.getLocation());
-                player.teleportAsync(deaths.get(death_index).loc);
-                betterMenu.closeMenu(player);
-                useBook(player);
-                // teleportEffectSound(player, deaths.get(death_index).loc);
-              }
-              return;
+          switch (p_menu.all_context.get(0).answer) {
             case "WARPS":
-              betterMenu.closeMenu(player);
+              dialMenu.closeMenu(player);
               return;
           }
         case cancel_prompt:
-          betterMenu.closeMenu(player);
+          dialMenu.closeMenu(player);
           return;
       }
     }
-    if (p_menu.getAll_context().id == 3) {
-      switch (p_menu.getAll_context().answer.name) {
+    if (p_menu.getListOfContext().id == 3) {
+      switch (p_menu.getListOfContext().answer) {
+        case go_back_prompt:
+          dialMenu.removeLastDialMenu(player);
+          return;
         case "LOCATIONS":
           if (isBookOutOfPages(ev)) {
             return;
@@ -1337,7 +1330,7 @@ public class magic_mirror implements Listener {
           }
 
           prompt_list.add(cancel_prompt);
-          betterMenu.sendPrompt(6, prompt_list, player, Item_Manager.magic_mirror_book);
+          dialMenu.sendDialMenu(6, prompt_list, player, Item_Manager.magic_mirror_book);
           saveGlobalWarpsToFile(global_warps_file);
           savePlayerWarpsToFile(player_warps_file);
           return;
@@ -1348,60 +1341,60 @@ public class magic_mirror implements Listener {
             return;
           }
           List<String> the_players = new ArrayList<>();
-          for (Player waiting_players : betterMenu.wait_list) {
+          for (Player waiting_players : dialMenu.wait_list) {
             the_players.add(waiting_players.getName().toUpperCase());
           }
           the_players.add(cancel_prompt);
-          betterMenu.sendPrompt(4, the_players, player, Item_Manager.magic_mirror_book);
+          dialMenu.sendDialMenu(4, the_players, player, Item_Manager.magic_mirror_book);
           return;
         case "WAIT FOR":
           // TODO: add player to some wait list
-          betterMenu.wait_list.add(player);
-          betterMenu.sendPrompt(5, List.of(cancel_prompt), player, Item_Manager.magic_mirror_book);
+          dialMenu.wait_list.add(player);
+          dialMenu.sendDialMenu(5, List.of(cancel_prompt), player, Item_Manager.magic_mirror_book);
           return;
         case cancel_prompt:
-          betterMenu.closeMenu(player);
+          dialMenu.closeMenu(player);
           return;
       }
 
     }
-    if (p_menu.getAll_context().id == 4) {
+    if (p_menu.getListOfContext().id == 4) {
       // FIXME: why is this not working?
-      switch (p_menu.getAll_context().answer.name) {
+      switch (p_menu.getListOfContext().answer) {
         case cancel_prompt:
-          betterMenu.closeMenu(player);
+          dialMenu.closeMenu(player);
           return;
         default:
-          for (Player wait_player : betterMenu.wait_list) {
+          for (Player wait_player : dialMenu.wait_list) {
             // System.out.printf("Player chose [%s]\n",
             // p_menu.getAll_context().answer.name.toUpperCase());
-            if (p_menu.getAll_context().answer.name.toUpperCase().equals(wait_player.getName().toUpperCase())) {
+            if (p_menu.getListOfContext().answer.toUpperCase().equals(wait_player.getName().toUpperCase())) {
               useBook(player);
               teleportEffectSound(player, player.getLocation());
               player.teleport(wait_player);
-              betterMenu.closeMenu(player);
-              betterMenu.closeMenu(wait_player);
+              dialMenu.closeMenu(player);
+              dialMenu.closeMenu(wait_player);
               // teleportEffectSound(player, wait_player.getLocation());
               return;
             }
           }
       }
     }
-    if (p_menu.getAll_context().id == 5) {
-      switch (p_menu.getAll_context().answer.name) {
+    if (p_menu.getListOfContext().id == 5) {
+      switch (p_menu.getListOfContext().answer) {
         case cancel_prompt:
-          betterMenu.closeMenu(player);
+          dialMenu.closeMenu(player);
           return;
       }
     }
-    if (p_menu.getAll_context().id == 6) {
+    if (p_menu.getListOfContext().id == 6) {
       // System.out.println("\n\tWARPING TO LOCATION\n");
-      switch (p_menu.getAll_context().answer.name) {
+      switch (p_menu.getListOfContext().answer) {
         case cancel_prompt:
-          betterMenu.closeMenu(player);
+          dialMenu.closeMenu(player);
           return;
         case "CLOSE":
-          betterMenu.closeMenu(player);
+          dialMenu.closeMenu(player);
           return;
         default:
           // System.out.println("ok so default it is.");
@@ -1409,13 +1402,13 @@ public class magic_mirror implements Listener {
             if (pw.player_name.equals(ev.getPlayer().getName())) {
               // System.out.println("found the player's stuff.");
               for (GlobalWarps w : pw.known_warps) {
-                if (w.name.equals(p_menu.getAll_context().answer.name)) {
+                if (w.name.equals(p_menu.getListOfContext().answer)) {
                   // System.out.println("found the player's selected warp.");
                   Location teleport_location = new Location(Bukkit.getWorld(w.dimension_name), w.location.X + 0.5,
                       w.location.Y + 1, w.location.Z + 0.5);
                   player.teleportAsync(teleport_location);
                   teleportEffectSound(player, player.getLocation());
-                  betterMenu.closeMenu(player);
+                  dialMenu.closeMenu(player);
                   useBook(player);
                   // teleportEffectSound(player, teleport_location);
                   return;
@@ -1428,7 +1421,7 @@ public class magic_mirror implements Listener {
       }
     }
     // prevent the player from breaking shit
-    if (betterMenu.hasMenuOpen(player) > -1) {
+    if (dialMenu.getPlayer(player) > -1) {
       ev.setCancelled(true);
     }
   }
@@ -1457,7 +1450,7 @@ public class magic_mirror implements Listener {
       }
     }
     // prevent the player from breaking shit
-    if (betterMenu.hasMenuOpen(event.getPlayer()) > -1) {
+    if (dialMenu.getPlayer(event.getPlayer()) > -1) {
       event.setCancelled(true);
     }
   }
@@ -1488,23 +1481,23 @@ public class magic_mirror implements Listener {
   // Breaks the player's elytra if hit by the dragon
   // @EventHandler
   // public void onPlayerHit(EntityDamageByEntityEvent event) {
-  //   Entity entity = event.getEntity();
-  //   Entity damager = event.getDamager();
-  //   if (damager.getType() == EntityType.ENDER_DRAGON) {
-  //     if (entity instanceof Player) {
-  //       Player player = (Player) event.getEntity();
-  //       ItemStack chest = player.getInventory().getChestplate();
-  //       if (chest == null) {
-  //         return;
-  //       }
-  //       if (chest.getType() == Material.ELYTRA) {
-  //         Damageable damageable = (Damageable) chest.getItemMeta();
-  //         damageable.setDamage(chest.getType().getMaxDurability());
-  //         chest.setItemMeta(damageable);
-  //         player.updateInventory();
-  //       }
-  //     }
-  //   }
+  // Entity entity = event.getEntity();
+  // Entity damager = event.getDamager();
+  // if (damager.getType() == EntityType.ENDER_DRAGON) {
+  // if (entity instanceof Player) {
+  // Player player = (Player) event.getEntity();
+  // ItemStack chest = player.getInventory().getChestplate();
+  // if (chest == null) {
+  // return;
+  // }
+  // if (chest.getType() == Material.ELYTRA) {
+  // Damageable damageable = (Damageable) chest.getItemMeta();
+  // damageable.setDamage(chest.getType().getMaxDurability());
+  // chest.setItemMeta(damageable);
+  // player.updateInventory();
+  // }
+  // }
+  // }
   // }
 
   // @EventHandler
@@ -1578,7 +1571,7 @@ public class magic_mirror implements Listener {
       if (hasItemInHand.size() > 0) {
         if (hasItemInHand.contains(player.getName())) {
           hasItemInHand.remove(player.getName());
-          betterMenu.closeMenu(player);
+          dialMenu.closeMenu(player);
         }
       }
     }
