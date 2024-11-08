@@ -9,7 +9,6 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -31,16 +30,24 @@ public class DialMenu implements Listener {
 
 	public class PlayerDialMenu {
 		Player player;
-		String selection;
-		String selection_last;
+		String hover;
+		String hover_last;
 		Integer page;
 		float initial_yaw;
 		int last_yaw_value;
 		int last_selection_value = -1;
+
 		int tick = 0;
 		int tick_offset = 3;
+
+		/**
+		 * Deprecated should be using a simple list instead
+		 */
 		ArrayList<DialContext> all_context = new ArrayList<>();
 		ItemStack using_item;
+		List<String> dial_options;
+		String dial_id;
+		String selection_answer;
 
 		public DialContext getListOfContext() {
 			return all_context.get(all_context.size() - 1);
@@ -48,9 +55,88 @@ public class DialMenu implements Listener {
 
 		public void createPlayer(Player the_player) {
 			this.player = the_player;
-			this.selection = "";
-			this.selection_last = "";
+			this.hover = "";
+			this.hover_last = "";
 			this.initial_yaw = the_player.getLocation().getYaw();
+		}
+
+		public void moveDialMenuSelection() {
+			Location location = player.getLocation();
+			int yaw = (int) player.getLocation().getYaw();
+
+			if (yaw < 0) {
+				yaw += 360;
+			}
+			// player.sendMessage(String.format("YAW: %s", yaw)); // prevents the selection
+			// from jumping back when going from 3 digits to 1
+			if (String.valueOf(last_yaw_value).length() == 3) {
+				if (String.valueOf(yaw).length() == 1) {
+					last_yaw_value = yaw;
+				}
+			}
+			// prevents the selection from jumping back when going from 3 digits to 1
+			if (String.valueOf(last_yaw_value).length() == 1) {
+				if (String.valueOf(yaw).length() == 3) {
+					last_yaw_value = yaw;
+				}
+			}
+			int selected = last_selection_value;
+			if (selected > dial_options.size() - 1) {
+				selected = 0;
+			}
+			if (yaw % 50 >= 8) {
+				// if (yaw % 40 >= 20) {
+				if (yaw > last_yaw_value) {
+					if (selected < dial_options.size() - 1) {
+						Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
+								Sound.ITEM_SPYGLASS_USE, 0.5f, 1f);
+						tick++;
+					}
+				} else if (yaw < last_yaw_value) {
+					if (selected > 0) {
+						Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
+								Sound.ITEM_SPYGLASS_USE, 0.5f, 1f);
+						tick--;
+					}
+				}
+			}
+			if (tick >= (tick_offset * 2)) {
+				tick = 1;
+				if (selected < dial_options.size() - 1) {
+					selected++;
+				}
+			} else if (tick <= 0) {
+				tick = tick_offset * 2 - 1;
+				if (selected > 0) {
+					selected--;
+				}
+			}
+			if (last_yaw_value != yaw) {
+				last_yaw_value = yaw;
+			}
+			// System.out.println(String.format("menu_tick at %s", tick));
+			if (selected <= -1) {
+				// selection =
+				// getListOfContext().selection_options.get(getListOfContext().selection_options.size()/2);
+				// return;
+			} else {
+				hover = dial_options.get(selected);
+			}
+			// System.out.printf("selection is: %s\n", selection);
+			// NOTE: this next line should not be hard coded here
+			if (hover != hover_last) {
+				if (selected <= -1) {
+					hover_last = dial_options.get(dial_options.size() / 2);
+				} else {
+					hover_last = dial_options.get(selected);
+				}
+			}
+			if (selected != last_selection_value) {
+				// System.out.println("the page flip sound should be playing");
+				Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
+						Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
+			}
+			last_selection_value = selected;
 		}
 
 		// this needs to run everytime the player moves
@@ -131,18 +217,19 @@ public class DialMenu implements Listener {
 			}
 			// System.out.println(String.format("menu_tick at %s", tick));
 			if (selected <= -1) {
-				// selection = getListOfContext().selection_options.get(getListOfContext().selection_options.size()/2);
+				// selection =
+				// getListOfContext().selection_options.get(getListOfContext().selection_options.size()/2);
 				// return;
 			} else {
-				selection = getListOfContext().selection_options.get(selected);
+				hover = getListOfContext().selection_options.get(selected);
 			}
 			// System.out.printf("selection is: %s\n", selection);
 			// NOTE: this next line should not be hard coded here
-			if (selection != selection_last) {
-				if (selected <=-1) {
-					selection_last = getListOfContext().selection_options.get(getListOfContext().selection_options.size()/2);
+			if (hover != hover_last) {
+				if (selected <= -1) {
+					hover_last = getListOfContext().selection_options.get(getListOfContext().selection_options.size() / 2);
 				} else {
-					selection_last = getListOfContext().selection_options.get(selected);
+					hover_last = getListOfContext().selection_options.get(selected);
 				}
 			}
 			if (selected != last_selection_value) {
@@ -156,7 +243,7 @@ public class DialMenu implements Listener {
 		// NOTE(to self): this is not an actualy event
 		public void playerChooseSelection(PlayerInteractEvent ev) {
 			if (getPlayer(player) > -1) {
-				ev.setCancelled(true); // since the menu us open lets prevent breaking shit
+				ev.setCancelled(true); // since the menu is open lets prevent breaking shit
 			} else {
 				if (ev.getPlayer().getInventory().getItemInMainHand() == null) {
 					return;
@@ -169,12 +256,19 @@ public class DialMenu implements Listener {
 				if (!p.player.equals(player)) {
 					continue;
 				}
-				if (p.selection == "NEXT PAGE") {
+				if (p.hover == "NEXT PAGE") {
 					p.page++;
 					return; // this should not trigger a new page just update it so it should return here
 				}
-				p.selection = selection;
-				p.getListOfContext().answer = selection;
+				p.hover = hover;
+				p.selection_answer = hover;
+				//NOTE(NO): i should close this here right? 
+				// closeMenu(ev.getPlayer());
+				// if (p.using_item != null) {
+				// 	if (!ev.getPlayer().getInventory().getItemInMainHand().equals(p.using_item)) {
+				// 		closeMenu(ev.getPlayer());
+				// 	}
+				// }
 				// System.out.println("should be showing some text now.");
 			}
 			// sendPrompt(0, List.of("scroll left and right"), player,
@@ -189,6 +283,14 @@ public class DialMenu implements Listener {
 			}
 		}
 		return -1;
+	}
+
+	public PlayerDialMenu getPlayerDialMenu(Player player) {
+		Integer index = getPlayer(player);
+		if ( index > -1) {
+			return player_with_menu.get(index);
+		}
+		return null;
 	}
 
 	public void closeMenu(Player player) {
@@ -208,14 +310,46 @@ public class DialMenu implements Listener {
 					Sound.BLOCK_CHISELED_BOOKSHELF_PICKUP_ENCHANTED, 1f, 0.6f);
 		}
 	}
+
+	// FIXME: remove tha all_context part of this
 	public void removeLastDialMenu(Player player) {
 		Integer index = getPlayer(player);
 		if (index <= -1) {
 			return;
 		}
 		PlayerDialMenu has_menu_open = player_with_menu.get(getPlayer(player));
-		has_menu_open.all_context.remove(has_menu_open.all_context.size()-1);
+		has_menu_open.all_context.remove(has_menu_open.all_context.size() - 1);
 		sendActionbar(player, has_menu_open, false);
+		refreshDialMenu(player);
+	}
+
+	/**
+	 * @param id :exmple server_name:menu_title or mod_name:menu_title
+	 * @param so :list of options
+	 * @param player :the plyer
+	 * @param uit :item to check for or null
+	 */
+	public void openDialMenu(String id,List<String> so, Player player, ItemStack uit) {
+		Integer index = getPlayer(player);
+		if (index == -1) {
+			PlayerDialMenu new_player = new PlayerDialMenu();
+			new_player.createPlayer(player);
+			player_with_menu.add(new_player);
+		}
+		PlayerDialMenu has_menu_open = player_with_menu.get(getPlayer(player));
+		List<String> new_list = new ArrayList<>();
+		for (int x = 0; x < so.size(); x++) {
+			new_list.add(so.get(x));
+		}
+
+		has_menu_open.dial_id = id;
+		has_menu_open.dial_options = so;
+		has_menu_open.using_item = uit;
+
+		player.addPotionEffect(
+				new PotionEffect(PotionEffectType.BLINDNESS, 1200, 1).withAmbient(false).withParticles(false));
+		// FIXME: new to change these to other methods to work with the simpler list
+		has_menu_open.moveDialMenuSelection();
 		refreshDialMenu(player);
 	}
 
@@ -253,7 +387,7 @@ public class DialMenu implements Listener {
 		}
 		PlayerDialMenu has_menu_open = player_with_menu.get(index);
 
-		has_menu_open.moveDial();
+		has_menu_open.moveDialMenuSelection();
 		sendActionbar(player, has_menu_open, false);
 
 		boolean hasBlindness = false;
@@ -267,7 +401,7 @@ public class DialMenu implements Listener {
 		}
 	}
 
-		public void sendActionbar(Player player, PlayerDialMenu p_with_m, boolean as_title) {
+	public void sendActionbar(Player player, PlayerDialMenu p_with_m, boolean as_title) {
 		Audience audience = Audience.audience(player);
 		if (as_title) {
 			audience.showTitle(Title.title(Component.text(""), Component.text(centerTextBar(p_with_m)),
@@ -282,9 +416,9 @@ public class DialMenu implements Listener {
 	public String centerTextBar(PlayerDialMenu has_menu_open) {
 		int bar_size = 55;
 		// int bar_size = 25;
-		String word = has_menu_open.selection;
+		String word = has_menu_open.hover;
 		if (word == "") {
-			word = has_menu_open.getListOfContext().selection_options.get(has_menu_open.getListOfContext().selection_options.size()/2);
+			word = has_menu_open.dial_options.get(has_menu_open.dial_options.size() / 2);
 		}
 		int word_size = word.length();
 
@@ -298,8 +432,7 @@ public class DialMenu implements Listener {
 		// has_menu_open.selection);
 		// String text_bar =
 		// String.format("%s",has_menu_open.getAll_context().context.toString());
-		String text_bar = String.join("  ", has_menu_open.getListOfContext().selection_options);
-		DialContext cnt = has_menu_open.getListOfContext();
+		String text_bar = String.join("  ", has_menu_open.dial_options);
 		// String context = has_menu_open.getAll_context().context.get(cnt.size()-1);
 		String context = "MAIN";
 		int cnt_size = has_menu_open.all_context.size();
@@ -310,7 +443,7 @@ public class DialMenu implements Listener {
 		// null) {
 		// }
 		if (has_menu_open.last_selection_value == -1) {
-			int size = has_menu_open.getListOfContext().selection_options.size();
+			int size = has_menu_open.dial_options.size();
 			has_menu_open.last_selection_value = Math.round(size / 2);
 			// System.out.printf("last selection value: %s\n",
 			// has_menu_open.last_selection_value);
@@ -318,11 +451,13 @@ public class DialMenu implements Listener {
 
 		text_bar = String.format("%s%s%s", blank_space, text_bar, blank_space);
 		// if (text_bar.length() <= 0) {
-		// 	return String.format(ChatColor.DARK_GRAY + "< %s >", colorText(has_menu_open.tick, "Scroll LEFT & RIGHT"));
+		// return String.format(ChatColor.DARK_GRAY + "< %s >",
+		// colorText(has_menu_open.tick, "Scroll LEFT & RIGHT"));
 		// }
 		int word_index = text_bar.indexOf(word);
 		// if (word_index <= 0) {
-		// 	return String.format(ChatColor.DARK_GRAY + "< %s >", colorText(has_menu_open.tick, "Scroll LEFT & RIGHT"));
+		// return String.format(ChatColor.DARK_GRAY + "< %s >",
+		// colorText(has_menu_open.tick, "Scroll LEFT & RIGHT"));
 		// }
 
 		// String final_text = text_bar.substring(word_index + (word.length() / 2),
