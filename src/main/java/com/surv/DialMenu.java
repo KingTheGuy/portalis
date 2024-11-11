@@ -48,6 +48,7 @@ public class DialMenu implements Listener {
 		List<String> dial_options;
 		String dial_id;
 		String selection_answer;
+		String custom_answer = ""; // FIXME: something like this could also be used as a way to pass data around
 
 		public DialContext getListOfContext() {
 			return all_context.get(all_context.size() - 1);
@@ -64,9 +65,10 @@ public class DialMenu implements Listener {
 			Location location = player.getLocation();
 			int yaw = (int) player.getLocation().getYaw();
 
-			if (yaw < 0) {
-				yaw += 360;
+			if (yaw <= -1) {
+				yaw += 361;
 			}
+			// System.out.println(String.format("player's yaw is: [ %s ]",yaw));
 			// player.sendMessage(String.format("YAW: %s", yaw)); // prevents the selection
 			// from jumping back when going from 3 digits to 1
 			if (String.valueOf(last_yaw_value).length() == 3) {
@@ -84,33 +86,53 @@ public class DialMenu implements Listener {
 			if (selected > dial_options.size() - 1) {
 				selected = 0;
 			}
-			if (yaw % 50 >= 8) {
-				// if (yaw % 40 >= 20) {
-				if (yaw > last_yaw_value) {
-					if (selected < dial_options.size() - 1) {
-						Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
-								Sound.ITEM_SPYGLASS_USE, 0.5f, 1f);
+			// FIXME: how do we make this feel smoother?
+			// player's ping could play a roll with this.
+			// ideally if it was possible run this client side.. it would be way smoother
+			// if (yaw % 50 >= 8) {
+			// if (yaw % 30 >= 8) {
+			// if (yaw % 60 >= 10) {
+			// if (yaw % 30 >= 15) { //NOTE: this one is pretty fine
+			boolean sneaking = false;
+			if (player.isSneaking()) {
+				sneaking = true;
+			}
+			if (yaw > last_yaw_value) {
+				if (selected < dial_options.size() - 1) {
+					Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
+							Sound.ITEM_SPYGLASS_USE, 0.5f, 1f);
+					if (sneaking == true) {
+						selected++;
+					} else {
 						tick++;
 					}
-				} else if (yaw < last_yaw_value) {
-					if (selected > 0) {
-						Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
-								Sound.ITEM_SPYGLASS_USE, 0.5f, 1f);
+				}
+			} else if (yaw < last_yaw_value) {
+				if (selected > 0) {
+					Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
+							Sound.ITEM_SPYGLASS_USE, 0.5f, 1f);
+					if (sneaking == true) {
+						selected--;
+					} else {
 						tick--;
 					}
 				}
 			}
-			if (tick >= (tick_offset * 2)) {
-				tick = 1;
-				if (selected < dial_options.size() - 1) {
-					selected++;
-				}
-			} else if (tick <= 0) {
-				tick = tick_offset * 2 - 1;
-				if (selected > 0) {
-					selected--;
+			// }
+			if (sneaking == false) {
+				if (tick >= (tick_offset * 2)) {
+					tick = 1;
+					if (selected < dial_options.size() - 1) {
+						selected++;
+					}
+				} else if (tick <= 0) {
+					tick = tick_offset * 2 - 1;
+					if (selected > 0) {
+						selected--;
+					}
 				}
 			}
+
 			if (last_yaw_value != yaw) {
 				last_yaw_value = yaw;
 			}
@@ -137,6 +159,23 @@ public class DialMenu implements Listener {
 						Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
 			}
 			last_selection_value = selected;
+		}
+
+		// NOTE: will this be used?
+		/**
+		 * for when extra data is needed, this could also be done outside of the menu
+		 * stuff
+		 * example plugin_name:menu_name:data_as_string
+		 * 
+		 * @return
+		 */
+		public String getDataFromId() {
+			String[] split = dial_id.split(":", -1);
+			System.out.println(String.format("the id length is: %s", split.length));
+			if (split.length <= 2) {
+				return split[1];
+			}
+			return split[2];
 		}
 
 		// this needs to run everytime the player moves
@@ -262,12 +301,13 @@ public class DialMenu implements Listener {
 				}
 				p.hover = hover;
 				p.selection_answer = hover;
-				//NOTE(NO): i should close this here right? 
+				// NOTE(NO): i should close this here right?
 				// closeMenu(ev.getPlayer());
 				// if (p.using_item != null) {
-				// 	if (!ev.getPlayer().getInventory().getItemInMainHand().equals(p.using_item)) {
-				// 		closeMenu(ev.getPlayer());
-				// 	}
+				// if (!ev.getPlayer().getInventory().getItemInMainHand().equals(p.using_item))
+				// {
+				// closeMenu(ev.getPlayer());
+				// }
 				// }
 				// System.out.println("should be showing some text now.");
 			}
@@ -287,7 +327,7 @@ public class DialMenu implements Listener {
 
 	public PlayerDialMenu getPlayerDialMenu(Player player) {
 		Integer index = getPlayer(player);
-		if ( index > -1) {
+		if (index > -1) {
 			return player_with_menu.get(index);
 		}
 		return null;
@@ -319,17 +359,17 @@ public class DialMenu implements Listener {
 		}
 		PlayerDialMenu has_menu_open = player_with_menu.get(getPlayer(player));
 		has_menu_open.all_context.remove(has_menu_open.all_context.size() - 1);
-		sendActionbar(player, has_menu_open, false);
+		sendDialActionBar(player, has_menu_open, false);
 		refreshDialMenu(player);
 	}
 
 	/**
-	 * @param id :exmple server_name:menu_title or mod_name:menu_title
-	 * @param so :list of options
+	 * @param id     :exmple server_name:menu_title or mod_name:menu_title
+	 * @param so     :list of options
 	 * @param player :the plyer
-	 * @param uit :item to check for or null
+	 * @param uit    :item to check for or null
 	 */
-	public void openDialMenu(String id,List<String> so, Player player, ItemStack uit) {
+	public void openDialMenu(String id, List<String> so, Player player, ItemStack uit) {
 		Integer index = getPlayer(player);
 		if (index == -1) {
 			PlayerDialMenu new_player = new PlayerDialMenu();
@@ -388,7 +428,7 @@ public class DialMenu implements Listener {
 		PlayerDialMenu has_menu_open = player_with_menu.get(index);
 
 		has_menu_open.moveDialMenuSelection();
-		sendActionbar(player, has_menu_open, false);
+		sendDialActionBar(player, has_menu_open, false);
 
 		boolean hasBlindness = false;
 		for (PotionEffect effect : player.getActivePotionEffects()) {
@@ -401,14 +441,13 @@ public class DialMenu implements Listener {
 		}
 	}
 
-	public void sendActionbar(Player player, PlayerDialMenu p_with_m, boolean as_title) {
+	public void sendDialActionBar(Player player, PlayerDialMenu p_with_m, boolean as_title) {
 		Audience audience = Audience.audience(player);
 		if (as_title) {
 			audience.showTitle(Title.title(Component.text(""), Component.text(centerTextBar(p_with_m)),
 					Title.Times.times(Duration.ofSeconds(0), Duration.ofSeconds(1), Duration.ofSeconds(1))));
 			return;
 		}
-
 		audience.sendActionBar(
 				() -> Component.text(centerTextBar(p_with_m)));
 	}
@@ -506,18 +545,31 @@ public class DialMenu implements Listener {
 			first = String.format("%s%s", extra, first);
 		}
 
-		boolean use_menu_name = false;
-		if (use_menu_name == true) {
-			return String.format(ChatColor.DARK_GRAY + "%s: < %s%s%s >", context, first, colorText(has_menu_open.tick, word),
+		if (has_menu_open.custom_answer != "") {
+			return String.format(ChatColor.DARK_GRAY + "%s : < %s%s%s >", has_menu_open.custom_answer, first,
+					colorText(has_menu_open.tick, word),
 					last);
-
 		}
 		return String.format(ChatColor.DARK_GRAY + "< %s%s%s >", first, colorText(has_menu_open.tick, word),
 				last);
 	}
 
 	public String colorText(int tick, String text) {
-		if (tick == 1) {
+		// if (tick == 1) {
+		// return String.format(ChatColor.AQUA + "(([ %s ]. ." +
+		// ChatColor.DARK_GRAY, text);
+		// } else if (tick == 2) {
+		// return String.format(ChatColor.AQUA + ". .[ %s ]. ." +
+		// ChatColor.DARK_GRAY, text);
+		// } else if (tick == 3) {
+		// return String.format(ChatColor.AQUA + ". .[ %s ]))" +
+		// ChatColor.DARK_GRAY, text);
+		// }
+		boolean skip_around = false;
+		if (skip_around) {
+			return String.format(ChatColor.AQUA + ". .[ %s ]. ." +
+					ChatColor.DARK_GRAY, text);
+		} else if (tick == 1) {
 			return String.format(ChatColor.AQUA + "(([ %s ]. ." +
 					ChatColor.DARK_GRAY, text);
 		} else if (tick == 2) {
@@ -537,4 +589,14 @@ public class DialMenu implements Listener {
 		return String.format(ChatColor.AQUA + "%s" + ChatColor.DARK_GRAY, text);
 	}
 
+	public List<String> alphabet() {
+		// FIXME: tihs just requires way too much scrolling, not good.
+		return List.of(
+				"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v",
+				"w", "x", "y", "z",
+				"-", "'", "#", "_",
+				"1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
+				"(DEL)",
+				"-DONE-");
+	}
 }

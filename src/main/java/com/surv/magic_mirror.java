@@ -1,21 +1,15 @@
 package com.surv;
 
-import java.awt.Container;
-import java.awt.DisplayMode;
-import java.awt.image.BufferedImageOp;
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
-import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -25,82 +19,51 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
-import org.bukkit.World;
 import org.bukkit.block.data.type.Light;
-import org.bukkit.entity.Enderman;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 import org.bukkit.entity.Villager.Profession;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
-import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
-import org.bukkit.event.hanging.HangingBreakEvent.RemoveCause;
-import org.bukkit.event.inventory.CraftItemEvent;
-import org.bukkit.event.inventory.InventoryAction;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.event.server.ServerLoadEvent;
-import org.bukkit.inventory.CraftingInventory;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.Merchant;
-import org.bukkit.inventory.MerchantInventory;
 import org.bukkit.inventory.MerchantRecipe;
 import org.bukkit.inventory.meta.BookMeta;
-import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.BookMeta.BookMetaBuilder;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.jetbrains.annotations.NotNull;
 
 import com.surv.items.Item_Manager;
-import com.surv.menu.player_selection;
 
-import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
-
-import com.destroystokyo.paper.event.block.AnvilDamagedEvent.DamageState;
-import com.destroystokyo.paper.event.player.PlayerElytraBoostEvent;
-import com.destroystokyo.paper.event.player.PlayerJumpEvent;
-import com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent;
 import com.destroystokyo.paper.event.server.ServerTickStartEvent;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
-import java.rmi.Remote;
-import java.rmi.registry.LocateRegistry;
 
 // import com.moandjiezana.toml.Toml;
 // import com.moandjiezana.toml.TomlWriter;
 // import com.surv.menu;
-import com.surv.DialMenu.DialContext;
 import com.surv.DialMenu.PlayerDialMenu;
 
-import net.kyori.adventure.Adventure;
 // import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.md_5.bungee.api.ChatColor;
 
@@ -213,6 +176,10 @@ public class magic_mirror implements Listener {
         return;
       }
     }
+    Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
+        Sound.BLOCK_CONDUIT_ACTIVATE, 1f, 1f);
+    audience.sendActionBar(
+        () -> Component.text("Warp created"));
     global_warps.add(warp_to_add);
     addPlayerWarp(location, player_name);
     saveGlobalWarpsToFile(global_warps_file);
@@ -227,6 +194,10 @@ public class magic_mirror implements Listener {
         // System.out.println(String.format("was at %s, played sound at
         // %s",used_warp.loc,used_warp.player.getLocation()));
         teleportEffectSound(used_warp.player, used_warp.player.getLocation());
+    		used_warp.player.addPotionEffect(
+    				new PotionEffect(PotionEffectType.CONFUSION, 120, 1).withAmbient(false).withParticles(false));
+    		used_warp.player.addPotionEffect(
+    				new PotionEffect(PotionEffectType.DARKNESS, 60, 1).withAmbient(false).withParticles(false));
 
         // just_warped.remove(used_warp);
         to_remove.add(used_warp);
@@ -407,51 +378,30 @@ public class magic_mirror implements Listener {
   public void tick(ServerTickStartEvent event) {
     if (global_warps.size() > 0) {
       if (event.getTickNumber() % 10 == 1) {
-        ToBeRemoved();
-        playerLocationChanged();
         for (GlobalWarps w : global_warps) {
           w.PromptMenu();
         }
         // check if the player has a lode warp beneath them
         if (just_used_lode_warp.size() > 0) {
-          boolean on_warp = false;
+          // boolean on_warp = false;
           List<UsedWarp> remove_this = new ArrayList<>();
           for (UsedWarp player_used_warp : just_used_lode_warp) {
             // System.out.println("yes this is running");
             if (player_used_warp.player.getLocation().subtract(0, 1, 0).getBlock().getType()
                 .equals(Material.LODESTONE)) {
-              // if (!used_w.player.getInventory().getItemInMainHand().isEmpty()) {
-              // Audience audience = Audience.audience(used_w.player);
-              // audience.sendActionBar(() -> Component.text("empty your
-              // hand").color(NamedTextColor.AQUA));
-              // betterMenu.closeMenu(used_w.player);
-              // return;
-              // }
-              on_warp = true;
+              // on_warp = true;
               // for each player's warp compare to global warps, remove if needed, rename if
               // needed.
-              PlayerDialMenu dm = dialMenu.getPlayerDialMenu(player_used_warp.player);
-              // Integer index = dialMenu.getPlayer(player_used_warp.player);
-              if (dm != null) {
-
-              }
               List<String> prompt_list = new ArrayList<>();
               List<GlobalWarps> to_remove = new ArrayList<>();
               for (PlayerWarps player_know_warp : player_warps) {
-                // System.out.printf("%s's warp size: %s\n", pw.player_name,
-                // pw.known_warps.size());
                 if (player_know_warp.player_name.equals(player_used_warp.player.getName())) {
-                  // System.out.printf("%s has: %s warp locations", pw.player_name,
-                  // pw.known_warps.size());
                   for (GlobalWarps player_global_warps : player_know_warp.known_warps) {
                     if (findPlayerWarpInGlobalWarps(player_global_warps) == null) {
                       to_remove.add(player_global_warps);
-                      // System.out.println("seems like this warp spot getting removed from the
-                      // player's list.");
-                      // pw.known_warps.remove(w);
                     } else {
                       if (player_global_warps.name == player_used_warp.warp_name) {
-
+                        //this prevents the current location from being showned right??
                       } else {
                         if (player_global_warps.name != null) {
                           prompt_list.add(player_global_warps.name);
@@ -468,27 +418,22 @@ public class magic_mirror implements Listener {
                   continue; // found the player
                 }
               }
-              // prompt_list.add("CLOSE");
-              // dialMenu.sendDialMenu(6, prompt_list, player_used_warp.player, null);
-              dialMenu.openDialMenu("MM:lodestone", prompt_list, player_used_warp.player, null);
+              Collections.sort(prompt_list, String.CASE_INSENSITIVE_ORDER);
+              dialMenu.openDialMenu("MM:locations", prompt_list, player_used_warp.player, null);
               saveGlobalWarpsToFile(global_warps_file);
               savePlayerWarpsToFile(player_warps_file);
               continue;
             }
-            // if (on_warp == false) {
-            // // just_used_lode_warp.remove(player_used_warp);
             remove_this.add(player_used_warp);
-            // betterMenu.closeMenu(player_used_warp.player);
-            // // System.out.println("removed the player from the list");
-            // on_warp = true;
-            // break;
-            // }
           }
           for (UsedWarp removeing_usedWarp : remove_this) {
             dialMenu.closeMenu(removeing_usedWarp.player);
             just_used_lode_warp.remove(removeing_usedWarp);
           }
         }
+        //NOTE: these should be closer to the end right??
+        playerLocationChanged();
+        ToBeRemoved();
       }
     }
   }
@@ -954,69 +899,130 @@ public class magic_mirror implements Listener {
     // }
     PlayerDialMenu dm = dialMenu.getPlayerDialMenu(player);
 
-    //FIXME: ive got too many of thse dm!=null stuff, just one is needed(or check for item in hand before hand)
+    // FIXME: ive got too many of thse dm!=null stuff, just one is needed(or check
+    // for item in hand before hand)
+    final String go_back_prompt = "GO BACK";
+    final String cancel_prompt = "CLOSE BOOK";
     if (dm != null) {
-      ev.setCancelled(true);
       dm.playerChooseSelection(ev);
+      ev.setCancelled(true);
       switch (dm.dial_id) {
+        case "MM:locations":
+          switch (dm.selection_answer) {
+            case cancel_prompt:
+              dialMenu.closeMenu(player);
+              return;
+            default:
+              // System.out.println("ok so default it is.");
+              for (PlayerWarps pw : player_warps) {
+                if (pw.player_name.equals(ev.getPlayer().getName())) {
+                  // System.out.println("found the player's stuff.");
+                  for (GlobalWarps w : pw.known_warps) {
+                    if (w.name.equals(dm.selection_answer)) {
+                      // System.out.println("found the player's selected warp.");
+                      Location teleport_location = new Location(Bukkit.getWorld(w.dimension_name), w.location.X + 0.5,
+                          w.location.Y + 1, w.location.Z + 0.5);
+                      player.teleportAsync(teleport_location);
+                      teleportEffectSound(player, player.getLocation());
+                      dialMenu.closeMenu(player);
+                      useBook(player);
+                      // teleportEffectSound(player, teleport_location);
+                      return;
+                    }
+                  }
+                  return;
+                }
+              }
+              return;
+          }
         case String s when s.contains("MM:create_warp_name_prefix"):
           switch (dm.selection_answer) {
             case "create warp":
+              // player.playSound(player.getLocation(), Sound.BLOCK_GRINDSTONE_USE, 1f, 1f);
               String player_name = ev.getPlayer().getName();
-              String[] split = dm.dial_id.split(":",-1);
-              String dial_id = String.format("MM:create_warp_name_subname:%s", split[2]);
-              System.out.println(String.format("the id looks like this: %s",dial_id));
+              // String[] split = dm.dial_id.split(":",-1);
+              // String dial_id = String.format("MM:create_warp_name_subname:%s", split[2]);
+              String dial_id = String.format("MM:create_warp_name_subname:%s", dm.getDataFromId());
+              System.out.println(String.format("the id looks like this: %s", dial_id));
               dialMenu.openDialMenu(dial_id,
                   List.of(
                       player_name.substring(0, 2),
                       player_name.substring(0, 3),
                       player_name.substring(0, 4),
                       player_name.substring(0, 5),
-                      player_name),
+                      player_name,
+                      "-CUSTOM-") ,
                   player,
-                  new ItemStack(Material.STICK));
+                  Item_Manager.magic_mirror_book);
               return;
             case "cancel":
               dialMenu.closeMenu(player);
               return;
           }
           return;
+        case String s when s.contains("MM:create_warp_name_subcustom"):
+          player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_WORK_CARTOGRAPHER, 1f, 1f);
+          if (dm.selection_answer == "(DEL)") {
+            StringBuilder w = new StringBuilder(dm.custom_answer);
+            dm.custom_answer = w.deleteCharAt(w.length()-1).toString();
+            dialMenu.openDialMenu(String.format("MM:create_warp_name_subcustom:%s", dm.getDataFromId()), 
+                dialMenu.alphabet(), player, null);
+            return;
+          }
+          if (dm.selection_answer == "-DONE-") {
+            // dialMenu.openDialMenu(, , , );
+            dm.selection_answer = dm.custom_answer;
+            dialMenu.openDialMenu(String.format("MM:create_warp_name_done:%s", dm.getDataFromId()), List.of(
+                dm.selection_answer), player, Item_Manager.magic_mirror_book);
+            dm.custom_answer = "";
+            return;
+          }
+          dm.custom_answer = String.format("%s%s", dm.custom_answer, dm.selection_answer);
+          dialMenu.openDialMenu(String.format("MM:create_warp_name_subcustom:%s", dm.getDataFromId()), 
+              dialMenu.alphabet(), player, null);
+          return;
         case String s when s.contains("MM:create_warp_name_subname"):
           // String player_name = ev.getPlayer().getName();
           String prefix = dm.selection_answer;
-          String[] split_again = dm.dial_id.split(":",-1);
-          String dial_id = String.format("MM:create_warp_name_done:%s", split_again[2]);
-          System.out.println(String.format("the id looks like this: %s",dial_id));
+          // String[] split_again = dm.dial_id.split(":",-1);
+          if (prefix == "-CUSTOM-") {
+            dialMenu.openDialMenu(String.format("MM:create_warp_name_subcustom:%s", dm.getDataFromId()), dialMenu.alphabet(), player, null);
+            // player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_WORK_CARTOGRAPHER, 1f, 1f);
+            return;
+          }
+          String dial_id = String.format("MM:create_warp_name_done:%s", dm.getDataFromId());
+          System.out.println(String.format("the id looks like this: %s", dial_id));
           dialMenu.openDialMenu(dial_id,
               List.of(
-                  String.format("%s's %s", prefix, "BASE"),
-                  String.format("%s's %s", prefix, "CASTLE"),
-                  String.format("%s's %s", prefix, "HOME"),
-                  String.format("%s's %s", prefix, "VILLAGE"),
-                  String.format("%s's %s", prefix, "FARM")),
+                  String.format("%s's %s", prefix, "Base"),
+                  String.format("%s's %s", prefix, "Home"),
+                  String.format("%s's %s", prefix, "Castle"),
+                  String.format("%s's %s", prefix, "Fort"),
+                  String.format("%s's %s", prefix, "Fortress"),
+                  String.format("%s's %s", prefix, "Stronghold"),
+                  String.format("%s's %s", prefix, "Camp"),
+                  String.format("%s's %s", prefix, "Bunker"),
+                  String.format("%s's %s", prefix, "Mansion"),
+                  String.format("%s's %s", prefix, "Village"),
+                  String.format("%s's %s", prefix, "Farm")),
               player,
-              new ItemStack(Material.STICK));
+              Item_Manager.magic_mirror_book);
           return;
         case String s when s.contains("MM:create_warp_name_done"):
-          String warp_name = dm.selection_answer;
-          String[] split_3 = dm.dial_id.split(":",-1);
-          String[] split_loc = split_3[2].split("_", -1);
-          System.out.println(String.format("and at the end like this: %s",dm.selection_answer));
 
+          // player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
+          String warp_name = dm.selection_answer;
+          // String[] split_3 = dm.dial_id.split(":",-1);
+          String[] split_loc = dm.getDataFromId().split("_", -1);
           Location location = player.getLocation();
           location.setX(Double.parseDouble(split_loc[0]));
           location.setY(Double.parseDouble(split_loc[1]));
           location.setZ(Double.parseDouble(split_loc[2]));
           // CREATE THE WARP
-          addWarp(location, ev.getPlayer().getName(), warp_name, audience);
           dialMenu.closeMenu(player);
-          Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
-              Sound.BLOCK_CONDUIT_ACTIVATE, 1f, 1f);
-          audience.sendActionBar(
-              () -> Component.text("Warp created"));
+          addWarp(location, ev.getPlayer().getName(), warp_name, audience);
           return;
         default:
-          return;
       }
     }
 
@@ -1135,7 +1141,7 @@ public class magic_mirror implements Listener {
                 String loc_string = String.format("%s_%s_%s", location.getBlockX(), location.blockY(),
                     location.getBlockZ());
                 String dial_id = String.format("MM:create_warp_name_prefix:%s", loc_string);
-                System.out.println(String.format("the id looks like this: %s",dial_id));
+                System.out.println(String.format("the id looks like this: %s", dial_id));
                 dialMenu.openDialMenu(dial_id,
                     List.of(
                         "create warp",
@@ -1281,8 +1287,6 @@ public class magic_mirror implements Listener {
     }
     // }
 
-    final String go_back_prompt = "GO BACK";
-    final String cancel_prompt = "CLOSE BOOK";
     // player.playSound(player.getLocation(), Sound.ENTITY_ILLUSIONER_CAST_SPELL,
     // 1f, 1f);
     ev.setCancelled(true);
@@ -1448,7 +1452,15 @@ public class magic_mirror implements Listener {
         case "MM:warps":
           switch (dm.selection_answer) {
             case go_back_prompt:
-              dialMenu.removeLastDialMenu(player);
+              dialMenu.openDialMenu("MM:main",
+                  List.of(
+                      "BED",
+                      "SPAWN",
+                      "WARPS",
+                      "LAST DEATH",
+                      "INFO",
+                      cancel_prompt),
+                  player, Item_Manager.magic_mirror_book);
               return;
             case "LOCATIONS":
               if (isBookOutOfPages(ev)) {
@@ -1485,7 +1497,7 @@ public class magic_mirror implements Listener {
                   break; // found the player
                 }
               }
-
+              Collections.sort(prompt_list, String.CASE_INSENSITIVE_ORDER);
               prompt_list.add(cancel_prompt);
               dialMenu.openDialMenu("MM:locations", prompt_list, player, Item_Manager.magic_mirror_book);
               saveGlobalWarpsToFile(global_warps_file);
@@ -1513,34 +1525,6 @@ public class magic_mirror implements Listener {
               dialMenu.closeMenu(player);
               return;
 
-          }
-        case "MM:locations":
-          switch (dm.selection_answer) {
-            case cancel_prompt:
-              dialMenu.closeMenu(player);
-              return;
-            default:
-              // System.out.println("ok so default it is.");
-              for (PlayerWarps pw : player_warps) {
-                if (pw.player_name.equals(ev.getPlayer().getName())) {
-                  // System.out.println("found the player's stuff.");
-                  for (GlobalWarps w : pw.known_warps) {
-                    if (w.name.equals(dm.selection_answer)) {
-                      // System.out.println("found the player's selected warp.");
-                      Location teleport_location = new Location(Bukkit.getWorld(w.dimension_name), w.location.X + 0.5,
-                          w.location.Y + 1, w.location.Z + 0.5);
-                      player.teleportAsync(teleport_location);
-                      teleportEffectSound(player, player.getLocation());
-                      dialMenu.closeMenu(player);
-                      useBook(player);
-                      // teleportEffectSound(player, teleport_location);
-                      return;
-                    }
-                  }
-                  return;
-                }
-              }
-              return;
           }
         case "MM:warp_to":
 
