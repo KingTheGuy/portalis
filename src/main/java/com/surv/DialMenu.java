@@ -596,7 +596,7 @@ public class DialMenu implements Listener {
 				"w", "x", "y", "z",
 				"-", "'", "#", "_",
 				"1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
-				"(DEL)",
-				"-DONE-");
+				"~DEL~",
+				"~DONE~");
 	}
 }

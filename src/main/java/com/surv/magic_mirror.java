@@ -194,10 +194,10 @@ public class magic_mirror implements Listener {
         // System.out.println(String.format("was at %s, played sound at
         // %s",used_warp.loc,used_warp.player.getLocation()));
         teleportEffectSound(used_warp.player, used_warp.player.getLocation());
-    		used_warp.player.addPotionEffect(
-    				new PotionEffect(PotionEffectType.CONFUSION, 120, 1).withAmbient(false).withParticles(false));
-    		used_warp.player.addPotionEffect(
-    				new PotionEffect(PotionEffectType.DARKNESS, 60, 1).withAmbient(false).withParticles(false));
+        used_warp.player.addPotionEffect(
+            new PotionEffect(PotionEffectType.CONFUSION, 120, 1).withAmbient(false).withParticles(false));
+        used_warp.player.addPotionEffect(
+            new PotionEffect(PotionEffectType.DARKNESS, 60, 1).withAmbient(false).withParticles(false));
 
         // just_warped.remove(used_warp);
         to_remove.add(used_warp);
@@ -401,7 +401,7 @@ public class magic_mirror implements Listener {
                       to_remove.add(player_global_warps);
                     } else {
                       if (player_global_warps.name == player_used_warp.warp_name) {
-                        //this prevents the current location from being showned right??
+                        // this prevents the current location from being showned right??
                       } else {
                         if (player_global_warps.name != null) {
                           prompt_list.add(player_global_warps.name);
@@ -431,7 +431,7 @@ public class magic_mirror implements Listener {
             just_used_lode_warp.remove(removeing_usedWarp);
           }
         }
-        //NOTE: these should be closer to the end right??
+        // NOTE: these should be closer to the end right??
         playerLocationChanged();
         ToBeRemoved();
       }
@@ -901,8 +901,11 @@ public class magic_mirror implements Listener {
 
     // FIXME: ive got too many of thse dm!=null stuff, just one is needed(or check
     // for item in hand before hand)
-    final String go_back_prompt = "GO BACK";
-    final String cancel_prompt = "CLOSE BOOK";
+    final String go_back_prompt = "~GO-BACK~";
+    final String cancel_prompt = "~CLOSE-BOOK~";
+
+    final String del_prompt = "~DEL~";
+    final String done_prompt = "~DONE~";
     if (dm != null) {
       dm.playerChooseSelection(ev);
       ev.setCancelled(true);
@@ -951,7 +954,7 @@ public class magic_mirror implements Listener {
                       player_name.substring(0, 4),
                       player_name.substring(0, 5),
                       player_name,
-                      "-CUSTOM-") ,
+                      "-CUSTOM-"),
                   player,
                   Item_Manager.magic_mirror_book);
               return;
@@ -962,14 +965,14 @@ public class magic_mirror implements Listener {
           return;
         case String s when s.contains("MM:create_warp_name_subcustom"):
           player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_WORK_CARTOGRAPHER, 1f, 1f);
-          if (dm.selection_answer == "(DEL)") {
+          if (dm.selection_answer == del_prompt) {
             StringBuilder w = new StringBuilder(dm.custom_answer);
-            dm.custom_answer = w.deleteCharAt(w.length()-1).toString();
-            dialMenu.openDialMenu(String.format("MM:create_warp_name_subcustom:%s", dm.getDataFromId()), 
+            dm.custom_answer = w.deleteCharAt(w.length() - 1).toString();
+            dialMenu.openDialMenu(String.format("MM:create_warp_name_subcustom:%s", dm.getDataFromId()),
                 dialMenu.alphabet(), player, null);
             return;
           }
-          if (dm.selection_answer == "-DONE-") {
+          if (dm.selection_answer == done_prompt) {
             // dialMenu.openDialMenu(, , , );
             dm.selection_answer = dm.custom_answer;
             dialMenu.openDialMenu(String.format("MM:create_warp_name_done:%s", dm.getDataFromId()), List.of(
@@ -978,7 +981,7 @@ public class magic_mirror implements Listener {
             return;
           }
           dm.custom_answer = String.format("%s%s", dm.custom_answer, dm.selection_answer);
-          dialMenu.openDialMenu(String.format("MM:create_warp_name_subcustom:%s", dm.getDataFromId()), 
+          dialMenu.openDialMenu(String.format("MM:create_warp_name_subcustom:%s", dm.getDataFromId()),
               dialMenu.alphabet(), player, null);
           return;
         case String s when s.contains("MM:create_warp_name_subname"):
@@ -986,8 +989,10 @@ public class magic_mirror implements Listener {
           String prefix = dm.selection_answer;
           // String[] split_again = dm.dial_id.split(":",-1);
           if (prefix == "-CUSTOM-") {
-            dialMenu.openDialMenu(String.format("MM:create_warp_name_subcustom:%s", dm.getDataFromId()), dialMenu.alphabet(), player, null);
-            // player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_WORK_CARTOGRAPHER, 1f, 1f);
+            dialMenu.openDialMenu(String.format("MM:create_warp_name_subcustom:%s", dm.getDataFromId()),
+                dialMenu.alphabet(), player, null);
+            // player.playSound(player.getLocation(),
+            // Sound.ENTITY_VILLAGER_WORK_CARTOGRAPHER, 1f, 1f);
             return;
           }
           String dial_id = String.format("MM:create_warp_name_done:%s", dm.getDataFromId());
@@ -1010,7 +1015,8 @@ public class magic_mirror implements Listener {
           return;
         case String s when s.contains("MM:create_warp_name_done"):
 
-          // player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
+          // player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f,
+          // 1f);
           String warp_name = dm.selection_answer;
           // String[] split_3 = dm.dial_id.split(":",-1);
           String[] split_loc = dm.getDataFromId().split("_", -1);
@@ -1329,7 +1335,7 @@ public class magic_mirror implements Listener {
               return;
             case "WARPS":
               dialMenu.openDialMenu("MM:warps",
-                  List.of("LOCATIONS", "WARP TO", "WAIT FOR", go_back_prompt, cancel_prompt), player,
+                  List.of("LOCATIONS", "OTHER USERS", go_back_prompt, cancel_prompt), player,
                   Item_Manager.magic_mirror_book);
               return;
             case "LAST DEATH":
@@ -1451,7 +1457,7 @@ public class magic_mirror implements Listener {
           }
         case "MM:warps":
           switch (dm.selection_answer) {
-            case go_back_prompt:
+            case go_back_prompt: // go back to last menu
               dialMenu.openDialMenu("MM:main",
                   List.of(
                       "BED",
@@ -1503,7 +1509,26 @@ public class magic_mirror implements Listener {
               saveGlobalWarpsToFile(global_warps_file);
               savePlayerWarpsToFile(player_warps_file);
               return;
+            case "OTHER USERS":
+              dialMenu.openDialMenu("MM:OTHER_USERS",
+                  List.of("WARP TO", "WAIT FOR", go_back_prompt, cancel_prompt), player,
+                  Item_Manager.magic_mirror_book);
+              return;
+            case cancel_prompt:
+              dialMenu.closeMenu(player);
+              return;
 
+          }
+        case "MM:OTHER_USERS":
+          switch (dm.selection_answer) {
+            case go_back_prompt:
+              dialMenu.openDialMenu("MM:warps",
+                  List.of("LOCATIONS", "OTHER USERS", go_back_prompt, cancel_prompt), player,
+                  Item_Manager.magic_mirror_book);
+              return;
+            case cancel_prompt:
+              dialMenu.closeMenu(player);
+              return;
             case "WARP TO":
               // TODO: list all players in the wait list
               if (isBookOutOfPages(ev)) {
@@ -1521,13 +1546,8 @@ public class magic_mirror implements Listener {
               dialMenu.wait_list.add(player);
               dialMenu.openDialMenu("MM:wait_for", List.of(cancel_prompt), player, Item_Manager.magic_mirror_book);
               return;
-            case cancel_prompt:
-              dialMenu.closeMenu(player);
-              return;
-
           }
         case "MM:warp_to":
-
           switch (dm.selection_answer) {
             case cancel_prompt:
               dialMenu.closeMenu(player);
