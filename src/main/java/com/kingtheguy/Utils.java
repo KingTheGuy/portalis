@@ -1,4 +1,4 @@
-package com.surv;
+package com.kingtheguy;
 
 public class Utils {
 

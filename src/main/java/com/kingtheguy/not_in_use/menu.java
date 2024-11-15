@@ -1,4 +1,4 @@
-package com.surv;
+package com.kingtheguy;
 
 import java.util.ArrayList;
 import java.util.List;

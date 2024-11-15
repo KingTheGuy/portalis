@@ -1,4 +1,4 @@
-package com.surv;
+package com.kingtheguy;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -95,6 +95,7 @@ public class DialMenu implements Listener {
 			// if (yaw % 30 >= 15) { //NOTE: this one is pretty fine
 			boolean sneaking = false;
 			if (player.isSneaking()) {
+				tick = tick_offset; //re-center
 				sneaking = true;
 			}
 			if (yaw > last_yaw_value) {
@@ -154,9 +155,10 @@ public class DialMenu implements Listener {
 				}
 			}
 			if (selected != last_selection_value) {
-				// System.out.println("the page flip sound should be playing");
 				Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
 						Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
+				// Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
+				// 		Sound.ITEM_INK_SAC_USE, 1f, 1f);
 			}
 			last_selection_value = selected;
 		}
@@ -457,6 +459,7 @@ public class DialMenu implements Listener {
 		// int bar_size = 25;
 		String word = has_menu_open.hover;
 		if (word == "") {
+			//FIXME: something is wrong here
 			word = has_menu_open.dial_options.get(has_menu_open.dial_options.size() / 2);
 		}
 		int word_size = word.length();
@@ -596,7 +599,7 @@ public class DialMenu implements Listener {
 				"w", "x", "y", "z",
 				"-", "'", "#", "_",
 				"1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
-				"~DEL~",
-				"~DONE~");
+				"=DEL=",
+				"=DONE=");
 	}
 }

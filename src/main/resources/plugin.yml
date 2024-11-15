@@ -1,5 +1,5 @@
-name: magic-mirror
-version: 0.1
-author: surv
-main: com.surv.magic
+name: portalis
+version: 1.0
+author: KingTheGuy
+main: com.kingtheguy.magic
 api-version: 1.20

@@ -1,11 +1,18 @@
 # DOC
 
-## how to use Magic Mirror & lore
+## how to use the Portalis & lore
 
 Use this book to warp around.
 
 Warping with this book
 will consume a page..
+
+As the use rip out a page an crumbles it the user will crumble and be
+sucked into the page.
+
+Just as quick they appear at their destination.
+
+-\*the book follows its user upon death.
 
 ---
 
@@ -27,7 +34,7 @@ _ingredients tossed in listed order into a [brewing-cauldron](#how-to-use-cauldr
 
 - 6x paper
 
-#### magic mirror:
+#### Portalis:
 
 _in crafting table_
 
@@ -40,16 +47,11 @@ _in crafting table_
 - E Eye of ender
 - I [Infused paper](#infused-paper)
 
-#### refilling magic mirror:
+#### refilling the Portalis:
 
 _in crafting table_
 
-> (I|I|I) top
-> (I|I|I) center
-> (_|M|_) bottom
-
-- I [Infused paper](#infused-paper)
-- M [Magic Mirror](#magic-mirror)
+combine the [[#Portalis:]] with at least 1 [[#infused-paper:]]
 
 ---
 
@@ -82,10 +84,10 @@ and toss in the ingredients.
 
 #### Creating
 
-Placing down a lodestone and
-using a name_tag on it will
-create a warp at that spot for
-you to warp to whenever.
+Placing down a lodestone crouch
+clicking it with a Portalis will
+create a location for the user to
+warp to.
 
 #### Saving location
 

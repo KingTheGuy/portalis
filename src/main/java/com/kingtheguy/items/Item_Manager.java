@@ -1,4 +1,4 @@
-package com.surv.items;
+package com.kingtheguy.items;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +29,7 @@ import org.bukkit.potion.PotionBrewer;
 import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionType;
 
-import com.surv.magic;
+import com.kingtheguy.magic;
 
 import io.papermc.paper.potion.PotionMix;
 import net.kyori.adventure.text.Component;
@@ -38,17 +38,24 @@ import net.kyori.adventure.text.format.NamedTextColor;
 public class Item_Manager {
 
 	public static ItemStack magic_mirror_book;
+	public static ItemStack portalis_book;
 	public static ItemStack ender_oil;
 	public static ItemStack infused_paper;
 	public static ItemStack spawn_book;
 	public static ItemStack coin;
 
+	public static Integer portalis_max_uses = 8;
+
 	public static void init() {
 		createMagicMirror();
+		createPortalis();
 		createEnderOil();
 		createInfusedPaper();
-		createMagicMirrorRecipe();
-		refillMagicMirrorRecipe();
+		// createInfusedPaperOldToNew();
+		// createMagicMirrorRecipe();
+		// refillMagicMirrorRecipe();
+		createPortalisRecipe();
+		// refillPortalis();
 		createStoneCutterRecipe();
 		// createSpawnBook();
 		createCoin();
@@ -99,6 +106,11 @@ public class Item_Manager {
 
 	}
 
+	private static void createPortalis() {
+		// Portalis book
+		portalis_book = refillPortalis(0);
+	}
+
 	private static void createMagicMirrorRecipe() {
 		// leather
 		{
@@ -128,6 +140,45 @@ public class Item_Manager {
 			Bukkit.updateRecipes();
 		}
 	}
+	// private static void createInfusedPaperOldToNew() {
+	// 	NamespacedKey key = new NamespacedKey(magic.getPlugin(), "custom_infused_paper_convert");
+	// 	ShapelessRecipe recipe = new ShapelessRecipe(key, infused_paper);
+	// 	ItemStack item = new ItemStack(Material.PAPER);
+	// 	ItemMeta meta = item.getItemMeta();
+	// 	meta.displayName(Component.text("Infused Paper").color(NamedTextColor.AQUA));
+	// 	recipe.addIngredient(item);
+	// 	Bukkit.getServer().addRecipe(recipe);
+	// 	Bukkit.updateRecipes();
+	// }
+	private static void createPortalisRecipe() {
+		// leather
+		{
+			NamespacedKey key = new NamespacedKey(magic.getPlugin(), "custom_portalis_recipe_LEATHER");
+			ShapedRecipe recipe = new ShapedRecipe(key, portalis_book);
+			recipe.shape("XXX", "ASD", "XXX");
+			recipe.setIngredient('X', Material.LEATHER);
+			recipe.setIngredient('A', Material.GOLD_INGOT);
+			recipe.setIngredient('S', Material.ENDER_EYE);
+			recipe.setIngredient('D', infused_paper);
+			Bukkit.getServer().addRecipe(recipe);
+			Bukkit.updateRecipes();
+			// Bukkit.addRecipe(recipe);
+		}
+
+		// rabbit hide
+		{
+			NamespacedKey key = new NamespacedKey(magic.getPlugin(), "custom_portalis_recipe_HIDE");
+			ShapedRecipe recipe = new ShapedRecipe(key, portalis_book);
+			recipe.shape("XXX", "ASD", "XXX");
+			recipe.setIngredient('X', Material.RABBIT_HIDE);
+			recipe.setIngredient('A', Material.GOLD_INGOT);
+			recipe.setIngredient('S', Material.ENDER_EYE);
+			recipe.setIngredient('D', infused_paper);
+			// Bukkit.addRecipe(recipe);
+			Bukkit.getServer().addRecipe(recipe);
+			Bukkit.updateRecipes();
+		}
+	}
 
 	private static void refillMagicMirrorRecipe() {
 		ItemStack repaired_book = new ItemStack(magic_mirror_book);
@@ -146,6 +197,22 @@ public class Item_Manager {
 		// Bukkit.addRecipe(recipe);
 		Bukkit.getServer().addRecipe(recipe);
 		Bukkit.updateRecipes();
+	}
+
+	public static ItemStack refillPortalis(Integer amount) {
+		ItemStack item = new ItemStack(Material.BOOK, 1);
+		ItemMeta meta = item.getItemMeta();
+		meta.displayName(Component.text(String.format("Portalis")).color(NamedTextColor.GOLD));
+		// Integer max_uses = 6;
+		NamespacedKey key = new NamespacedKey(magic.getPlugin(), "portalis_use_data");
+		meta.getPersistentDataContainer().set(key, PersistentDataType.INTEGER, amount);
+		List<Component> lore = new ArrayList<>();
+		lore.add(Component.text(String.format("%s/%s uses", amount, portalis_max_uses)).color(NamedTextColor.AQUA));
+		meta.lore(lore);
+		meta.addEnchant(Enchantment.LUCK, 1, false);
+		meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+		item.setItemMeta(meta);
+		return item;
 	}
 
 	private static void createEnderOil() {
@@ -177,7 +244,10 @@ public class Item_Manager {
 		// Infused paper
 		ItemStack item = new ItemStack(Material.PAPER, 1);
 		ItemMeta meta = item.getItemMeta();
-		meta.displayName(Component.text(String.format("Infused Paper")));
+		meta.displayName(Component.text(String.format("Infused Paper")).color(NamedTextColor.AQUA));
+		List<Component> lore = new ArrayList<>();
+		lore.add(Component.text(String.format("I can see my reflection")).color(NamedTextColor.DARK_PURPLE));
+		meta.lore(lore);
 		meta.addEnchant(Enchantment.LUCK, 1, false);
 		meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
 		item.setItemMeta(meta);
@@ -221,7 +291,16 @@ public class Item_Manager {
 			Bukkit.getServer().addRecipe(recipe);
 			Bukkit.updateRecipes();
 		}
+		{
+			NamespacedKey key = new NamespacedKey(magic.getPlugin(), "mm_stonecutter_cobbled_deepslate");
+			ItemStack result = new ItemStack(Material.COBBLED_DEEPSLATE);
+			StonecuttingRecipe recipe = new StonecuttingRecipe(key, result, Material.DEEPSLATE);
+			// Bukkit.addRecipe(recipe);
+			Bukkit.getServer().addRecipe(recipe);
+			Bukkit.updateRecipes();
+		}
 		// TODO: add "Netherack > Red Sand at Stonecutter"
+		//yea maybe not
 	}
 
 	// private static void createSpawnBook() {

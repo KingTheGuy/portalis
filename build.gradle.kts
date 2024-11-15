@@ -30,9 +30,9 @@ dependencies {
     implementation("com.google.code.gson:gson:2.11.0")
 }
 
-group = "com.surv.magic"
+group = "com.kingtheguy.magic"
 version = "1.0"
-description = "magic-mirror"
+description = "portalis"
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))

@@ -1,4 +1,4 @@
-package com.surv;
+package com.kingtheguy;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,7 +24,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
 import com.destroystokyo.paper.event.server.ServerTickStartEvent;
-import com.surv.items.Item_Manager;
+import com.kingtheguy.items.Item_Manager;
 
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.sound.Sound;

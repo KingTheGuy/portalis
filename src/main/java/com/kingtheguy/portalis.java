@@ -1,4 +1,4 @@
-package com.surv;
+package com.kingtheguy;
 
 import java.io.BufferedWriter;
 import java.io.FileReader;
@@ -8,8 +8,10 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.Iterator;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -29,6 +31,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -46,7 +49,7 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-import com.surv.items.Item_Manager;
+import com.kingtheguy.items.Item_Manager;
 
 import com.destroystokyo.paper.event.server.ServerTickStartEvent;
 import com.google.gson.Gson;
@@ -57,7 +60,7 @@ import java.lang.reflect.Type;
 // import com.moandjiezana.toml.Toml;
 // import com.moandjiezana.toml.TomlWriter;
 // import com.surv.menu;
-import com.surv.DialMenu.PlayerDialMenu;
+import com.kingtheguy.DialMenu.PlayerDialMenu;
 
 // import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import net.kyori.adventure.audience.Audience;
@@ -93,7 +96,7 @@ import net.md_5.bungee.api.ChatColor;
 //FIXME: let player know not to have a shield in hand.. 
 //or add code to ignore the shield or any other item in offhand
 
-public class magic_mirror implements Listener {
+public class portalis implements Listener {
 
   ///// Config////
   // String TheItemName = "Magic Mirror";
@@ -103,8 +106,15 @@ public class magic_mirror implements Listener {
   // TODO: add a delay, on item use.. will cause some problems otherwise.
   // may need to change the confirmation on select to be crouch.
   // WHAT AM I DOING WRONG HERE?//
-  String global_warps_file = "global_warps.json";
-  String player_warps_file = "player_warps.json";
+
+  // FIXME: come back to this plugin_name var once i figure out the name of this
+  // plugin
+  String PLUGIN_NAME = "portalis";
+  String global_warps_file = String.format("plugins/%s/global_warps.json", PLUGIN_NAME);
+  String player_warps_file = String.format("plugins/%s/player_warps.json", PLUGIN_NAME);
+  // String global_warps_file = "global_warps.json";
+  // String player_warps_file = "player_warps.json";
+
   public static List<player_deaths> deaths = new ArrayList<>();
 
   public static List<GlobalWarps> global_warps = new ArrayList<>();
@@ -419,7 +429,7 @@ public class magic_mirror implements Listener {
                 }
               }
               Collections.sort(prompt_list, String.CASE_INSENSITIVE_ORDER);
-              dialMenu.openDialMenu("MM:locations", prompt_list, player_used_warp.player, null);
+              dialMenu.openDialMenu("PORTALIS:locations", prompt_list, player_used_warp.player, null);
               saveGlobalWarpsToFile(global_warps_file);
               savePlayerWarpsToFile(player_warps_file);
               continue;
@@ -491,7 +501,7 @@ public class magic_mirror implements Listener {
 
   }
 
-  public String PLAYER_WARPS = "player_warps.yaml";
+  // public String PLAYER_WARPS = "player_warps.yaml";
 
   public class warp_options_cost {
     private String name;
@@ -764,7 +774,7 @@ public class magic_mirror implements Listener {
   // return;
   // }
   // if
-  // (player.getInventory().getItemInMainHand().getType().equals(Item_Manager.magic_mirror_book.getType()))
+  // (player.getInventory().getItemInMainHand().getType().equals(Item_Manager.portalis_book.getType()))
   // {
   // System.out.println("YES this should be working..");
   // }
@@ -803,21 +813,21 @@ public class magic_mirror implements Listener {
     if (item.isEmpty()) {
       return;
     }
-    ItemStack magic_mirror_no_data = new ItemStack(Item_Manager.magic_mirror_book);
-    ItemMeta magic_meta = magic_mirror_no_data.getItemMeta();
+    ItemStack portalis_no_data = new ItemStack(Item_Manager.portalis_book);
+    ItemMeta portalis_meta = portalis_no_data.getItemMeta();
 
     ItemStack c_hand_item = item.clone();
-    c_hand_item.setItemMeta(magic_meta);
-    if (!c_hand_item.equals(magic_mirror_no_data)) {
+    c_hand_item.setItemMeta(portalis_meta);
+    if (!c_hand_item.equals(portalis_no_data)) {
       // System.out.println("not the same!!");
       return;
     }
 
-    NamespacedKey key = new NamespacedKey(magic.getPlugin(), "magic_mirror_use_data");
+    NamespacedKey key = new NamespacedKey(magic.getPlugin(), "portalis_use_data");
     ItemMeta meta = item.getItemMeta();
     PersistentDataContainer container = meta.getPersistentDataContainer();
     Integer cur_value = container.get(key, PersistentDataType.INTEGER);
-    Integer max_uses = 6;
+    Integer max_uses = Item_Manager.portalis_max_uses;
     Integer new_value = cur_value;
     if (cur_value > 0) {
       new_value = cur_value - 1;
@@ -826,7 +836,7 @@ public class magic_mirror implements Listener {
     List<Component> lore = new ArrayList<>();
     meta.getPersistentDataContainer().set(key, PersistentDataType.INTEGER, new_value);
     item.setItemMeta(meta);
-    lore.add(Component.text(String.format("%s/%s uses", new_value, max_uses)));
+    lore.add(Component.text(String.format("%s/%s uses", new_value, max_uses)).color(NamedTextColor.AQUA));
     item.lore().clear();
     item.lore(lore);
   }
@@ -865,7 +875,7 @@ public class magic_mirror implements Listener {
   public boolean isBookOutOfPages(PlayerInteractEvent ev) {
     Player player = ev.getPlayer();
     Audience audience = Audience.audience(player);
-    NamespacedKey key = new NamespacedKey(magic.getPlugin(), "magic_mirror_use_data");
+    NamespacedKey key = new NamespacedKey(magic.getPlugin(), "portalis_use_data");
     ItemMeta meta = ev.getItem().getItemMeta();
     PersistentDataContainer container = meta.getPersistentDataContainer();
     Integer cur_value = container.get(key, PersistentDataType.INTEGER);
@@ -901,16 +911,16 @@ public class magic_mirror implements Listener {
 
     // FIXME: ive got too many of thse dm!=null stuff, just one is needed(or check
     // for item in hand before hand)
-    final String go_back_prompt = "~GO-BACK~";
-    final String cancel_prompt = "~CLOSE-BOOK~";
+    final String go_back_prompt = "=GO-BACK=";
+    final String cancel_prompt = "=CLOSE-BOOK=";
 
-    final String del_prompt = "~DEL~";
-    final String done_prompt = "~DONE~";
+    final String del_prompt = "=DEL=";
+    final String done_prompt = "=DONE=";
     if (dm != null) {
       dm.playerChooseSelection(ev);
       ev.setCancelled(true);
       switch (dm.dial_id) {
-        case "MM:locations":
+        case "PORTALIS:locations":
           switch (dm.selection_answer) {
             case cancel_prompt:
               dialMenu.closeMenu(player);
@@ -938,15 +948,16 @@ public class magic_mirror implements Listener {
               }
               return;
           }
-        case String s when s.contains("MM:create_warp_name_prefix"):
+        case String s when s.contains("PORTALIS:create_warp_name_prefix"):
           switch (dm.selection_answer) {
-            case "create warp":
+            case "CREATE-WARP":
               // player.playSound(player.getLocation(), Sound.BLOCK_GRINDSTONE_USE, 1f, 1f);
               String player_name = ev.getPlayer().getName();
               // String[] split = dm.dial_id.split(":",-1);
-              // String dial_id = String.format("MM:create_warp_name_subname:%s", split[2]);
-              String dial_id = String.format("MM:create_warp_name_subname:%s", dm.getDataFromId());
-              System.out.println(String.format("the id looks like this: %s", dial_id));
+              // String dial_id = String.format("PORTALIS:create_warp_name_subname:%s",
+              // split[2]);
+              String dial_id = String.format("PORTALIS:create_warp_name_subname:%s", dm.getDataFromId());
+              // System.out.println(String.format("the id looks like this: %s", dial_id));
               dialMenu.openDialMenu(dial_id,
                   List.of(
                       player_name.substring(0, 2),
@@ -954,51 +965,52 @@ public class magic_mirror implements Listener {
                       player_name.substring(0, 4),
                       player_name.substring(0, 5),
                       player_name,
-                      "-CUSTOM-"),
+                      "=CUSTOM_NAME="),
                   player,
-                  Item_Manager.magic_mirror_book);
+                  Item_Manager.portalis_book);
               return;
             case "cancel":
               dialMenu.closeMenu(player);
               return;
           }
           return;
-        case String s when s.contains("MM:create_warp_name_subcustom"):
+        case String s when s.contains("PORTALIS:create_warp_name_subcustom"):
           player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_WORK_CARTOGRAPHER, 1f, 1f);
           if (dm.selection_answer == del_prompt) {
             StringBuilder w = new StringBuilder(dm.custom_answer);
             dm.custom_answer = w.deleteCharAt(w.length() - 1).toString();
-            dialMenu.openDialMenu(String.format("MM:create_warp_name_subcustom:%s", dm.getDataFromId()),
+            dialMenu.openDialMenu(String.format("PORTALIS:create_warp_name_subcustom:%s", dm.getDataFromId()),
                 dialMenu.alphabet(), player, null);
             return;
           }
           if (dm.selection_answer == done_prompt) {
             // dialMenu.openDialMenu(, , , );
             dm.selection_answer = dm.custom_answer;
-            dialMenu.openDialMenu(String.format("MM:create_warp_name_done:%s", dm.getDataFromId()), List.of(
-                dm.selection_answer), player, Item_Manager.magic_mirror_book);
+            dialMenu.openDialMenu(String.format("PORTALIS:create_warp_name_done:%s", dm.getDataFromId()), List.of(
+                dm.selection_answer), player, Item_Manager.portalis_book);
             dm.custom_answer = "";
             return;
           }
           dm.custom_answer = String.format("%s%s", dm.custom_answer, dm.selection_answer);
-          dialMenu.openDialMenu(String.format("MM:create_warp_name_subcustom:%s", dm.getDataFromId()),
+          dialMenu.openDialMenu(String.format("PORTALIS:create_warp_name_subcustom:%s", dm.getDataFromId()),
               dialMenu.alphabet(), player, null);
           return;
-        case String s when s.contains("MM:create_warp_name_subname"):
+        case String s when s.contains("PORTALIS:create_warp_name_subname"):
           // String player_name = ev.getPlayer().getName();
           String prefix = dm.selection_answer;
           // String[] split_again = dm.dial_id.split(":",-1);
-          if (prefix == "-CUSTOM-") {
-            dialMenu.openDialMenu(String.format("MM:create_warp_name_subcustom:%s", dm.getDataFromId()),
+          if (prefix == "=CUSTOM_NAME=") {
+            dialMenu.openDialMenu(String.format("PORTALIS:create_warp_name_subcustom:%s", dm.getDataFromId()),
                 dialMenu.alphabet(), player, null);
             // player.playSound(player.getLocation(),
             // Sound.ENTITY_VILLAGER_WORK_CARTOGRAPHER, 1f, 1f);
             return;
           }
-          String dial_id = String.format("MM:create_warp_name_done:%s", dm.getDataFromId());
-          System.out.println(String.format("the id looks like this: %s", dial_id));
+          String dial_id = String.format("PORTALIS:create_warp_name_done:%s", dm.getDataFromId());
+          // System.out.println(String.format("the id looks like this: %s", dial_id));
           dialMenu.openDialMenu(dial_id,
               List.of(
+                  String.format("%s's %s", prefix, "=CUSTOM_NAME="),
                   String.format("%s's %s", prefix, "Base"),
                   String.format("%s's %s", prefix, "Home"),
                   String.format("%s's %s", prefix, "Castle"),
@@ -1011,9 +1023,15 @@ public class magic_mirror implements Listener {
                   String.format("%s's %s", prefix, "Village"),
                   String.format("%s's %s", prefix, "Farm")),
               player,
-              Item_Manager.magic_mirror_book);
+              Item_Manager.portalis_book);
           return;
-        case String s when s.contains("MM:create_warp_name_done"):
+        case String s when s.contains("PORTALIS:create_warp_name_done"):
+          if (dm.selection_answer.contains("=CUSTOM_NAME=")) {
+            dialMenu.openDialMenu(String.format("PORTALIS:create_warp_name_subcustom:%s", dm.getDataFromId()),
+                dialMenu.alphabet(), player, null);
+            dm.custom_answer = dm.selection_answer.replaceAll("=CUSTOM_NAME=", "");
+            return;
+          }
 
           // player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f,
           // 1f);
@@ -1032,63 +1050,70 @@ public class magic_mirror implements Listener {
       }
     }
 
-    if (itemType.equals(Material.STICK)) {
-      // DialMenu.player_with_menu();
-      ev.setCancelled(true);
-      if (dm != null) {
-        dm.playerChooseSelection(ev);
-        switch (dm.dial_id) {
-          case "mm:stick_main":
-            System.out.println(String.format("what was the answer?", dm.selection_answer));
-            if (dm.selection_answer == "/spark tps") {
-              dialMenu.openDialMenu("mm:i_see", List.of("you chose tps", "good for you", "menu_is_i_see"), player,
-                  new ItemStack(Material.STICK));
-              // dialMenu.closeMenu(player);
-            } else {
-              dialMenu.openDialMenu("mm:stick_now", List.of("so what", "now then", "you or me"), player,
-                  new ItemStack(Material.STICK));
-            }
-            return;
-          case "mm:stick_now":
-            dialMenu.openDialMenu("mm:stick_two", List.of("rename-warp", "remove-warp"), player,
-                new ItemStack(Material.STICK));
-            return;
-          case "mm:stick_two":
-            if (dm.selection_answer == "rename-warp") {
-              String player_name = ev.getPlayer().getName();
-              dialMenu.openDialMenu("mm:rename-warp",
-                  List.of(player_name.substring(0, 2), player_name.substring(0, 3), player_name.substring(0, 4),
-                      player_name),
-                  player,
-                  new ItemStack(Material.STICK));
-            }
-            if (dm.selection_answer == "remove-warp") {
+    // if (itemType.equals(Material.STICK)) {
+    // // DialMenu.player_with_menu();
+    // ev.setCancelled(true);
+    // if (dm != null) {
+    // dm.playerChooseSelection(ev);
+    // switch (dm.dial_id) {
+    // case "mm:stick_main":
+    // System.out.println(String.format("what was the answer?",
+    // dm.selection_answer));
+    // if (dm.selection_answer == "/spark tps") {
+    // dialMenu.openDialMenu("mm:i_see", List.of("you chose tps", "good for you",
+    // "menu_is_i_see"), player,
+    // new ItemStack(Material.STICK));
+    // // dialMenu.closeMenu(player);
+    // } else {
+    // dialMenu.openDialMenu("mm:stick_now", List.of("so what", "now then", "you or
+    // me"), player,
+    // new ItemStack(Material.STICK));
+    // }
+    // return;
+    // case "mm:stick_now":
+    // dialMenu.openDialMenu("mm:stick_two", List.of("rename-warp", "remove-warp"),
+    // player,
+    // new ItemStack(Material.STICK));
+    // return;
+    // case "mm:stick_two":
+    // if (dm.selection_answer == "rename-warp") {
+    // String player_name = ev.getPlayer().getName();
+    // dialMenu.openDialMenu("mm:rename-warp",
+    // List.of(player_name.substring(0, 2), player_name.substring(0, 3),
+    // player_name.substring(0, 4),
+    // player_name),
+    // player,
+    // new ItemStack(Material.STICK));
+    // }
+    // if (dm.selection_answer == "remove-warp") {
 
-            }
-            // dialMenu.closeMenu(player);
-            return;
-          case "mm:rename-warp":
-            String prefix = dm.selection_answer;
-            dialMenu.openDialMenu("mm:renamed-warp", List.of(
-                String.format("%s's %s", prefix, "BASE"),
-                String.format("%s's %s", prefix, "CASTLE"),
-                String.format("%s's %s", prefix, "HOME"),
-                String.format("%s's %s", prefix, "VILLAGE"),
-                String.format("%s's %s", prefix, "FARM")), player,
-                new ItemStack(Material.STICK));
-            return;
-          case "mm:renamed-warp":
-            dialMenu.closeMenu(player);
-            audience.sendActionBar(
-                () -> Component.text(ChatColor.AQUA + String.format("warp renamed to [ %s ]", dm.selection_answer)));
-            return;
-        }
-      } else {
-        dialMenu.openDialMenu("mm:stick_main", List.of("/co near", "/co inspect", "/spark tps", "/vote kick", "CLOSE"),
-            player, new ItemStack(Material.STICK));
-      }
-      return;
-    }
+    // }
+    // // dialMenu.closeMenu(player);
+    // return;
+    // case "mm:rename-warp":
+    // String prefix = dm.selection_answer;
+    // dialMenu.openDialMenu("mm:renamed-warp", List.of(
+    // String.format("%s's %s", prefix, "BASE"),
+    // String.format("%s's %s", prefix, "CASTLE"),
+    // String.format("%s's %s", prefix, "HOME"),
+    // String.format("%s's %s", prefix, "VILLAGE"),
+    // String.format("%s's %s", prefix, "FARM")), player,
+    // new ItemStack(Material.STICK));
+    // return;
+    // case "mm:renamed-warp":
+    // dialMenu.closeMenu(player);
+    // audience.sendActionBar(
+    // () -> Component.text(ChatColor.AQUA + String.format("warp renamed to [ %s ]",
+    // dm.selection_answer)));
+    // return;
+    // }
+    // } else {
+    // dialMenu.openDialMenu("mm:stick_main", List.of("/co near", "/co inspect",
+    // "/spark tps", "/vote kick", "CLOSE"),
+    // player, new ItemStack(Material.STICK));
+    // }
+    // return;
+    // }
 
     // TODO: min level of xp needed to store is 10 levels.. should also give back 10
     // levels
@@ -1123,7 +1148,6 @@ public class magic_mirror implements Listener {
 
           player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1f);
           ev.setCancelled(true);
-
         }
       }
     }
@@ -1133,52 +1157,54 @@ public class magic_mirror implements Listener {
       // just wait for the dial id to be addingwarp_answer
       // so use this as a way to get get to that first dial part
       if (ev.getPlayer().isSneaking()) {
-        if (ev.getClickedBlock().getType().equals(Material.LODESTONE)) {
-          NamespacedKey key = new NamespacedKey(magic.getPlugin(), "magic_mirror_use_data");
-          ItemMeta meta = ev.getItem().getItemMeta();
-          PersistentDataContainer container = meta.getPersistentDataContainer();
-          Integer cur_value = container.get(key, PersistentDataType.INTEGER);
-          if (cur_value != null) {
-            if (dm == null) {
-              // TODO: need to first check if this is a warp already or not
-              Location location = ev.getClickedBlock().getLocation();
-              GlobalWarps warp = isThisAWarpLocation(ev.getClickedBlock().getLocation());
-              if (warp == null) {
-                String loc_string = String.format("%s_%s_%s", location.getBlockX(), location.blockY(),
-                    location.getBlockZ());
-                String dial_id = String.format("MM:create_warp_name_prefix:%s", loc_string);
-                System.out.println(String.format("the id looks like this: %s", dial_id));
-                dialMenu.openDialMenu(dial_id,
-                    List.of(
-                        "create warp",
-                        "cancel"),
-                    player, Item_Manager.magic_mirror_book);
-                ev.setCancelled(true);
-              } else {
-                String nametag_name = "ass";
-                // rename or added warp to locations
-                if (warp.creator.equals(ev.getPlayer().getName())) {
-                  boolean name_in_use = false;
-                  for (GlobalWarps w : global_warps) {
-                    if (nametag_name.equals(w.name)) {
-                      Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
-                          Sound.BLOCK_CONDUIT_DEACTIVATE, 1f, 1f);
-                      audience.sendActionBar(
-                          () -> Component.text(ChatColor.LIGHT_PURPLE + "Choose another name"));
-                      name_in_use = true;
-                      break;
-                    }
-                  }
-                  if (!name_in_use) {
-                    Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
-                        Sound.BLOCK_SMITHING_TABLE_USE, 1f, 1f);
-                  }
+        if (ev.getClickedBlock() != null) {
+          if (ev.getClickedBlock().getType().equals(Material.LODESTONE)) {
+            NamespacedKey key = new NamespacedKey(magic.getPlugin(), "portalis_use_data");
+            ItemMeta meta = ev.getItem().getItemMeta();
+            PersistentDataContainer container = meta.getPersistentDataContainer();
+            Integer cur_value = container.get(key, PersistentDataType.INTEGER);
+            if (cur_value != null) {
+              if (dm == null) {
+                // TODO: need to first check if this is a warp already or not
+                Location location = ev.getClickedBlock().getLocation();
+                GlobalWarps warp = isThisAWarpLocation(ev.getClickedBlock().getLocation());
+                if (warp == null) {
+                  String loc_string = String.format("%s_%s_%s", location.getBlockX(), location.blockY(),
+                      location.getBlockZ());
+                  String dial_id = String.format("PORTALIS:create_warp_name_prefix:%s", loc_string);
+                  // System.out.println(String.format("the id looks like this: %s", dial_id));
+                  dialMenu.openDialMenu(dial_id,
+                      List.of(
+                          "CREATE-WARP",
+                          "CANCEL"),
+                      player, Item_Manager.portalis_book);
+                  ev.setCancelled(true);
                 } else {
-                  audience.sendActionBar(
-                      () -> Component.text(String.format("Cannot rename. %s's Warp.", warp.creator)));
+                  String nametag_name = "ass";
+                  // rename or added warp to locations
+                  if (warp.creator.equals(ev.getPlayer().getName())) {
+                    boolean name_in_use = false;
+                    for (GlobalWarps w : global_warps) {
+                      if (nametag_name.equals(w.name)) {
+                        Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
+                            Sound.BLOCK_CONDUIT_DEACTIVATE, 1f, 1f);
+                        audience.sendActionBar(
+                            () -> Component.text(ChatColor.LIGHT_PURPLE + "Choose another name"));
+                        name_in_use = true;
+                        break;
+                      }
+                    }
+                    if (!name_in_use) {
+                      Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
+                          Sound.BLOCK_SMITHING_TABLE_USE, 1f, 1f);
+                    }
+                  } else {
+                    audience.sendActionBar(
+                        () -> Component.text(String.format("Cannot rename. %s's Warp.", warp.creator)));
+                  }
                 }
+                return;
               }
-              return;
             }
           }
         }
@@ -1231,11 +1257,11 @@ public class magic_mirror implements Listener {
         return;
       } else {
         // if
-        // (!item.getItemMeta().displayName().equals(Item_Manager.magic_mirror_book.getItemMeta().displayName()))
+        // (!item.getItemMeta().displayName().equals(Item_Manager.portalis_book.getItemMeta().displayName()))
         // {
         // return;
         // }
-        NamespacedKey key = new NamespacedKey(magic.getPlugin(), "magic_mirror_use_data");
+        NamespacedKey key = new NamespacedKey(magic.getPlugin(), "portalis_use_data");
         ItemMeta meta = ev.getItem().getItemMeta();
         PersistentDataContainer container = meta.getPersistentDataContainer();
         Integer cur_value = container.get(key, PersistentDataType.INTEGER);
@@ -1245,7 +1271,7 @@ public class magic_mirror implements Listener {
         if (cur_value != null) {
           ev.setCancelled(true); // prevent other iteractions
 
-          // if (magic_mirror_no_data.equals(hand_item)) {
+          // if (portalis_no_data.equals(hand_item)) {
           // if (action.equals(Action.RIGHT_CLICK_BLOCK) ||
           // action.equals(Action.RIGHT_CLICK_AIR)) {
           if (ev.getClickedBlock() != null) {
@@ -1301,7 +1327,7 @@ public class magic_mirror implements Listener {
     if (dm != null) {
       dm.playerChooseSelection(ev);
       switch (dm.dial_id) {
-        case "MM:main":
+        case "PORTALIS:main":
           switch (dm.selection_answer) {
             case "BED":
               if (isBookOutOfPages(ev)) {
@@ -1320,7 +1346,7 @@ public class magic_mirror implements Listener {
               }
               dialMenu.closeMenu(player);
               // dialMenu.sendDialMenu(2, List.of(confirm_prompt, cancel_prompt), player,
-              // Item_Manager.magic_mirror_book);
+              // Item_Manager.portalis_book);
               return;
             case "SPAWN":
               if (isBookOutOfPages(ev)) {
@@ -1334,9 +1360,9 @@ public class magic_mirror implements Listener {
               dialMenu.closeMenu(player);
               return;
             case "WARPS":
-              dialMenu.openDialMenu("MM:warps",
+              dialMenu.openDialMenu("PORTALIS:warps",
                   List.of("LOCATIONS", "OTHER USERS", go_back_prompt, cancel_prompt), player,
-                  Item_Manager.magic_mirror_book);
+                  Item_Manager.portalis_book);
               return;
             case "LAST DEATH":
               if (isBookOutOfPages(ev)) {
@@ -1391,9 +1417,14 @@ public class magic_mirror implements Listener {
                               """).decorate(TextDecoration.ITALIC).decoration(TextDecoration.BOLD, false)),
                   Component.text("")
                       .append(Component.text("Stange\n\n").decorate(TextDecoration.BOLD))
-                      .append(Component.text("Use this book to warp around.\n\n"))
-                      .append(Component.text("Warping with this book\n"))
-                      .append(Component.text("will consume a page..\n")),
+                      .append(Component.text(
+                          """
+                              Use this book to warp around.
+                              Warping with this book
+                              will consume a page..
+
+                              Crouching while using the menu will increase the dial's speed.
+                                  """).decoration(TextDecoration.BOLD, false)),
                   Component.text("")
                       .append(Component.text("infused-paper:\n\n").decorate(TextDecoration.BOLD))
                       .append(Component.text("ingredients tossed into a cauldron\n\n").decorate(TextDecoration.ITALIC))
@@ -1402,21 +1433,17 @@ public class magic_mirror implements Listener {
                       .append(Component.text("- 1x dandelion\n\n"))
                       .append(Component.text("lastly toss in:\n\n"))
                       .append(Component.text("- 6x paper\n")),
-                  Component.text("")
-                      .append(Component.text("refilling the magic mirror:\n\n").decorate(TextDecoration.BOLD))
-                      .append(Component.text("in crafting table\n\n").decorate(TextDecoration.ITALIC))
-                      .append(Component.text("(I|I|I) top   \n"))
-                      .append(Component.text("(I|I|I) center\n"))
-                      .append(Component.text("(_|M|_) bottom\n\n"))
-                      .append(Component.text("- (I) Infused paper\n"))
-                      .append(Component.text("- (M) Magic Mirror\n")),
+                  Component.text("refilling the Portalis:\n\n").decorate(TextDecoration.BOLD)
+                      .append(Component.text(
+                          """
+                              In crafting table:\n
+                              Combine the Portalis with at least 1 infused-paper
+                                  """).decoration(TextDecoration.BOLD, false)),
                   Component.text("")
                       .append(Component.text("How to use cauldron:\n").decorate(TextDecoration.BOLD))
                       .append(Component.text(
                           """
-                              Simply place a `cauldron` on
-                               top of a lit `campfire`
-                              and toss in the ingredients.
+                              Simply place a `cauldron` on top of a lit `campfire` and toss in the ingredients.
                               """).decoration(TextDecoration.BOLD, false)),
                   Component.text("Warping to other book users\n\n").decorate(TextDecoration.BOLD)
                       .append(Component.text(
@@ -1427,8 +1454,8 @@ public class magic_mirror implements Listener {
                       .append(Component.text("Creating\n\n").decorate(TextDecoration.BOLD))
                       .append(Component.text(
                           """
-                              Placing down a lodestone and using a name_tag on it will create a warp at that spot for you to warp to whenever.
-                              """)
+                              Placing down a lodestone crouch clicking it with a Portalis will create a location for the user to warp to.
+                                """)
                           .decoration(TextDecoration.BOLD, false)),
                   Component.text("Saving location\n\n").decorate(TextDecoration.BOLD)
                       .append(Component.text(
@@ -1455,10 +1482,10 @@ public class magic_mirror implements Listener {
               dialMenu.closeMenu(player);
               return;
           }
-        case "MM:warps":
+        case "PORTALIS:warps":
           switch (dm.selection_answer) {
             case go_back_prompt: // go back to last menu
-              dialMenu.openDialMenu("MM:main",
+              dialMenu.openDialMenu("PORTALIS:main",
                   List.of(
                       "BED",
                       "SPAWN",
@@ -1466,7 +1493,7 @@ public class magic_mirror implements Listener {
                       "LAST DEATH",
                       "INFO",
                       cancel_prompt),
-                  player, Item_Manager.magic_mirror_book);
+                  player, Item_Manager.portalis_book);
               return;
             case "LOCATIONS":
               if (isBookOutOfPages(ev)) {
@@ -1505,26 +1532,26 @@ public class magic_mirror implements Listener {
               }
               Collections.sort(prompt_list, String.CASE_INSENSITIVE_ORDER);
               prompt_list.add(cancel_prompt);
-              dialMenu.openDialMenu("MM:locations", prompt_list, player, Item_Manager.magic_mirror_book);
+              dialMenu.openDialMenu("PORTALIS:locations", prompt_list, player, Item_Manager.portalis_book);
               saveGlobalWarpsToFile(global_warps_file);
               savePlayerWarpsToFile(player_warps_file);
               return;
             case "OTHER USERS":
-              dialMenu.openDialMenu("MM:OTHER_USERS",
+              dialMenu.openDialMenu("PORTALIS:OTHER_USERS",
                   List.of("WARP TO", "WAIT FOR", go_back_prompt, cancel_prompt), player,
-                  Item_Manager.magic_mirror_book);
+                  Item_Manager.portalis_book);
               return;
             case cancel_prompt:
               dialMenu.closeMenu(player);
               return;
 
           }
-        case "MM:OTHER_USERS":
+        case "PORTALIS:OTHER_USERS":
           switch (dm.selection_answer) {
             case go_back_prompt:
-              dialMenu.openDialMenu("MM:warps",
+              dialMenu.openDialMenu("PORTALIS:warps",
                   List.of("LOCATIONS", "OTHER USERS", go_back_prompt, cancel_prompt), player,
-                  Item_Manager.magic_mirror_book);
+                  Item_Manager.portalis_book);
               return;
             case cancel_prompt:
               dialMenu.closeMenu(player);
@@ -1539,15 +1566,15 @@ public class magic_mirror implements Listener {
                 the_players.add(waiting_players.getName().toUpperCase());
               }
               the_players.add(cancel_prompt);
-              dialMenu.openDialMenu("mm:warp_to", the_players, player, Item_Manager.magic_mirror_book);
+              dialMenu.openDialMenu("PORTALIS:warp_to", the_players, player, Item_Manager.portalis_book);
               return;
             case "WAIT FOR":
               // TODO: add player to some wait list
               dialMenu.wait_list.add(player);
-              dialMenu.openDialMenu("MM:wait_for", List.of(cancel_prompt), player, Item_Manager.magic_mirror_book);
+              dialMenu.openDialMenu("PORTALIS:wait_for", List.of(cancel_prompt), player, Item_Manager.portalis_book);
               return;
           }
-        case "MM:warp_to":
+        case "PORTALIS:warp_to":
           switch (dm.selection_answer) {
             case cancel_prompt:
               dialMenu.closeMenu(player);
@@ -1561,13 +1588,12 @@ public class magic_mirror implements Listener {
                   teleportEffectSound(player, player.getLocation());
                   player.teleport(wait_player);
                   dialMenu.closeMenu(player);
-                  dialMenu.closeMenu(wait_player);
-                  // teleportEffectSound(player, wait_player.getLocation());
+                  // dialMenu.closeMenu(wait_player);
                   return;
                 }
               }
           }
-        case "MM:wait_for":
+        case "PORTALIS:wait_for":
           switch (dm.selection_answer) {
             case cancel_prompt:
               dialMenu.closeMenu(player);
@@ -1575,7 +1601,7 @@ public class magic_mirror implements Listener {
           }
       }
     } else {
-      dialMenu.openDialMenu("MM:main",
+      dialMenu.openDialMenu("PORTALIS:main",
           List.of(
               "BED",
               "SPAWN",
@@ -1583,7 +1609,7 @@ public class magic_mirror implements Listener {
               "LAST DEATH",
               "INFO",
               cancel_prompt),
-          player, Item_Manager.magic_mirror_book);
+          player, Item_Manager.portalis_book);
     }
   }
 
@@ -1695,7 +1721,7 @@ public class magic_mirror implements Listener {
   // if
   // (player.getInventory().getItemInMainHand().getType().equals(Material.BOOK)) {
   // // player.sendMessage("This should be working then..");
-  // player.getInventory().addItem(Item_Manager.magic_mirror_book);
+  // player.getInventory().addItem(Item_Manager.portalis_book);
   // player.playSound(ev.getEntity().getLocation(),
   // Sound.ENTITY_EVOKER_CAST_SPELL, SoundCategory.BLOCKS, 1, 1);
 
@@ -1718,7 +1744,7 @@ public class magic_mirror implements Listener {
 
     if (isEmpty != null) {
       Material itemType = isEmpty.getType();
-      if (itemType.equals(Item_Manager.magic_mirror_book.getType())) {
+      if (itemType.equals(Item_Manager.portalis_book.getType())) {
         if (!hasItemInHand.contains(player.getName())) {
           hasItemInHand.add(player.getName());
         }
@@ -1790,17 +1816,130 @@ public class magic_mirror implements Listener {
     ItemStack[] matrix = event.getInventory().getMatrix();
 
     // Check each item in the matrix
+    int how_many = 0;
+    int how_many_books = 0;
+    boolean book_found = false;
+    boolean is_old_infused_paper = false;
+    int uses = 0;
+    boolean stacked = false;
+    NamespacedKey portalis_key = new NamespacedKey(magic.getPlugin(), "portalis_use_data");
     for (ItemStack item : matrix) {
       if (item != null) {
         ItemStack one_item = item.clone();
-        one_item.setAmount(1);
+        one_item.asOne();
         if (one_item.equals(Item_Manager.coin)) {
           // If the item with the certain data value is found, prevent crafting
           event.getInventory().setResult(new ItemStack(Material.AIR));
           break;
         }
-      }
+        if (item.equals(Item_Manager.infused_paper)) {
+          how_many++;
+          if (item.getAmount() > 1) {
+            stacked = true;
+          }
+        }
+        if (!item.equals(Item_Manager.infused_paper)) {
+          if (item.getType() == Material.PAPER) {
+            if (item.getEnchantments().toString().contains("minecraft:luck_of_the_sea")) {
+              how_many++;
+              if (item.getAmount() > 1) {
+                stacked = true;
+              }
+            }
+          }
+        }
+        one_item = item.clone(); // reset this cuz yes
+        // for (int x = 0; x <= Item_Manager.portalis_max_uses; x++) {
+        if (one_item.getItemMeta().getPersistentDataContainer().has(portalis_key)) {
+          Integer cur_value = one_item.getItemMeta().getPersistentDataContainer().get(portalis_key,
+              PersistentDataType.INTEGER);
+          // System.out.println(String.format("book with [%s] uses left found",
+          // cur_value));
+          uses = cur_value;
+          how_many_books++;
+          book_found = true;
+        }
+        for (NamespacedKey key : item.getItemMeta().getPersistentDataContainer().getKeys()) {
+          if (key.toString().equals("magic-mirror:magic_mirror_use_data")) {
+            // System.out.println(String.format("book with [%s] uses left found",
+            // cur_value));
+            how_many_books++;
+            book_found = true;
+          }
+        }
 
+        // FIXME: need to convert the old infused paper to the new one..
+
+        // System.out.println(String.format("enchatments:
+        // %s",item.getEnchantments().toString()));
+        // System.out.println(String.format("displayname:
+        // %s",item.getItemMeta().displayName()));
+        // if (item.getItemMeta().displayName().equals(Component.text("Infused
+        // Paper").color(NamedTextColor.AQUA))) {
+        // System.out.println("yes lets convert to the new infused paper");
+        // }
+
+        // System.out.println(String.format("here are some kets: [ %s
+        // ]",item.getItemMeta().getPersistentDataContainer().getKeys().toString()));
+        // this should convert old pages to the new ones
+        // if (one_item.getItemMeta().displayName() != null) {
+        // if (one_item.getItemMeta().displayName() ==
+        // Item_Manager.infused_paper.getItemMeta().displayName()){
+        // // ItemStack new_stack = new ItemStack(Item_Manager.infused_paper);
+        // // new_stack.setAmount(item.getAmount());
+        // event.getInventory().setResult(Item_Manager.infused_paper);
+        // }
+        // }
+      }
+    }
+    if (stacked == true) {
+      return;
+    }
+    if (how_many_books > 1) {
+      // System.out.println("too many books");
+      event.getInventory().setResult(new ItemStack(Material.AIR));
+    }
+    if (book_found == true) {
+      // System.out.println("yes book found");
+      if (uses + how_many > Item_Manager.portalis_max_uses) {
+        how_many = Item_Manager.portalis_max_uses;
+        uses = 0;
+        event.getInventory().setResult(new ItemStack(Material.AIR));
+      } else {
+        event.getInventory().setResult(Item_Manager.refillPortalis(uses + how_many));
+      }
+    }
+    // else if (how_many > 0) {
+    // ItemStack new_stack = new ItemStack(Item_Manager.infused_paper);
+    // new_stack.setAmount(how_many);
+    // event.getInventory().setResult(new_stack);
+
+    // }
+  }
+
+  @EventHandler
+  public void keepBookOnDeath(PlayerDeathEvent event) {
+    // Player player = event.getPlayer();
+    List<ItemStack> keep = event.getItemsToKeep();
+    // player.sendActionBar(Component.text("resources dropped."));
+    NamespacedKey portalis_key = new NamespacedKey(magic.getPlugin(), "portalis_use_data");
+    for (Iterator iterator = event.getDrops().iterator(); iterator.hasNext();) {
+      ItemStack drop = (ItemStack) iterator.next();
+
+      if (drop.getItemMeta().getPersistentDataContainer().has(portalis_key)) {
+        // Integer cur_value = drop.getItemMeta().getPersistentDataContainer().get(portalis_key,
+        //     PersistentDataType.INTEGER);
+        // if (drop.equals(Item_Manager.portalis_book)) {
+        keep.add(drop);
+        iterator.remove();
+        // break;
+        // }
+      }
+      // if (drop.getType().toString().toUpperCase().contains(item)) {
+      // keep.add(drop);
+      // iterator.remove();
+      // break;
+      // }
     }
   }
 }
