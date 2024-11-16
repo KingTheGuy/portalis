@@ -4,17 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "7eb451181ee9b0f4",
+        "id": "c7798f1367bf0570",
         "type": "tabs",
         "children": [
           {
-            "id": "2dce6639a401b98c",
+            "id": "991bae88a5e3113d",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
                 "file": "README.md",
-                "mode": "source",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
@@ -162,22 +162,23 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "2dce6639a401b98c",
+  "active": "991bae88a5e3113d",
   "lastOpenFiles": [
     "TODO.md",
+    "repo_assets/recipes/portalis-recipe.png",
     "README.md",
+    "repo_assets/recipes/portalis-refill.png",
+    "repo_assets/recipes/oxidized_copper.png",
+    "repo_assets/recipes/infused_paper.png",
+    "repo_assets/recipes/cobble_stone.png",
+    "repo_assets/recipes.md",
     "doc.md",
     "repo_assets/recipes/refill.png",
-    "repo_assets/recipes/oxidized_copper.png",
-    "repo_assets/recipes/cobble_stone.png",
-    "repo_assets/recipes/infused_paper.png",
     "repo_assets/recipes/magic_mirror.png",
     "repo_assets/recipes",
     "repo_assets/Portalis_icon.png",
     "repo_assets/mm_dem.gif",
     "repo_assets/lodestone_warping.gif",
-    "repo_assets/example.gif",
-    "repo_assets/book_warping.gif",
     "build/tmp/compileJava/previous-compilation-data.bin",
     "build/classes/java/main/com/kingtheguy/magic.class",
     "build/classes/java/main/com/kingtheguy/items/Item_Manager.class",
