@@ -1,0 +1,12 @@
+{
+	"required": true,
+	"package": "com.kingtheguy.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"mixins": [
+		"ExampleMixin",
+		"HeadMovementMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

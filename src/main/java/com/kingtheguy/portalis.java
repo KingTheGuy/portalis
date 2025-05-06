@@ -11,7 +11,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-import java.util.Iterator;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -50,7 +49,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 import com.kingtheguy.items.Item_Manager;
-
+import com.kingtheguy.menu.player_selection;
 import com.destroystokyo.paper.event.server.ServerTickStartEvent;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
@@ -404,9 +403,9 @@ public class portalis implements Listener {
               // needed.
               List<String> prompt_list = new ArrayList<>();
               List<GlobalWarps> to_remove = new ArrayList<>();
-              for (PlayerWarps player_know_warp : player_warps) {
-                if (player_know_warp.player_name.equals(player_used_warp.player.getName())) {
-                  for (GlobalWarps player_global_warps : player_know_warp.known_warps) {
+              for (PlayerWarps player_known_warp : player_warps) {
+                if (player_known_warp.player_name.equals(player_used_warp.player.getName())) {
+                  for (GlobalWarps player_global_warps : player_known_warp.known_warps) {
                     if (findPlayerWarpInGlobalWarps(player_global_warps) == null) {
                       to_remove.add(player_global_warps);
                     } else {
@@ -423,10 +422,14 @@ public class portalis implements Listener {
                     }
                   }
                   for (GlobalWarps w : to_remove) {
-                    player_know_warp.known_warps.remove(w);
+                    player_known_warp.known_warps.remove(w);
                   }
                   continue; // found the player
                 }
+              }
+              if (prompt_list.size() <= 0) {
+                prompt_list.add("No Warps Known");
+                // continue;
               }
               Collections.sort(prompt_list, String.CASE_INSENSITIVE_ORDER);
               dialMenu.openDialMenu("PORTALIS:locations", prompt_list, player_used_warp.player, null);
@@ -890,6 +893,9 @@ public class portalis implements Listener {
 
   @EventHandler
   public void onPlayerInteract(PlayerInteractEvent ev) {
+    // Block block = ev.getClickedBlock();
+    // block.getBiome();
+    // block.setBiome();
     Player player = ev.getPlayer();
     if (ev.getAction().equals(Action.PHYSICAL)) {
       return;
@@ -900,7 +906,6 @@ public class portalis implements Listener {
     }
     ItemStack item = player.getInventory().getItemInMainHand();
     Material itemType = item.getType();
-    Action action = ev.getAction();
     Audience audience = Audience.audience(player);
 
     // if (ev.getClickedBlock().getType().equals(Material.LODESTONE)) {
@@ -1333,12 +1338,14 @@ public class portalis implements Listener {
               if (isBookOutOfPages(ev)) {
                 return;
               }
-              if (player.getBedSpawnLocation() == null) {
+              // if (player.getBedSpawnLocation() == null) {
+              if (player.getRespawnLocation() == null) {
                 audience.sendActionBar(() -> Component.text("Where is my bed?").color(NamedTextColor.RED));
                 player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
               } else {
                 teleportEffectSound(player, player.getLocation());
-                player.teleportAsync(player.getBedSpawnLocation());
+                // player.teleportAsync(player.getBedSpawnLocation());
+                player.teleportAsync(player.getRespawnLocation());
                 dialMenu.closeMenu(player);
                 // System.out.println("\n\n\tYES BOOK IS BEING USED\n\n");
                 useBook(player);
@@ -1819,7 +1826,6 @@ public class portalis implements Listener {
     int how_many = 0;
     int how_many_books = 0;
     boolean book_found = false;
-    boolean is_old_infused_paper = false;
     int uses = 0;
     boolean stacked = false;
     NamespacedKey portalis_key = new NamespacedKey(magic.getPlugin(), "portalis_use_data");
@@ -1923,12 +1929,13 @@ public class portalis implements Listener {
     List<ItemStack> keep = event.getItemsToKeep();
     // player.sendActionBar(Component.text("resources dropped."));
     NamespacedKey portalis_key = new NamespacedKey(magic.getPlugin(), "portalis_use_data");
-    for (Iterator iterator = event.getDrops().iterator(); iterator.hasNext();) {
+    for (Iterator<ItemStack> iterator = event.getDrops().iterator(); iterator.hasNext();) {
       ItemStack drop = (ItemStack) iterator.next();
 
       if (drop.getItemMeta().getPersistentDataContainer().has(portalis_key)) {
-        // Integer cur_value = drop.getItemMeta().getPersistentDataContainer().get(portalis_key,
-        //     PersistentDataType.INTEGER);
+        // Integer cur_value =
+        // drop.getItemMeta().getPersistentDataContainer().get(portalis_key,
+        // PersistentDataType.INTEGER);
         // if (drop.equals(Item_Manager.portalis_book)) {
         keep.add(drop);
         iterator.remove();

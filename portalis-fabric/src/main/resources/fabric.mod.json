@@ -1,0 +1,41 @@
+{
+	"schemaVersion": 1,
+	"id": "portalis-fabric",
+	"version": "${version}",
+	"name": "portalis-fabric",
+	"description": "warps, warps everywhere.",
+	"authors": [
+		"KingTheGuy"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/portalis-fabric/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.kingtheguy.Portalisfabric"
+		],
+		"client": [
+			"com.kingtheguy.PortalisfabricClient"
+		]
+	},
+	"mixins": [
+		"portalis-fabric.mixins.json",
+		{
+			"config": "portalis-fabric.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.16.9",
+		"minecraft": "~1.21.3",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
