@@ -365,12 +365,12 @@ public class DialMenu implements Listener {
 
 		text_bar = String.format("%s%s%s", blank_space, text_bar, blank_space);
 		// if (text_bar.length() <= 0) {
-		// return String.format(ChatColor.DARK_GRAY + "< %s >",
+		// return String.format(ChatColor.GRAY + "< %s >",
 		// colorText(has_menu_open.tick, "Scroll LEFT & RIGHT"));
 		// }
 		int word_index = text_bar.indexOf(word);
 		// if (word_index <= 0) {
-		// return String.format(ChatColor.DARK_GRAY + "< %s >",
+		// return String.format(ChatColor.GRAY + "< %s >",
 		// colorText(has_menu_open.tick, "Scroll LEFT & RIGHT"));
 		// }
 
@@ -421,47 +421,47 @@ public class DialMenu implements Listener {
 		}
 
 		if (has_menu_open.custom_answer != "") {
-			return String.format(ChatColor.DARK_GRAY + "%s : < %s%s%s >", has_menu_open.custom_answer, first,
+			return String.format(ChatColor.GRAY + "%s : < %s%s%s >", has_menu_open.custom_answer, first,
 					colorText(has_menu_open.tick, word),
 					last);
 		}
-		return String.format(ChatColor.DARK_GRAY + "< %s%s%s >", first, colorText(has_menu_open.tick, word),
+		return String.format(ChatColor.GRAY + "< %s%s%s >", first, colorText(has_menu_open.tick, word),
 				last);
 	}
 
 	public String colorText(int tick, String text) {
 		// if (tick == 1) {
 		// return String.format(ChatColor.AQUA + "(([ %s ]. ." +
-		// ChatColor.DARK_GRAY, text);
+		// ChatColor.GRAY, text);
 		// } else if (tick == 2) {
 		// return String.format(ChatColor.AQUA + ". .[ %s ]. ." +
-		// ChatColor.DARK_GRAY, text);
+		// ChatColor.GRAY, text);
 		// } else if (tick == 3) {
 		// return String.format(ChatColor.AQUA + ". .[ %s ]))" +
-		// ChatColor.DARK_GRAY, text);
+		// ChatColor.GRAY, text);
 		// }
 		boolean skip_around = false;
 		if (skip_around) {
 			return String.format(ChatColor.AQUA + ". .[ %s ]. ." +
-					ChatColor.DARK_GRAY, text);
+					ChatColor.GRAY, text);
 		} else if (tick == 1) {
 			return String.format(ChatColor.AQUA + "(([ %s ]. ." +
-					ChatColor.DARK_GRAY, text);
+					ChatColor.GRAY, text);
 		} else if (tick == 2) {
 			return String.format(ChatColor.AQUA + ". ([ %s ]. ." +
-					ChatColor.DARK_GRAY, text);
+					ChatColor.GRAY, text);
 		} else if (tick == 3) {
 			return String.format(ChatColor.AQUA + ". .[ %s ]. ." +
-					ChatColor.DARK_GRAY, text);
+					ChatColor.GRAY, text);
 		} else if (tick == 4) {
 			return String.format(ChatColor.AQUA + ". .[ %s ]) ." +
-					ChatColor.DARK_GRAY, text);
+					ChatColor.GRAY, text);
 		} else if (tick == 5) {
 			return String.format(ChatColor.AQUA + ". .[ %s ]))" +
-					ChatColor.DARK_GRAY, text);
+					ChatColor.GRAY, text);
 		}
 
-		return String.format(ChatColor.AQUA + "%s" + ChatColor.DARK_GRAY, text);
+		return String.format(ChatColor.AQUA + "%s" + ChatColor.GRAY, text);
 	}
 
 	public List<String> alphabet() {

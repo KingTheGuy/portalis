@@ -49,7 +49,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 import com.kingtheguy.items.Item_Manager;
-import com.kingtheguy.menu.player_selection;
+// import com.kingtheguy.menu.player_selection;
 import com.destroystokyo.paper.event.server.ServerTickStartEvent;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
@@ -125,7 +125,7 @@ public class portalis implements Listener {
   // TODO: when a player walk to a location of a warp open the warp locations menu
   // and add them to the used_lode list.
   // make sure they have "access" to the warp before opening the menu
-  public static List<UsedWarp> just_used_lode_warp = new ArrayList<>();
+  public static List<UsedWarp> using_lode_warp = new ArrayList<>();
 
   public class UsedWarp {
     Player player;
@@ -326,26 +326,20 @@ public class portalis implements Listener {
       // location.getBlockY() + 2.2, location.getBlockZ() + (z / 10), 0);
     }
 
+    // TODO: rename just_used_lode_warp to using_lode_warp
+    // use just_used_warp to prevent the menu from popping up again
     public void PromptMenu() {
-      // System.out.println(this.dimension_name);
-      // Location location = new Location(Bukkit.getWorld(this.dimension_name),
-      // this.location.X,
-      // this.location.Y + 1, this.location.Z);
       Location location = new Location(Bukkit.getWorld(this.dimension_name), this.location.X,
           this.location.Y + 1, this.location.Z);
       Collection<Entity> entities = location.getNearbyEntities(location.getBlockX(), location.getBlockY(),
           location.getBlockZ());
-      if (entities.size() > 0) {
+      if (entities.size() > 0) { //get all entities in area
         entities.forEach(entity -> {
           if (entity instanceof Player) {
-            // System.out.println(String.format("is location null? %s",location));
-            // System.out.println(String.format("is entity locatoin null? %s",location));
-            if (Utils.get3DDistance(location.getBlockX(), location.getBlockY(), location.getBlockZ(),
-                entity.getLocation().getBlockX(), entity.getLocation().getBlockY(),
-                entity.getLocation().getBlockZ()) < 1) {
-              // System.out.println("yes this mf is close to a warp location");
+            double dist = Utils.get3DDistance(location.getBlockX(), location.getBlockY(), location.getBlockZ(), entity.getLocation().getBlockX(), entity.getLocation().getBlockY(), entity.getLocation().getBlockZ());
+            if (dist < 1) {
               boolean found = false;
-              for (UsedWarp used_w : just_used_lode_warp) {
+              for (UsedWarp used_w : using_lode_warp) {
                 if (used_w.player == (Player) entity) {
                   found = true;
                   continue;
@@ -355,10 +349,8 @@ public class portalis implements Listener {
                 UsedWarp new_user = new UsedWarp();
                 new_user.player = (Player) entity;
                 new_user.warp_name = this.name;
-                just_used_lode_warp.add(new_user);
+                using_lode_warp.add(new_user);
               }
-              // System.out.println(String.format("size: %s", just_used_lode_warp.size()));
-
             }
           }
         });
@@ -390,12 +382,13 @@ public class portalis implements Listener {
         for (GlobalWarps w : global_warps) {
           w.PromptMenu();
         }
+
         // check if the player has a lode warp beneath them
-        if (just_used_lode_warp.size() > 0) {
+        if (using_lode_warp.size() > 0) {
           // boolean on_warp = false;
           List<UsedWarp> remove_this = new ArrayList<>();
-          for (UsedWarp player_used_warp : just_used_lode_warp) {
-            // System.out.println("yes this is running");
+          for (UsedWarp player_used_warp : using_lode_warp) {
+            //NOTE: why are we checking if the block beneth is a lodestone?
             if (player_used_warp.player.getLocation().subtract(0, 1, 0).getBlock().getType()
                 .equals(Material.LODESTONE)) {
               // on_warp = true;
@@ -441,9 +434,10 @@ public class portalis implements Listener {
           }
           for (UsedWarp removeing_usedWarp : remove_this) {
             dialMenu.closeMenu(removeing_usedWarp.player);
-            just_used_lode_warp.remove(removeing_usedWarp);
+            using_lode_warp.remove(removeing_usedWarp);
           }
         }
+
         // NOTE: these should be closer to the end right??
         playerLocationChanged();
         ToBeRemoved();
@@ -554,11 +548,11 @@ public class portalis implements Listener {
     Player player = ev.getPlayer();
     dialMenu.closeMenu(player);
     UsedWarp remove_this = new UsedWarp();
-    for (UsedWarp p : just_used_lode_warp)
-      if (just_used_lode_warp.contains(p)) {
+    for (UsedWarp p : using_lode_warp)
+      if (using_lode_warp.contains(p)) {
         remove_this = p;
       }
-    just_used_lode_warp.remove(remove_this);
+    using_lode_warp.remove(remove_this);
     // new_prompt.closeMenu(player);
   }
 
