@@ -368,6 +368,12 @@ public class portalis implements Listener {
         warp_remove_list.add(this);
       }
     }
+    public void PlayAmbientSound() {
+      Location location_above = new Location(Bukkit.getWorld(this.dimension_name), this.location.X,
+          this.location.Y + 1, this.location.Z);
+      Bukkit.getWorld(location_above.getWorld().getUID()).playSound(location_above, Sound.BLOCK_CONDUIT_AMBIENT,
+          SoundCategory.AMBIENT, 0.5f, 1f);
+    }
   }
 
   static List<GlobalWarps> warp_remove_list = new ArrayList<>();
@@ -375,6 +381,12 @@ public class portalis implements Listener {
   @EventHandler
   public void tick(ServerTickStartEvent event) {
     if (global_warps.size() > 0) {
+      if (event.getTickNumber() % 20 == 8) {
+        for (GlobalWarps w : global_warps) {
+          w.PlayAmbientSound();
+        }
+        
+      }
       if (event.getTickNumber() % 10 == 1) {
         for (GlobalWarps w : global_warps) {
           w.PromptMenu();
