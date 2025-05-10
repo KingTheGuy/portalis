@@ -32,6 +32,9 @@ public class magic extends JavaPlugin {
     Item_Manager.init();
     getServer().getPluginManager().registerEvents(new portalis(), this);
     getServer().getPluginManager().registerEvents(new CauldronBrewing(), this);
+    plugin.getCommand("givebook").setExecutor(new Commands());
+    plugin.getCommand("giveinfusedpaper").setExecutor(new Commands());
+    plugin.getCommand("setselectioncolor").setExecutor(new Commands());
     getServer().getConsoleSender().sendMessage("Portalis loaded");
   }
 

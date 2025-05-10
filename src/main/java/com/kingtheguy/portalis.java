@@ -328,7 +328,7 @@ public class portalis implements Listener {
 
     // TODO: rename just_used_lode_warp to using_lode_warp
     // use just_used_warp to prevent the menu from popping up again
-    public void PromptMenu() {
+    public void CheckForPlayers() {
       Location location = new Location(Bukkit.getWorld(this.dimension_name), this.location.X,
           this.location.Y + 1, this.location.Z);
       Collection<Entity> entities = location.getNearbyEntities(location.getBlockX(), location.getBlockY(),
@@ -381,17 +381,15 @@ public class portalis implements Listener {
   @EventHandler
   public void tick(ServerTickStartEvent event) {
     if (global_warps.size() > 0) {
-      if (event.getTickNumber() % 20 == 8) {
+      if (event.getTickNumber() % 20 == 8) { //do this every 8 seconds.. right.
         for (GlobalWarps w : global_warps) {
           w.PlayAmbientSound();
         }
-        
       }
       if (event.getTickNumber() % 10 == 1) {
         for (GlobalWarps w : global_warps) {
-          w.PromptMenu();
+          w.CheckForPlayers();
         }
-
         // check if the player has a lode warp beneath them
         if (using_lode_warp.size() > 0) {
           // boolean on_warp = false;
@@ -431,7 +429,7 @@ public class portalis implements Listener {
                 }
               }
               if (prompt_list.size() <= 0) {
-                prompt_list.add("No Warps Known");
+                prompt_list.add("No other warps known");
                 // continue;
               }
               Collections.sort(prompt_list, String.CASE_INSENSITIVE_ORDER);

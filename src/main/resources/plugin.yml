@@ -3,3 +3,13 @@ version: 1.1
 author: KingTheGuy
 main: com.kingtheguy.magic
 api-version: 1.20
+commands:
+  givebook:
+    description: give book
+    usage: /portalis <command>
+  giveinfusedpaper:
+    description: give infused paper
+    usage: /portalis <command>
+  setselectioncolor:
+    description: set the dial menu selection color
+    usage: /portalis <command>

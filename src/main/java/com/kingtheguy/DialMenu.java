@@ -21,6 +21,7 @@ public class DialMenu implements Listener {
 
 	ArrayList<PlayerDialMenu> player_with_menu = new ArrayList<>();
 	List<Player> wait_list = new ArrayList<>();
+	public static ChatColor selection_color = ChatColor.AQUA;
 
 	public class DialContext {
 		int id;
@@ -431,37 +432,37 @@ public class DialMenu implements Listener {
 
 	public String colorText(int tick, String text) {
 		// if (tick == 1) {
-		// return String.format(ChatColor.AQUA + "(([ %s ]. ." +
+		// return String.format(selection_color + "(([ %s ]. ." +
 		// ChatColor.GRAY, text);
 		// } else if (tick == 2) {
-		// return String.format(ChatColor.AQUA + ". .[ %s ]. ." +
+		// return String.format(selection_color + ". .[ %s ]. ." +
 		// ChatColor.GRAY, text);
 		// } else if (tick == 3) {
-		// return String.format(ChatColor.AQUA + ". .[ %s ]))" +
+		// return String.format(selection_color + ". .[ %s ]))" +
 		// ChatColor.GRAY, text);
 		// }
 		boolean skip_around = false;
 		if (skip_around) {
-			return String.format(ChatColor.AQUA + ". .[ %s ]. ." +
+			return String.format(selection_color + ". .[ %s ]. ." +
 					ChatColor.GRAY, text);
 		} else if (tick == 1) {
-			return String.format(ChatColor.AQUA + "(([ %s ]. ." +
+			return String.format(selection_color + "(([ %s ]. ." +
 					ChatColor.GRAY, text);
 		} else if (tick == 2) {
-			return String.format(ChatColor.AQUA + ". ([ %s ]. ." +
+			return String.format(selection_color + ". ([ %s ]. ." +
 					ChatColor.GRAY, text);
 		} else if (tick == 3) {
-			return String.format(ChatColor.AQUA + ". .[ %s ]. ." +
+			return String.format(selection_color + ". .[ %s ]. ." +
 					ChatColor.GRAY, text);
 		} else if (tick == 4) {
-			return String.format(ChatColor.AQUA + ". .[ %s ]) ." +
+			return String.format(selection_color + ". .[ %s ]) ." +
 					ChatColor.GRAY, text);
 		} else if (tick == 5) {
-			return String.format(ChatColor.AQUA + ". .[ %s ]))" +
+			return String.format(selection_color + ". .[ %s ]))" +
 					ChatColor.GRAY, text);
 		}
 
-		return String.format(ChatColor.AQUA + "%s" + ChatColor.GRAY, text);
+		return String.format(selection_color + "%s" + ChatColor.GRAY, text);
 	}
 
 	public List<String> alphabet() {
