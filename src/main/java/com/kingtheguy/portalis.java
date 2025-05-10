@@ -333,24 +333,21 @@ public class portalis implements Listener {
           this.location.Y + 1, this.location.Z);
       Collection<Entity> entities = location.getNearbyEntities(location.getBlockX(), location.getBlockY(),
           location.getBlockZ());
-      if (entities.size() > 0) { //get all entities in area
+      if (entities.size() > 0) { // get all entities in area
         entities.forEach(entity -> {
           if (entity instanceof Player) {
-            double dist = Utils.get3DDistance(location.getBlockX(), location.getBlockY(), location.getBlockZ(), entity.getLocation().getBlockX(), entity.getLocation().getBlockY(), entity.getLocation().getBlockZ());
+            double dist = Utils.get3DDistance(location.getBlockX(), location.getBlockY(), location.getBlockZ(),
+                entity.getLocation().getBlockX(), entity.getLocation().getBlockY(), entity.getLocation().getBlockZ());
             if (dist < 1) {
-              boolean found = false;
               for (UsedWarp used_w : using_lode_warp) {
                 if (used_w.player == (Player) entity) {
-                  found = true;
                   continue;
                 }
               }
-              if (found == false) {
-                UsedWarp new_user = new UsedWarp();
-                new_user.player = (Player) entity;
-                new_user.warp_name = this.name;
-                using_lode_warp.add(new_user);
-              }
+              UsedWarp new_user = new UsedWarp();
+              new_user.player = (Player) entity;
+              new_user.warp_name = this.name;
+              using_lode_warp.add(new_user);
             }
           }
         });
@@ -388,7 +385,8 @@ public class portalis implements Listener {
           // boolean on_warp = false;
           List<UsedWarp> remove_this = new ArrayList<>();
           for (UsedWarp player_used_warp : using_lode_warp) {
-            //NOTE: why are we checking if the block beneth is a lodestone?
+            // NOTE(it is better than checking if it is a lode warp): why are we checking if
+            // the block beneth is a lodestone?
             if (player_used_warp.player.getLocation().subtract(0, 1, 0).getBlock().getType()
                 .equals(Material.LODESTONE)) {
               // on_warp = true;
