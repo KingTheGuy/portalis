@@ -8,9 +8,11 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -108,7 +110,7 @@ public class portalis implements Listener {
 
   // FIXME: come back to this plugin_name var once i figure out the name of this
   // plugin
-  String PLUGIN_NAME = "portalis";
+  public static String PLUGIN_NAME = "portalis";
   String global_warps_file = String.format("plugins/%s/global_warps.json", PLUGIN_NAME);
   String player_warps_file = String.format("plugins/%s/player_warps.json", PLUGIN_NAME);
   // String global_warps_file = "global_warps.json";
@@ -359,20 +361,19 @@ public class portalis implements Listener {
           this.location.Y, this.location.Z);
       Location location_above = new Location(Bukkit.getWorld(this.dimension_name), this.location.X,
           this.location.Y + 1, this.location.Z);
-      if (location.getBlock().getType().equals(Material.LODESTONE)) {
+      if (!location.getBlock().getType().equals(Material.LODESTONE)) {
         if (location_above.getBlock().getType().equals(Material.LIGHT)) {
           location_above.getBlock().setType(Material.AIR);
         }
-      }
-      if (!location.getBlock().getType().equals(Material.LODESTONE)) {
         warp_remove_list.add(this);
       }
     }
+
     public void PlayAmbientSound() {
       Location location_above = new Location(Bukkit.getWorld(this.dimension_name), this.location.X,
           this.location.Y + 1, this.location.Z);
       Bukkit.getWorld(location_above.getWorld().getUID()).playSound(location_above, Sound.BLOCK_CONDUIT_AMBIENT,
-          SoundCategory.AMBIENT, 0.5f, 1f);
+          SoundCategory.BLOCKS, 1.5f, 1.6f);
     }
   }
 
@@ -381,7 +382,7 @@ public class portalis implements Listener {
   @EventHandler
   public void tick(ServerTickStartEvent event) {
     if (global_warps.size() > 0) {
-      if (event.getTickNumber() % 20 == 8) { //do this every 8 seconds.. right.
+      if (event.getTickNumber() % 50 == 1) { // do this every 6 seconds.. right.
         for (GlobalWarps w : global_warps) {
           w.PlayAmbientSound();
         }
@@ -455,8 +456,8 @@ public class portalis implements Listener {
 
   private void ToBeRemoved() {
     for (GlobalWarps w : global_warps) {
-      w.RemoveWarp();
       w.particlesAndLight(); // show some particles
+      w.RemoveWarp();
     }
     for (GlobalWarps w : warp_remove_list) {
       // System.out.println("warp has been removed.");
@@ -501,9 +502,8 @@ public class portalis implements Listener {
   }
 
   class player_deaths {
-    public Player name;
+    public UUID uuid;
     public Location loc;
-
   }
 
   // public String PLAYER_WARPS = "player_warps.yaml";
@@ -561,7 +561,6 @@ public class portalis implements Listener {
         remove_this = p;
       }
     using_lode_warp.remove(remove_this);
-    // new_prompt.closeMenu(player);
   }
 
   public void saveGlobalWarpsToFile(String file) {
@@ -609,6 +608,35 @@ public class portalis implements Listener {
       System.out.println(e);
     }
   }
+
+  // public void saveSettingsFile(String file) {
+  // try {
+  // BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+  // Gson gson = new Gson();
+  // String json = gson.toJson(player_warps);
+  // writer.write(json);
+  // writer.close();
+  // } catch (IOException e) {
+  // System.out.println(e);
+  // }
+  // }
+
+  // public void loadSettingsFile(String file) {
+  // try {
+  // Gson gson = new Gson();
+  // JsonReader reader = new JsonReader(new FileReader(file));
+  // Type listOfMyClassObject = new TypeToken<List<PlayerWarps>>() {
+  // }.getType();
+  // List<PlayerWarps> warps = gson.fromJson(reader, listOfMyClassObject);
+  // for (PlayerWarps w : warps) {
+  // player_warps.add(w);
+  // }
+
+  // reader.close();
+  // } catch (IOException e) {
+  // System.out.println(e);
+  // }
+  // }
 
   public void loadGlobalWarpsFromFile(String file) {
     try {
@@ -927,6 +955,27 @@ public class portalis implements Listener {
       dm.playerChooseSelection(ev);
       ev.setCancelled(true);
       switch (dm.dial_id) {
+        case "PORTALIS:rip_page":
+          switch (dm.selection_answer) {
+            case cancel_prompt:
+              dialMenu.closeMenu(player);
+              return;
+            default:
+              if (isBookOutOfPages(ev)) {
+                return;
+              }
+              useBook(player);
+              if (!ev.getPlayer().getInventory().getItemInOffHand().isEmpty()) {
+                ev.getPlayer().getInventory().getItemInOffHand().damage(1, ev.getPlayer());
+                // player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
+                player.playSound(player.getLocation(), Sound.ENTITY_SHEEP_SHEAR, 1f, 1f);
+              }
+              HashMap<Integer, ItemStack> left = player.getInventory().addItem(new ItemStack(Item_Manager.createRippedWarpPage(dm.selection_answer)));
+              if (!left.isEmpty()) {
+                player.getWorld().dropItem(player.getLocation(), new ItemStack(Item_Manager.createRippedWarpPage(dm.selection_answer)));
+              }
+            return;
+          }
         case "PORTALIS:locations":
           switch (dm.selection_answer) {
             case cancel_prompt:
@@ -1057,6 +1106,97 @@ public class portalis implements Listener {
       }
     }
 
+    { // CREATE Ripped page
+      if (player.getInventory().getItemInOffHand().getType().equals(Material.SHEARS)
+          && !ev.getPlayer().getInventory().getItemInMainHand().isEmpty()) {
+        NamespacedKey key = new NamespacedKey(magic.getPlugin(), "portalis_use_data");
+        ItemMeta meta = ev.getPlayer().getInventory().getItemInMainHand().getItemMeta();
+        PersistentDataContainer container = meta.getPersistentDataContainer();
+        Integer cur_value = container.get(key, PersistentDataType.INTEGER);
+        if (cur_value == null) {
+          // do nothing
+        } else {
+          ev.setCancelled(true); // prevent other iteractions
+          // System.out.println("the player is holding shears and a portalis");
+          List<String> prompt_list = new ArrayList<>();
+          List<GlobalWarps> to_remove = new ArrayList<>();
+          for (PlayerWarps pw : player_warps) {
+            // System.out.printf("%s's warp size: %s\n", pw.player_name,
+            // pw.known_warps.size());
+            if (pw.player_name.equals(player.getName())) {
+              // System.out.printf("%s has: %s warp locations", pw.player_name,
+              // pw.known_warps.size());
+              for (GlobalWarps w : pw.known_warps) {
+                if (findPlayerWarpInGlobalWarps(w) == null) {
+                  to_remove.add(w);
+                  // System.out.println("seems like this warp spot getting removed from the
+                  // player's list.");
+                  // pw.known_warps.remove(w);
+                } else {
+                  if (w.name != null) {
+                    prompt_list.add(w.name);
+                  } else {
+                    prompt_list.add(w.location.toString());
+
+                  }
+                }
+              }
+              for (GlobalWarps w : to_remove) {
+                pw.known_warps.remove(w);
+              }
+              break; // found the player
+            }
+          }
+          Collections.sort(prompt_list, String.CASE_INSENSITIVE_ORDER);
+          prompt_list.add(cancel_prompt);
+
+          dialMenu.openDialMenu("PORTALIS:rip_page", prompt_list, player, Item_Manager.portalis_book);
+          return; // prevent everything else
+        }
+      }
+    }
+
+    {
+      // USE Ripped page
+      if (ev.getItem() != null) {
+        NamespacedKey key = new NamespacedKey(magic.getPlugin(), "portalis_ripped_page");
+        ItemMeta meta = ev.getItem().getItemMeta();
+        PersistentDataContainer container = meta.getPersistentDataContainer();
+        String cur_value = container.get(key, PersistentDataType.STRING);
+        if (cur_value != null) {
+          ev.setCancelled(true);
+          // teleportEffectSound(player, player.getLocation());
+          // player.teleportAsync(player.getBedSpawnLocation());
+          boolean found = false;
+          for (GlobalWarps gw : global_warps) {
+            if (gw.name.equals(cur_value)) {
+              // player.
+              item.setAmount(item.getAmount() - 1);
+              Location teleport_location = new Location(Bukkit.getWorld(gw.dimension_name), gw.location.X + 0.5,
+                  gw.location.Y + 1, gw.location.Z + 0.5);
+              teleportEffectSound(player, player.getLocation());
+              player.teleportAsync(teleport_location);
+              dialMenu.closeMenu(player);
+              playerLocationChanged();
+              int damage_to_apply = 4;
+              double player_health = player.getHealth();
+              if ((player_health - damage_to_apply) < 1) {
+                player.damage(player_health - 1);
+              } else {
+                player.damage(damage_to_apply);
+              }
+              found = true;
+              break;
+            }
+          }
+          if (found == false) {
+            audience.sendActionBar(() -> Component.text("page invalid").color(NamedTextColor.RED));
+            player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f);
+          }
+          return;
+        }
+      }
+    }
     // if (itemType.equals(Material.STICK)) {
     // // DialMenu.player_with_menu();
     // ev.setCancelled(true);
@@ -1133,7 +1273,10 @@ public class portalis implements Listener {
             // item.setType(Material.EXPERIENCE_BOTTLE);
             player.getInventory().removeItem(new ItemStack(Material.GLASS_BOTTLE));
 
-            player.getWorld().dropItem(player.getLocation(), new ItemStack(Material.EXPERIENCE_BOTTLE));
+            HashMap<Integer, ItemStack> left = player.getInventory().addItem(new ItemStack(Material.EXPERIENCE_BOTTLE));
+            if (!left.isEmpty()) {
+              player.getWorld().dropItem(player.getLocation(), new ItemStack(Material.EXPERIENCE_BOTTLE));
+            }
             player.playSound(player.getLocation(), Sound.BLOCK_BEEHIVE_DRIP, 1f, 1f);
             player.playSound(player.getLocation(), Sound.ITEM_BOTTLE_FILL_DRAGONBREATH, 1f, 1f);
           } else {
@@ -1147,8 +1290,11 @@ public class portalis implements Listener {
           int xp = player.getLevel();
           player.setLevel(xp + 10);
           // player.getInventory().addItem(new ItemStack(Material.GLASS_BOTTLE));
-          player.getWorld().dropItem(player.getLocation(), new ItemStack(Material.GLASS_BOTTLE));
           player.getInventory().removeItem(new ItemStack(Material.EXPERIENCE_BOTTLE));
+          HashMap<Integer, ItemStack> left = player.getInventory().addItem(new ItemStack(Material.GLASS_BOTTLE));
+          if (!left.isEmpty()) {
+            player.getWorld().dropItem(player.getLocation(), new ItemStack(Material.GLASS_BOTTLE));
+          }
           // player.playSound(player.getLocation(), Sound.AMBIENT_UNDERWATER_EXIT, 0.5f,
           // 1f);
           player.playSound(player.getLocation(), Sound.ITEM_BOTTLE_EMPTY, 1f, 1f);
@@ -1263,11 +1409,6 @@ public class portalis implements Listener {
         }
         return;
       } else {
-        // if
-        // (!item.getItemMeta().displayName().equals(Item_Manager.portalis_book.getItemMeta().displayName()))
-        // {
-        // return;
-        // }
         NamespacedKey key = new NamespacedKey(magic.getPlugin(), "portalis_use_data");
         ItemMeta meta = ev.getItem().getItemMeta();
         PersistentDataContainer container = meta.getPersistentDataContainer();
@@ -1335,6 +1476,8 @@ public class portalis implements Listener {
       dm.playerChooseSelection(ev);
       switch (dm.dial_id) {
         case "PORTALIS:main":
+          List<String> prompt_list = new ArrayList<>();
+          List<GlobalWarps> to_remove = new ArrayList<>();
           switch (dm.selection_answer) {
             case "BED":
               if (isBookOutOfPages(ev)) {
@@ -1368,9 +1511,83 @@ public class portalis implements Listener {
               // teleportEffectSound(player, Bukkit.getWorld("world").getSpawnLocation());
               dialMenu.closeMenu(player);
               return;
-            case "WARPS":
-              dialMenu.openDialMenu("PORTALIS:warps",
-                  List.of("LOCATIONS", "OTHER USERS", go_back_prompt, cancel_prompt), player,
+            // case "WARPS":
+            // dialMenu.openDialMenu("PORTALIS:warps",
+            // List.of("LOCATIONS", "OTHER USERS", go_back_prompt, cancel_prompt), player,
+            // Item_Manager.portalis_book);
+            // return;
+            case "LOCATIONS":
+              if (isBookOutOfPages(ev)) {
+                return;
+              }
+              // for each player's warp compare to global warps, remove if needed, rename if
+              // needed.
+              for (PlayerWarps pw : player_warps) {
+                // System.out.printf("%s's warp size: %s\n", pw.player_name,
+                // pw.known_warps.size());
+                if (pw.player_name.equals(player.getName())) {
+                  // System.out.printf("%s has: %s warp locations", pw.player_name,
+                  // pw.known_warps.size());
+                  for (GlobalWarps w : pw.known_warps) {
+                    if (findPlayerWarpInGlobalWarps(w) == null) {
+                      to_remove.add(w);
+                      // System.out.println("seems like this warp spot getting removed from the
+                      // player's list.");
+                      // pw.known_warps.remove(w);
+                    } else {
+                      if (w.name != null) {
+                        prompt_list.add(w.name);
+                      } else {
+                        prompt_list.add(w.location.toString());
+
+                      }
+                    }
+                  }
+                  for (GlobalWarps w : to_remove) {
+                    pw.known_warps.remove(w);
+                  }
+                  break; // found the player
+                }
+              }
+              Collections.sort(prompt_list, String.CASE_INSENSITIVE_ORDER);
+              prompt_list.add(cancel_prompt);
+              dialMenu.openDialMenu("PORTALIS:locations", prompt_list, player, Item_Manager.portalis_book);
+              saveGlobalWarpsToFile(global_warps_file);
+              savePlayerWarpsToFile(player_warps_file);
+              return;
+            case "RIP PAGE":
+              if (isBookOutOfPages(ev)) {
+                return;
+              }
+              for (PlayerWarps pw : player_warps) {
+                if (pw.player_name.equals(player.getName())) {
+                  for (GlobalWarps w : pw.known_warps) {
+                    if (findPlayerWarpInGlobalWarps(w) == null) {
+                      to_remove.add(w);
+                    } else {
+                      if (w.name != null) {
+                        prompt_list.add(w.name);
+                      } else {
+                        prompt_list.add(w.location.toString());
+
+                      }
+                    }
+                  }
+                  for (GlobalWarps w : to_remove) {
+                    pw.known_warps.remove(w);
+                  }
+                  break; // found the player
+                }
+              }
+              Collections.sort(prompt_list, String.CASE_INSENSITIVE_ORDER);
+              prompt_list.add(cancel_prompt);
+
+              dialMenu.openDialMenu("PORTALIS:rip_page", prompt_list, player, Item_Manager.portalis_book);
+              
+              return;
+            case "OTHER USERS":
+              dialMenu.openDialMenu("PORTALIS:OTHER_USERS",
+                  List.of("WARP TO", "WAIT FOR", go_back_prompt, cancel_prompt), player,
                   Item_Manager.portalis_book);
               return;
             case "LAST DEATH":
@@ -1379,7 +1596,7 @@ public class portalis implements Listener {
               }
               int death_index = -1;
               for (player_deaths d : deaths) {
-                if (d.name == player) {
+                if (d.uuid == player.getUniqueId()) {
                   death_index = deaths.indexOf(d);
                 }
               }
@@ -1414,18 +1631,18 @@ public class portalis implements Listener {
 
               // Add some pages to the book
               bookMeta.addPages(
-                  Component.text("Table of Contents:\n\n").decorate(TextDecoration.BOLD)
-                      .append(Component.text(
-                          """
-                              [pg. 3] Strange book
-                              [pg. 4] Infused-paper
-                              [pg. 5] Refilling the book
-                              [pg. 6] use cauldron
-                              [pg. 7] Warping to other book users
-                              [pg. 9] Custom warp locations
-                              """).decorate(TextDecoration.ITALIC).decoration(TextDecoration.BOLD, false)),
+                  // Component.text("Table of Contents:\n\n").decorate(TextDecoration.BOLD)
+                  // .append(Component.text(
+                  // """
+                  // [pg. 3] Strange book
+                  // [pg. 4] Infused-paper
+                  // [pg. 5] Refilling the book
+                  // [pg. 6] use cauldron
+                  // [pg. 7] Warping to other book users
+                  // [pg. 9] Custom warp locations
+                  // """).decorate(TextDecoration.ITALIC).decoration(TextDecoration.BOLD, false)),
                   Component.text("")
-                      .append(Component.text("Stange\n\n").decorate(TextDecoration.BOLD))
+                      .append(Component.text("Strange\n\n").decorate(TextDecoration.UNDERLINED))
                       .append(Component.text(
                           """
                               Use this book to warp around.
@@ -1435,50 +1652,63 @@ public class portalis implements Listener {
                               Crouching while using the menu will increase the dial's speed.
                                   """).decoration(TextDecoration.BOLD, false)),
                   Component.text("")
-                      .append(Component.text("infused-paper:\n\n").decorate(TextDecoration.BOLD))
+                      .append(Component.text("Infused-Paper\n\n").decorate(TextDecoration.UNDERLINED))
                       .append(Component.text("ingredients tossed into a cauldron\n\n").decorate(TextDecoration.ITALIC))
                       .append(Component.text("- 1x ender pearl\n"))
                       .append(Component.text("- 1x spider eye\n"))
                       .append(Component.text("- 1x dandelion\n\n"))
                       .append(Component.text("lastly toss in:\n\n"))
                       .append(Component.text("- 6x paper\n")),
-                  Component.text("refilling the Portalis:\n\n").decorate(TextDecoration.BOLD)
+                  Component.text("refilling the Portalis\n\n").decorate(TextDecoration.UNDERLINED)
                       .append(Component.text(
                           """
                               In crafting table:\n
                               Combine the Portalis with at least 1 infused-paper
-                                  """).decoration(TextDecoration.BOLD, false)),
+                                  """).decoration(TextDecoration.BOLD, false)
+                          .decoration(TextDecoration.UNDERLINED, false)),
                   Component.text("")
-                      .append(Component.text("How to use cauldron:\n").decorate(TextDecoration.BOLD))
+                      .append(Component.text("How to use Cauldron\n\n").decorate(TextDecoration.UNDERLINED))
                       .append(Component.text(
                           """
                               Simply place a `cauldron` on top of a lit `campfire` and toss in the ingredients.
                               """).decoration(TextDecoration.BOLD, false)),
-                  Component.text("Warping to other book users\n\n").decorate(TextDecoration.BOLD)
+                  Component.text("Other Book Users\n\n").decorate(TextDecoration.UNDERLINED)
                       .append(Component.text(
                           """
                               To warp to other users you'll have to ask them select `wait_for` within the book's menu.
-                              """).decoration(TextDecoration.BOLD, false)),
-                  Component.text("Custom warp locations\n\n").decorate(TextDecoration.BOLD)
-                      .append(Component.text("Creating\n\n").decorate(TextDecoration.BOLD))
+                              """).decoration(TextDecoration.UNDERLINED, false)),
+                  Component.text("Custom warp Locations\n\n").decorate(TextDecoration.UNDERLINED)
+                      .append(Component.text("Creating\n\n").decorate(TextDecoration.BOLD)
+                          .decoration(TextDecoration.BOLD, false))
                       .append(Component.text(
                           """
                               Placing down a lodestone crouch clicking it with a Portalis will create a location for the user to warp to.
                                 """)
-                          .decoration(TextDecoration.BOLD, false)),
-                  Component.text("Saving location\n\n").decorate(TextDecoration.BOLD)
+                          .decoration(TextDecoration.BOLD, false).decoration(TextDecoration.UNDERLINED, false)),
+                  Component.text("Saving location\n\n").decorate(TextDecoration.UNDERLINED)
                       .append(Component.text(
                           """
                               If you happen to find an active lodestone and would like to save it for yourself you can use your book on it, saving its location.
                               """)
-                          .decoration(TextDecoration.BOLD, false)),
-                  Component.text("Using\n\n").decorate(TextDecoration.BOLD)
+                          .decoration(TextDecoration.BOLD, false).decoration(TextDecoration.UNDERLINED, false)),
+                  Component.text("Using\n\n").decorate(TextDecoration.UNDERLINED)
                       .append(Component.text(
                           """
                               Stepping on any active lodestone will open a warp menu showing you all other locations that you have saved..
                               Warping from lodestone to lodestone will cost you nothing.
                               """)
-                          .decoration(TextDecoration.BOLD, false)));
+                          .decoration(TextDecoration.BOLD, false).decoration(TextDecoration.UNDERLINED, false)),
+                  Component.text("Ripped Pages\n\n").decorate(TextDecoration.UNDERLINED)
+                      .append(Component.text(
+                          // FIXME: fill this in
+                          """
+                              *One time use warp pages.
+
+                              Create these the using a Portalis while having shears in your offhand.
+                                """)
+                          .decoration(TextDecoration.BOLD, false).decoration(TextDecoration.UNDERLINED, false))
+
+              );
               // .append(Component.text(""))
               // Set the book's meta data
               book.setItemMeta(bookMeta);
@@ -1491,76 +1721,19 @@ public class portalis implements Listener {
               dialMenu.closeMenu(player);
               return;
           }
-        case "PORTALIS:warps":
+        case "PORTALIS:OTHER_USERS":
           switch (dm.selection_answer) {
-            case go_back_prompt: // go back to last menu
+            case go_back_prompt:
               dialMenu.openDialMenu("PORTALIS:main",
                   List.of(
                       "BED",
                       "SPAWN",
-                      "WARPS",
+                      "LOCATIONS",
+                      "OTHER USERS",
                       "LAST DEATH",
                       "INFO",
                       cancel_prompt),
                   player, Item_Manager.portalis_book);
-              return;
-            case "LOCATIONS":
-              if (isBookOutOfPages(ev)) {
-                return;
-              }
-              // for each player's warp compare to global warps, remove if needed, rename if
-              // needed.
-              List<String> prompt_list = new ArrayList<>();
-              List<GlobalWarps> to_remove = new ArrayList<>();
-              for (PlayerWarps pw : player_warps) {
-                // System.out.printf("%s's warp size: %s\n", pw.player_name,
-                // pw.known_warps.size());
-                if (pw.player_name.equals(player.getName())) {
-                  // System.out.printf("%s has: %s warp locations", pw.player_name,
-                  // pw.known_warps.size());
-                  for (GlobalWarps w : pw.known_warps) {
-                    if (findPlayerWarpInGlobalWarps(w) == null) {
-                      to_remove.add(w);
-                      // System.out.println("seems like this warp spot getting removed from the
-                      // player's list.");
-                      // pw.known_warps.remove(w);
-                    } else {
-                      if (w.name != null) {
-                        prompt_list.add(w.name);
-                      } else {
-                        prompt_list.add(w.location.toString());
-
-                      }
-                    }
-                  }
-                  for (GlobalWarps w : to_remove) {
-                    pw.known_warps.remove(w);
-                  }
-                  break; // found the player
-                }
-              }
-              Collections.sort(prompt_list, String.CASE_INSENSITIVE_ORDER);
-              prompt_list.add(cancel_prompt);
-              dialMenu.openDialMenu("PORTALIS:locations", prompt_list, player, Item_Manager.portalis_book);
-              saveGlobalWarpsToFile(global_warps_file);
-              savePlayerWarpsToFile(player_warps_file);
-              return;
-            case "OTHER USERS":
-              dialMenu.openDialMenu("PORTALIS:OTHER_USERS",
-                  List.of("WARP TO", "WAIT FOR", go_back_prompt, cancel_prompt), player,
-                  Item_Manager.portalis_book);
-              return;
-            case cancel_prompt:
-              dialMenu.closeMenu(player);
-              return;
-
-          }
-        case "PORTALIS:OTHER_USERS":
-          switch (dm.selection_answer) {
-            case go_back_prompt:
-              dialMenu.openDialMenu("PORTALIS:warps",
-                  List.of("LOCATIONS", "OTHER USERS", go_back_prompt, cancel_prompt), player,
-                  Item_Manager.portalis_book);
               return;
             case cancel_prompt:
               dialMenu.closeMenu(player);
@@ -1614,7 +1787,9 @@ public class portalis implements Listener {
           List.of(
               "BED",
               "SPAWN",
-              "WARPS",
+              "LOCATIONS",
+              "OTHER USERS",
+              "RIP PAGE",
               "LAST DEATH",
               "INFO",
               cancel_prompt),
@@ -1799,12 +1974,12 @@ public class portalis implements Listener {
     if (entity.equals(EntityType.PLAYER)) {
       Entity player = ev.getEntity();
       player_deaths this_death = new player_deaths();
-      this_death.name = (Player) player;
       this_death.loc = player.getLocation();
+      this_death.uuid = player.getUniqueId();
       int index = -1;
       if (deaths.size() > 0) {
         for (player_deaths d : deaths) {
-          if (d.name == player) {
+          if (d.uuid == player.getUniqueId()) {
             index = deaths.indexOf(d);
           }
         }

@@ -7,6 +7,7 @@ plugins {
 }
 
 repositories {
+    mavenCentral()
     mavenLocal()
     maven {
         url = uri("https://repo.papermc.io/repository/maven-public/")
@@ -19,19 +20,21 @@ repositories {
     // maven {
     //     url = uri("https://repo.maven.apache.org/maven2/")
     // }
+    maven { url = uri("https://maven.pkg.github.com/tomlj/tomlj") }
 }
 
 dependencies {
     // api(libs.com.moandjiezana.toml.toml4j)
     // api(libs.org.apache.maven.plugins.maven.assembly.plugin)
     // compileOnly(libs.io.papermc.paper.paper.api)
-    compileOnly("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
-    implementation("com.moandjiezana.toml:toml4j:0.7.2")
+    // implementation("com.moandjiezana.toml:toml4j:0.7.2")
+    implementation("org.tomlj:tomlj:1.1.1")
     implementation("com.google.code.gson:gson:2.11.0")
+    compileOnly("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
 }
 
 group = "com.kingtheguy.magic"
-version = "1.1"
+version = "1.2"
 description = "portalis"
 
 java {

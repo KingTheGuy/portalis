@@ -13,5 +13,5 @@ public class Utils {
     int deltaY = y2 - y1;
     int deltaZ = z2 - z1;
     return Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
-  }
+  } 
 }

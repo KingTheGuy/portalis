@@ -41,6 +41,7 @@ public class Item_Manager {
 	public static ItemStack portalis_book;
 	public static ItemStack ender_oil;
 	public static ItemStack infused_paper;
+	public static ItemStack ripped_page;
 	public static ItemStack spawn_book;
 	public static ItemStack coin;
 
@@ -51,6 +52,8 @@ public class Item_Manager {
 		createPortalis();
 		createEnderOil();
 		createInfusedPaper();
+		// createRippedWarpPage();
+		ripped_page = createRippedWarpPage("SPAWN");
 		// createInfusedPaperOldToNew();
 		// createMagicMirrorRecipe();
 		// refillMagicMirrorRecipe();
@@ -238,6 +241,25 @@ public class Item_Manager {
 		// PotionMix custom_potion_mix = new PotionMix(key, result, input, ingredient);
 		// PotionBrewer brewer = Bukkit.getServer().getPotionBrewer();
 		// brewer.addPotionMix(custom_potion_mix);
+	}
+
+	public static ItemStack createRippedWarpPage(String warp_name) {
+		// Ripped page
+		// ItemStack item = new ItemStack(Material.PAPER, 1);
+		ItemStack item = new ItemStack(Material.FILLED_MAP, 1);
+		ItemMeta meta = item.getItemMeta();
+		meta.displayName(Component.text(String.format("Ripped Page")).color(NamedTextColor.GOLD));
+		NamespacedKey key = new NamespacedKey(magic.getPlugin(), "portalis_ripped_page");
+		meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, warp_name);
+		List<Component> lore = new ArrayList<>();
+		lore.add(Component.text(String.format("@: %s",warp_name)).color(NamedTextColor.YELLOW));
+		lore.add(Component.text(String.format("..you feel dissy gazing on it.")).color(NamedTextColor.DARK_PURPLE));
+		lore.add(Component.text(String.format("one time use")).color(NamedTextColor.AQUA));
+		meta.lore(lore);
+		meta.addEnchant(Enchantment.LUCK, 1, false);
+		meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+		item.setItemMeta(meta);
+		return item;
 	}
 
 	private static void createInfusedPaper() {

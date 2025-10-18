@@ -21,7 +21,7 @@ public class DialMenu implements Listener {
 
 	ArrayList<PlayerDialMenu> player_with_menu = new ArrayList<>();
 	List<Player> wait_list = new ArrayList<>();
-	public static ChatColor selection_color = ChatColor.AQUA;
+	public static ChatColor selection_color = Config.default_settings.text_color;
 
 	public class DialContext {
 		int id;
@@ -174,7 +174,7 @@ public class DialMenu implements Listener {
 		 */
 		public String getDataFromId() {
 			String[] split = dial_id.split(":", -1);
-			System.out.println(String.format("the id length is: %s", split.length));
+			// System.out.println(String.format("the id length is: %s", split.length));
 			if (split.length <= 2) {
 				return split[1];
 			}
@@ -329,6 +329,13 @@ public class DialMenu implements Listener {
 
 	public String centerTextBar(PlayerDialMenu has_menu_open) {
 		int bar_size = 55;
+		if (has_menu_open.custom_answer != "") {
+			int custom_length = has_menu_open.custom_answer.length();
+			if (custom_length > bar_size / 3) {
+				custom_length = bar_size /3;
+			}
+			bar_size = bar_size - custom_length;
+		}
 		// int bar_size = 25;
 		String word = has_menu_open.hover;
 		if (word == "") {
