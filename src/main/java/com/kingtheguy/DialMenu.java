@@ -14,6 +14,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.title.Title;
 import net.md_5.bungee.api.ChatColor;
 
@@ -21,7 +22,7 @@ public class DialMenu implements Listener {
 
 	ArrayList<PlayerDialMenu> player_with_menu = new ArrayList<>();
 	List<Player> wait_list = new ArrayList<>();
-	public static ChatColor selection_color = Config.default_settings.text_color;
+	public static TextColor selection_color = Config.default_settings.text_color;
 
 	public class DialContext {
 		int id;

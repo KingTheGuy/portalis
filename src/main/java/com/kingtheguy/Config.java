@@ -8,22 +8,23 @@ import java.io.IOException;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 
-import net.md_5.bungee.api.ChatColor;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 
 public class Config {
 
-  public static Settings default_settings = new Settings(ChatColor.RED, false);
+  public static Settings default_settings = new Settings(TextColor.fromHexString(NamedTextColor.AQUA.asHexString()), false);
 
   public static class Settings {
-    ChatColor text_color;
+    TextColor text_color;
     boolean infinite_uses;
 
     public Settings() {
-      this.text_color = ChatColor.AQUA;
+      this.text_color = NamedTextColor.AQUA;
       this.infinite_uses = false;
     }
 
-    public Settings(ChatColor text_color, Boolean infinite_uses) {
+    public Settings(TextColor text_color, Boolean infinite_uses) {
       this.text_color = text_color;
       this.infinite_uses = infinite_uses;
     }

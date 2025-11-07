@@ -30,7 +30,8 @@ dependencies {
     // implementation("com.moandjiezana.toml:toml4j:0.7.2")
     implementation("org.tomlj:tomlj:1.1.1")
     implementation("com.google.code.gson:gson:2.11.0")
-    compileOnly("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
+    // compileOnly("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT")
 }
 
 group = "com.kingtheguy.magic"

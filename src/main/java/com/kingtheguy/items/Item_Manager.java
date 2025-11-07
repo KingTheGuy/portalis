@@ -2,36 +2,23 @@ package com.kingtheguy.items;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+// import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.block.BrewingStand;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.Merchant;
-import org.bukkit.inventory.MerchantInventory;
-import org.bukkit.inventory.MerchantRecipe;
-import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.inventory.StonecuttingRecipe;
-import org.bukkit.inventory.RecipeChoice.MaterialChoice;
-import org.bukkit.inventory.meta.BookMeta;
-import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
-import org.bukkit.inventory.meta.BookMeta.BookMetaBuilder;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.potion.PotionBrewer;
-import org.bukkit.potion.PotionData;
-import org.bukkit.potion.PotionType;
 
 import com.kingtheguy.magic;
 
-import io.papermc.paper.potion.PotionMix;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 
@@ -42,7 +29,7 @@ public class Item_Manager {
 	public static ItemStack ender_oil;
 	public static ItemStack infused_paper;
 	public static ItemStack ripped_page;
-	public static ItemStack spawn_book;
+	// public static ItemStack spawn_book;
 	public static ItemStack coin;
 
 	public static Integer portalis_max_uses = 8;
@@ -67,7 +54,7 @@ public class Item_Manager {
 	private static ItemStack getMundanePotion() {
 		ItemStack mundane_potion = new ItemStack(Material.POTION);
 		PotionMeta mundane_potion_meta = (PotionMeta) mundane_potion.getItemMeta();
-		mundane_potion_meta.setBasePotionData(new PotionData(PotionType.MUNDANE));
+		// mundane_potion_meta.setBasePotionData(new PotionData(PotionType.MUNDANE));
 		mundane_potion.setItemMeta(mundane_potion_meta);
 		return mundane_potion;
 	}
@@ -79,7 +66,7 @@ public class Item_Manager {
 		List<Component> lore = new ArrayList<>();
 		lore.add(Component.text(String.format("for trading")).color(NamedTextColor.YELLOW));
 		meta.lore(lore);
-		meta.addEnchant(Enchantment.LUCK, 1, false);
+		meta.addEnchant(Enchantment.LURE, 1, false);
 		meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
 		item.setItemMeta(meta);
 		coin = item;
@@ -102,7 +89,7 @@ public class Item_Manager {
 		List<Component> lore = new ArrayList<>();
 		lore.add(Component.text(String.format("%s/%s uses", 0, max_uses)));
 		meta.lore(lore);
-		meta.addEnchant(Enchantment.LUCK, 1, false);
+		meta.addEnchant(Enchantment.LURE, 1, false);
 		meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
 		item.setItemMeta(meta);
 		magic_mirror_book = item;
@@ -212,7 +199,7 @@ public class Item_Manager {
 		List<Component> lore = new ArrayList<>();
 		lore.add(Component.text(String.format("%s/%s uses", amount, portalis_max_uses)).color(NamedTextColor.AQUA));
 		meta.lore(lore);
-		meta.addEnchant(Enchantment.LUCK, 1, false);
+		meta.addEnchant(Enchantment.LURE, 1, false);
 		meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
 		item.setItemMeta(meta);
 		return item;
@@ -222,11 +209,13 @@ public class Item_Manager {
 		// Ender Oil
 		ItemStack potion = new ItemStack(Material.POTION, 1);
 		PotionMeta potion_meta = (PotionMeta) potion.getItemMeta();
-		PotionData potion_data = new PotionData(PotionType.MUNDANE, false, false);
+		// PotionData potion_data = new PotionData(PotionType.MUNDANE, false, false);
+		// PotionType potion_data = PotionType.MUNDANE;
 		potion_meta.displayName(Component.text(String.format("Ender Oil")));
-		potion_meta.addEnchant(Enchantment.LUCK, 1, false);
+		potion_meta.addEnchant(Enchantment.LURE, 1, false);
 		potion_meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-		potion_meta.setBasePotionData(potion_data);
+		// potion_meta.setBasePotionData(PotionType.MUNDANE);
+		// potion_data.
 		potion.setItemMeta(potion_meta);
 		ender_oil = potion;
 
@@ -256,7 +245,7 @@ public class Item_Manager {
 		lore.add(Component.text(String.format("..you feel dissy gazing on it.")).color(NamedTextColor.DARK_PURPLE));
 		lore.add(Component.text(String.format("one time use")).color(NamedTextColor.AQUA));
 		meta.lore(lore);
-		meta.addEnchant(Enchantment.LUCK, 1, false);
+		meta.addEnchant(Enchantment.LURE, 1, false);
 		meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
 		item.setItemMeta(meta);
 		return item;
@@ -270,7 +259,7 @@ public class Item_Manager {
 		List<Component> lore = new ArrayList<>();
 		lore.add(Component.text(String.format("I can see my reflection")).color(NamedTextColor.DARK_PURPLE));
 		meta.lore(lore);
-		meta.addEnchant(Enchantment.LUCK, 1, false);
+		meta.addEnchant(Enchantment.LURE, 1, false);
 		meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
 		item.setItemMeta(meta);
 		infused_paper = item;

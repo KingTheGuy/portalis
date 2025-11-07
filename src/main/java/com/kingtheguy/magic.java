@@ -29,7 +29,7 @@ public class magic extends JavaPlugin {
         directory.mkdirs();
     }
 
-    Config.saveConfig();
+    // Config.saveConfig();
     Item_Manager.init();
     getServer().getPluginManager().registerEvents(new portalis(), this);
     getServer().getPluginManager().registerEvents(new CauldronBrewing(), this);

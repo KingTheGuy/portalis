@@ -206,9 +206,10 @@ public class portalis implements Listener {
         // %s",used_warp.loc,used_warp.player.getLocation()));
         teleportEffectSound(used_warp.player, used_warp.player.getLocation());
         used_warp.player.addPotionEffect(
-            new PotionEffect(PotionEffectType.CONFUSION, 120, 1).withAmbient(false).withParticles(false));
+            new PotionEffect(PotionEffectType.NAUSEA, 120, 1).withAmbient(false).withParticles(false));
         used_warp.player.addPotionEffect(
             new PotionEffect(PotionEffectType.DARKNESS, 60, 1).withAmbient(false).withParticles(false));
+        // used_warp.player.addPotionEffect(new PotionEffectType.NAUSEA);
 
         // just_warped.remove(used_warp);
         to_remove.add(used_warp);
@@ -968,12 +969,13 @@ public class portalis implements Listener {
               if (!ev.getPlayer().getInventory().getItemInOffHand().isEmpty()) {
                 ev.getPlayer().getInventory().getItemInOffHand().damage(1, ev.getPlayer());
                 // player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
-                player.playSound(player.getLocation(), Sound.ENTITY_SHEEP_SHEAR, 1f, 1f);
               }
               HashMap<Integer, ItemStack> left = player.getInventory().addItem(new ItemStack(Item_Manager.createRippedWarpPage(dm.selection_answer)));
               if (!left.isEmpty()) {
                 player.getWorld().dropItem(player.getLocation(), new ItemStack(Item_Manager.createRippedWarpPage(dm.selection_answer)));
               }
+              player.playSound(player.getLocation(), Sound.ENTITY_SHEEP_SHEAR, 1f, 1f);
+              player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
             return;
           }
         case "PORTALIS:locations":
@@ -1309,6 +1311,8 @@ public class portalis implements Listener {
       // TODO:open with id of addingwarp with the location.. then at some point just
       // just wait for the dial id to be addingwarp_answer
       // so use this as a way to get get to that first dial part
+
+      // CREATING A LODESTONE WARP
       if (ev.getPlayer().isSneaking()) {
         if (ev.getClickedBlock() != null) {
           if (ev.getClickedBlock().getType().equals(Material.LODESTONE)) {
@@ -1363,6 +1367,7 @@ public class portalis implements Listener {
         }
       }
     }
+    // CREATING/SAVING/REMOVING A LODESTONE WARP
     if (!ev.getPlayer().getInventory().getItemInMainHand().isEmpty()) {
       if (ev.getItem().getType().equals(Material.NAME_TAG)) {
         ItemStack nametag = ev.getItem();
@@ -1783,6 +1788,7 @@ public class portalis implements Listener {
           }
       }
     } else {
+      // OPEN PORTALIS BOOK
       dialMenu.openDialMenu("PORTALIS:main",
           List.of(
               "BED",
@@ -1794,6 +1800,7 @@ public class portalis implements Listener {
               "INFO",
               cancel_prompt),
           player, Item_Manager.portalis_book);
+    player.playSound(player.getLocation(), Sound.BLOCK_CHISELED_BOOKSHELF_PICKUP, 1f, 1f);
     }
   }
 

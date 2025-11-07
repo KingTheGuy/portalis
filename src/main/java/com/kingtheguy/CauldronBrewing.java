@@ -12,7 +12,6 @@ import org.bukkit.Particle;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Levelled;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -21,13 +20,11 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
 
 import com.destroystokyo.paper.event.server.ServerTickStartEvent;
 import com.kingtheguy.items.Item_Manager;
 
 import net.kyori.adventure.audience.Audience;
-import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 
@@ -108,7 +105,7 @@ public class CauldronBrewing implements Listener {
 		}
 
 		public void CauldronTossIngridient(Location location) {
-			Bukkit.getWorld(location.getWorld().getUID()).spawnParticle(Particle.EXPLOSION_NORMAL, location.getX(),
+			Bukkit.getWorld(location.getWorld().getUID()).spawnParticle(Particle.EXPLOSION, location.getX(),
 					location.getY() + 0.2, location.getZ(), 0);
 			location.getWorld().playSound(location, org.bukkit.Sound.BLOCK_BUBBLE_COLUMN_WHIRLPOOL_INSIDE, (float) 1.0,
 					(float) 0.8);
@@ -159,7 +156,7 @@ public class CauldronBrewing implements Listener {
 			// Bukkit.getWorld(location.getWorld().getUID()).spawnParticle(Particle.BUBBLE_POP,
 			// location.getBlockX() + (x / 10),
 			// location.getBlockY() + 1, location.getBlockZ() + (z / 10), 0);
-			Bukkit.getWorld(this.location.getWorld().getUID()).spawnParticle(Particle.WATER_SPLASH,
+			Bukkit.getWorld(this.location.getWorld().getUID()).spawnParticle(Particle.SPLASH,
 					this.location.getBlockX() + (x / 10),
 					this.location.getBlockY() + 1, this.location.getBlockZ() + (z / 10), 0);
 		}
@@ -175,7 +172,7 @@ public class CauldronBrewing implements Listener {
 		}
 
 		public void CauldronMixComplete() {
-			Bukkit.getWorld(this.location.getWorld().getUID()).spawnParticle(Particle.EXPLOSION_NORMAL,
+			Bukkit.getWorld(this.location.getWorld().getUID()).spawnParticle(Particle.EXPLOSION,
 					this.location.getBlockX() + 0.5,
 					this.location.getBlockY() + 1, this.location.getBlockZ() + 0.5, 0);
 			this.location.getWorld().playSound(this.location, org.bukkit.Sound.BLOCK_BUBBLE_COLUMN_WHIRLPOOL_INSIDE,

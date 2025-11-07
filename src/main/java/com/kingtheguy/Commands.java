@@ -1,5 +1,6 @@
 package com.kingtheguy;
 
+import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -8,6 +9,8 @@ import org.bukkit.inventory.ItemStack;
 
 import com.kingtheguy.items.Item_Manager;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextColor;
 import net.md_5.bungee.api.ChatColor;
 
 public class Commands implements CommandExecutor {
@@ -40,6 +43,7 @@ public class Commands implements CommandExecutor {
           } else {
             player.getInventory().addItem(new ItemStack(Item_Manager.portalis_book));
           }
+          player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
         } else {
           // System.out.println("this command can only be executed by a player");
         }
@@ -52,14 +56,21 @@ public class Commands implements CommandExecutor {
           } else {
             player.getInventory().addItem(new ItemStack(Item_Manager.infused_paper));
           }
+          player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
         } else {
           // System.out.println("this command can only be executed by a player");
         }
         break;
       case "portalis:setselectioncolor":
-        ChatColor color = DialMenu.selection_color;
-        color = stringToColor(args[0]);
-        DialMenu.selection_color = color;
+        // ChatColor color = DialMenu.selection_color;
+        // color = stringToColor(args[0]);
+        // DialMenu.selection_color = color;
+        if (sender instanceof Player) {
+          Player player = (Player) sender;
+          TextColor color = TextColor.fromHexString(args[0]);
+          player.sendMessage(Component.text("eat my ass, does this allow lots of             spaces??").color(color));
+          DialMenu.selection_color = color;
+        };
         break;
       case "portalis:giverippedpage":
         if (sender instanceof Player) {
@@ -72,6 +83,7 @@ public class Commands implements CommandExecutor {
             player.getInventory().addItem(new ItemStack(Item_Manager.ripped_page));
             // System.out.println("this command can only be executed by a player");
           }
+          player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
         }
         break;
     }
