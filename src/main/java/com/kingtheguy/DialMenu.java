@@ -12,16 +12,18 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.title.Title;
-import net.md_5.bungee.api.ChatColor;
 
 public class DialMenu implements Listener {
 
 	ArrayList<PlayerDialMenu> player_with_menu = new ArrayList<>();
 	List<Player> wait_list = new ArrayList<>();
+	final int bar_size = 55;
 	public static TextColor selection_color = Config.default_settings.text_color;
 
 	public class DialContext {
@@ -97,8 +99,8 @@ public class DialMenu implements Listener {
 			// if (yaw % 30 >= 15) { //NOTE: this one is pretty fine
 			boolean sneaking = false;
 			if (player.isSneaking()) {
-				tick = tick_offset; //re-center
-				sneaking = true;
+					tick = tick_offset; // re-center
+					sneaking = true;
 			}
 			if (yaw > last_yaw_value) {
 				if (selected < dial_options.size() - 1) {
@@ -160,7 +162,7 @@ public class DialMenu implements Listener {
 				Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
 						Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
 				// Bukkit.getWorld(location.getWorld().getUID()).playSound(location,
-				// 		Sound.ITEM_INK_SAC_USE, 1f, 1f);
+				// Sound.ITEM_INK_SAC_USE, 1f, 1f);
 			}
 			last_selection_value = selected;
 		}
@@ -320,33 +322,35 @@ public class DialMenu implements Listener {
 	public void sendDialActionBar(Player player, PlayerDialMenu p_with_m, boolean as_title) {
 		Audience audience = Audience.audience(player);
 		if (as_title) {
-			audience.showTitle(Title.title(Component.text(""), Component.text(centerTextBar(p_with_m)),
+			audience.showTitle(Title.title(Component.text(""), centerTextBar(p_with_m),
 					Title.Times.times(Duration.ofSeconds(0), Duration.ofSeconds(1), Duration.ofSeconds(1))));
 			return;
 		}
+		// audience.sendActionBar(
+		// () -> Component.text(centerTextBar(p_with_m)));
 		audience.sendActionBar(
-				() -> Component.text(centerTextBar(p_with_m)));
+				() -> centerTextBar(p_with_m));
 	}
 
-	public String centerTextBar(PlayerDialMenu has_menu_open) {
-		int bar_size = 55;
+	public Component centerTextBar(PlayerDialMenu has_menu_open) {
+		int context_bar = bar_size;
 		if (has_menu_open.custom_answer != "") {
 			int custom_length = has_menu_open.custom_answer.length();
 			if (custom_length > bar_size / 3) {
-				custom_length = bar_size /3;
+				custom_length = bar_size / 3;
 			}
-			bar_size = bar_size - custom_length;
+			context_bar = bar_size - custom_length;
 		}
 		// int bar_size = 25;
 		String word = has_menu_open.hover;
 		if (word == "") {
-			//FIXME: something is wrong here
+			// FIXME: something is wrong here
 			word = has_menu_open.dial_options.get(has_menu_open.dial_options.size() / 2);
 		}
 		int word_size = word.length();
 
 		String blank_space = new String();
-		for (int x = 0; x < bar_size; x++) {
+		for (int x = 0; x < context_bar; x++) {
 			blank_space += " ";
 		}
 
@@ -377,7 +381,7 @@ public class DialMenu implements Listener {
 		// return String.format(ChatColor.GRAY + "< %s >",
 		// colorText(has_menu_open.tick, "Scroll LEFT & RIGHT"));
 		// }
-		int word_index = text_bar.indexOf(word);
+		// int word_index = text_bar.indexOf(word);
 		// if (word_index <= 0) {
 		// return String.format(ChatColor.GRAY + "< %s >",
 		// colorText(has_menu_open.tick, "Scroll LEFT & RIGHT"));
@@ -386,56 +390,81 @@ public class DialMenu implements Listener {
 		// String final_text = text_bar.substring(word_index + (word.length() / 2),
 		// word_index + (word.length() / 2) + bar_length);
 
-		String first = new String();
-		String last = new String();
+		// String first = new String();
+		// String last = new String();
 
-		String[] bar_split = text_bar.split(word);
+		// String[] bar_split = text_bar.split(word);
 
-		int start_index = bar_split[0].length() - bar_size / 2 - 1 + (word_size / 2);
-		for (int x = 0; x <= bar_size / 2 - (word_size / 2); x++) {
-			first = String.format("%s%s", first, text_bar.charAt(start_index));
-			start_index++;
-		}
-		int add_this = 0;
-		if (word_size % 2 == 0) {
-			add_this++;
-		}
-		start_index = word_index + word_size;
-		for (int x = 0; x <= bar_size / 2 - (word_size / 2) + add_this; x++) {
-			last = String.format("%s%s", last, text_bar.charAt(start_index));
-			start_index++;
-		}
+		// int start_index = bar_split[0].length() - context_bar / 2 - 1 + (word_size /
+		// 2);
+		// for (int x = 0; x <= context_bar / 2 - (word_size / 2); x++) {
+		// first = String.format("%s%s", first, text_bar.charAt(start_index));
+		// start_index++;
+		// }
+		// int add_this = 0;
+		// if (word_size % 2 == 0) {
+		// add_this++;
+		// }
+		// start_index = word_index + word_size;
+		// for (int x = 0; x <= context_bar / 2 - (word_size / 2) + add_this; x++) {
+		// last = String.format("%s%s", last, text_bar.charAt(start_index));
+		// start_index++;
+		// }
 
-		if (has_menu_open.tick > has_menu_open.tick_offset) {
-			String extra = new String();
-			if (has_menu_open.tick == 4) {
-				extra = String.format("%s%s", extra, " ");
-				first = first.substring(1, first.length());
-			} else {
-				extra = String.format("%s%s", extra, "  ");
-				first = first.substring(2, first.length());
-			}
-			last = String.format("%s%s", last, extra);
-		}
-		if (has_menu_open.tick < has_menu_open.tick_offset) {
-			String extra = new String();
-			if (has_menu_open.tick == 2) {
-				extra = String.format("%s%s", extra, " ");
-				last = last.substring(0, last.length() - 1);
-			} else {
-				extra = String.format("%s%s", extra, "  ");
-				last = last.substring(0, last.length() - 2);
-			}
-			first = String.format("%s%s", extra, first);
-		}
+		// if (has_menu_open.tick > has_menu_open.tick_offset) {
+		// String extra = new String();
+		// if (has_menu_open.tick == 4) {
+		// extra = String.format("%s%s", extra, " ");
+		// first = first.substring(1, first.length());
+		// } else {
+		// extra = String.format("%s%s", extra, " ");
+		// first = first.substring(2, first.length());
+		// }
+		// last = String.format("%s%s", last, extra);
+		// }
+		// if (has_menu_open.tick < has_menu_open.tick_offset) {
+		// String extra = new String();
+		// if (has_menu_open.tick == 2) {
+		// extra = String.format("%s%s", extra, " ");
+		// last = last.substring(0, last.length() - 1);
+		// } else {
+		// extra = String.format("%s%s", extra, " ");
+		// last = last.substring(0, last.length() - 2);
+		// }
+		// first = String.format("%s%s", extra, first);
+		// }
+
+		String[] what_we_got = spacer(
+				String.join("  ", has_menu_open.dial_options), word, context_bar);
 
 		if (has_menu_open.custom_answer != "") {
-			return String.format(ChatColor.GRAY + "%s : < %s%s%s >", has_menu_open.custom_answer, first,
-					colorText(has_menu_open.tick, word),
-					last);
+			// return String.format(ChatColor.GRAY + "%s : < %s%s%s >",
+			// has_menu_open.custom_answer, first,
+			// colorText(has_menu_open.tick, word),
+			// last);
+			// return Component.text("%s : < %s%s%s >").color(NamedTextColor.GRAY);
+			return Component.text(has_menu_open.custom_answer).color(NamedTextColor.GOLD)
+					.append(Component.text(" : ").color(NamedTextColor.GRAY))
+					.append(Component.text("< ").color(NamedTextColor.GRAY))
+					.append(Component.text(what_we_got[0]).color(NamedTextColor.GRAY))
+					.append(Component.text(colorText(has_menu_open.tick, word)).color(selection_color))
+					.append(Component.text(what_we_got[1]).color(NamedTextColor.GRAY))
+					.append(Component.text(" >").color(NamedTextColor.GRAY));
+			// : < %s%s%s >").color(NamedTextColor.GRAY);
+			// , has_menu_open.custom_answer, first, colorText(has_menu_open.tick, word),
+			// last
 		}
-		return String.format(ChatColor.GRAY + "< %s%s%s >", first, colorText(has_menu_open.tick, word),
-				last);
+		// return String.format(ChatColor.GRAY + "< %s%s%s >", first,
+		// colorText(has_menu_open.tick, word),
+		// last);
+		// return Component.text("<
+		// ").color(NamedTextColor.GRAY).append(Component.text(first).color(NamedTextColor.GRAY)).append(Component.text(colorText(has_menu_open.tick,
+		// word))).append(Component.text(last).color(NamedTextColor.GRAY).append(Component.text(">").color(NamedTextColor.GOLD)));
+		return Component.text("< ").color(NamedTextColor.GRAY)
+				.append(Component.text(what_we_got[0]).color(NamedTextColor.GRAY))
+				.append(Component.text(colorText(has_menu_open.tick, word)).color(selection_color))
+				.append(Component.text(what_we_got[1]).color(NamedTextColor.GRAY))
+				.append(Component.text(" >").color(NamedTextColor.GRAY));
 	}
 
 	public String colorText(int tick, String text) {
@@ -451,26 +480,89 @@ public class DialMenu implements Listener {
 		// }
 		boolean skip_around = false;
 		if (skip_around) {
-			return String.format(selection_color + ". .[ %s ]. ." +
-					ChatColor.GRAY, text);
+			// return String.format(selection_color + ". .[ %s ]. ." +
+			// ChatColor.GRAY, text);
+			return "   [ " + text + " ]   ";
 		} else if (tick == 1) {
-			return String.format(selection_color + "(([ %s ]. ." +
-					ChatColor.GRAY, text);
+			// return String.format(selection_color + "(([ %s ]. ." +
+			// ChatColor.GRAY, text);
+			return ". .[ " + text + " ]   ";
 		} else if (tick == 2) {
-			return String.format(selection_color + ". ([ %s ]. ." +
-					ChatColor.GRAY, text);
+			// return String.format(selection_color + ". ([ %s ]. ." +
+			// ChatColor.GRAY, text);
+			return "  .[ " + text + " ]   ";
 		} else if (tick == 3) {
-			return String.format(selection_color + ". .[ %s ]. ." +
-					ChatColor.GRAY, text);
+			// return String.format(selection_color + ". .[ %s ]. ." +
+			// ChatColor.GRAY, text);
+			return "   [ " + text + " ]   ";
 		} else if (tick == 4) {
-			return String.format(selection_color + ". .[ %s ]) ." +
-					ChatColor.GRAY, text);
+			// return String.format(selection_color + ". .[ %s ]) ." +
+			// ChatColor.GRAY, text);
+			return "   [ " + text + " ].  ";
 		} else if (tick == 5) {
-			return String.format(selection_color + ". .[ %s ]))" +
-					ChatColor.GRAY, text);
+			// return String.format(selection_color + ". .[ %s ]))" +
+			// ChatColor.GRAY, text);
+			return "   [ " + text + " ]. .";
 		}
 
-		return String.format(selection_color + "%s" + ChatColor.GRAY, text);
+		// return String.format(selection_color + "%s" + ChatColor.GRAY, text);
+		return text;
+	}
+
+	public String[] spacer(String text, String word, int context_bar) {
+		// String[] bar_split = text.split(word);
+		Integer word_index = text.indexOf(word);
+		Integer word_length = word.length();
+		Integer word_half_length = word_length / 2;
+
+		String first = text.substring(0, word_index);
+		String last = text.substring(word_index + word_length);
+
+		// add whitespaces
+		for (int x = 0; first.length() <= context_bar / 2; x++) {
+			first = String.format(" %s", first);
+		}
+
+		// add whitespaces
+		for (int x = 0; last.length() <= context_bar / 2; x++) {
+			last = String.format("%s ", last);
+		}
+
+		// constrain to half the bar size
+		first = first.substring(first.length() - (context_bar / 2), first.length() - 1);
+		last = last.substring(1, context_bar / 2);
+
+		String plus = "";
+		if (word_length % 2 == 0) {
+			plus = " ";
+		}
+
+		// // [ ] TODO: need to add half the length of the word to each side
+		// String temp_first = text.substring(0, word_index - 1);
+		// int to_add_first = 0;
+		// to_add_first = (context_bar / 2) + (word_length / 2);
+		// for (int x = 0; x <= to_add_first; x++) {
+		// temp_first = " " + temp_first;
+		// }
+
+		// first = temp_first;
+
+		// String temp_last = text.substring(word_index + (word_length));
+		// int to_add_last = 0;
+		// to_add_last = ((context_bar / 2) + (word_length / 2)); // -
+		// temp_last.length();
+		// for (int x = 0; x <= to_add_last; x++) {
+		// temp_last = temp_last + " ";
+		// }
+		// last = temp_last;
+
+		// // NOTE: if i add the word_size to both sides it just cancels out.
+		// first = first.substring((first.length() - (word_length / 2)) - (context_bar /
+		// 2), first.length());
+		// last = last.substring(0, ((context_bar / 2) + (word_length / 2)));
+
+		last = String.format("%s%s", last.substring(0, last.length() - word_half_length), plus);
+		return new String[] { first.substring(word_half_length), last };
 	}
 
 	public List<String> alphabet() {
