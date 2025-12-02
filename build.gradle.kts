@@ -35,7 +35,7 @@ dependencies {
 }
 
 group = "com.kingtheguy.magic"
-version = "1.2"
+version = "1.3"
 description = "portalis"
 
 java {
