@@ -970,13 +970,15 @@ public class portalis implements Listener {
                 ev.getPlayer().getInventory().getItemInOffHand().damage(1, ev.getPlayer());
                 // player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
               }
-              HashMap<Integer, ItemStack> left = player.getInventory().addItem(new ItemStack(Item_Manager.createRippedWarpPage(dm.selection_answer)));
+              HashMap<Integer, ItemStack> left = player.getInventory()
+                  .addItem(new ItemStack(Item_Manager.createRippedWarpPage(dm.selection_answer)));
               if (!left.isEmpty()) {
-                player.getWorld().dropItem(player.getLocation(), new ItemStack(Item_Manager.createRippedWarpPage(dm.selection_answer)));
+                player.getWorld().dropItem(player.getLocation(),
+                    new ItemStack(Item_Manager.createRippedWarpPage(dm.selection_answer)));
               }
               player.playSound(player.getLocation(), Sound.ENTITY_SHEEP_SHEAR, 1f, 1f);
               player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
-            return;
+              return;
           }
         case "PORTALIS:locations":
           switch (dm.selection_answer) {
@@ -1594,7 +1596,7 @@ public class portalis implements Listener {
               prompt_list.add(cancel_prompt);
 
               dialMenu.openDialMenu("PORTALIS:rip_page", prompt_list, player, Item_Manager.portalis_book);
-              
+
               return;
             case "OTHER USERS":
               dialMenu.openDialMenu("PORTALIS:OTHER_USERS",
@@ -1737,12 +1739,13 @@ public class portalis implements Listener {
             case go_back_prompt:
               dialMenu.openDialMenu("PORTALIS:main",
                   List.of(
-                      "BED",
-                      "SPAWN",
-                      "LOCATIONS",
-                      "OTHER USERS",
-                      "LAST DEATH",
-                      "INFO",
+                      // "BED",
+                      // "SPAWN",
+                      // "LOCATIONS",
+                      // "OTHER USERS",
+                      // "LAST DEATH",
+                      // "INFO",
+                      "LAST DEATH", "SPAWN", "OTHER USERS", "LOCATIONS", "BED", "INFO", "RIP PAGE",
                       cancel_prompt),
                   player, Item_Manager.portalis_book);
               return;
@@ -1797,16 +1800,17 @@ public class portalis implements Listener {
       // OPEN PORTALIS BOOK
       dialMenu.openDialMenu("PORTALIS:main",
           List.of(
-              "BED",
-              "SPAWN",
-              "LOCATIONS",
-              "OTHER USERS",
-              "RIP PAGE",
-              "LAST DEATH",
-              "INFO",
+              // "BED",
+              // "SPAWN",
+              // "LOCATIONS",
+              // "OTHER USERS",
+              // "RIP PAGE",
+              // "LAST DEATH",
+              // "INFO",
+              "LAST DEATH", "SPAWN", "OTHER USERS", "LOCATIONS", "BED", "INFO", "RIP PAGE",
               cancel_prompt),
           player, Item_Manager.portalis_book);
-    player.playSound(player.getLocation(), Sound.BLOCK_CHISELED_BOOKSHELF_PICKUP, 1f, 1f);
+      player.playSound(player.getLocation(), Sound.BLOCK_CHISELED_BOOKSHELF_PICKUP, 1f, 1f);
     }
   }
 
