@@ -10,6 +10,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.inventory.StonecuttingRecipe;
@@ -49,6 +50,7 @@ public class Item_Manager {
 		createStoneCutterRecipe();
 		// createSpawnBook();
 		createCoin();
+		changeLodestoneRecipe();
 	}
 
 	private static ItemStack getMundanePotion() {
@@ -130,15 +132,17 @@ public class Item_Manager {
 			Bukkit.updateRecipes();
 		}
 	}
+
 	// private static void createInfusedPaperOldToNew() {
-	// 	NamespacedKey key = new NamespacedKey(magic.getPlugin(), "custom_infused_paper_convert");
-	// 	ShapelessRecipe recipe = new ShapelessRecipe(key, infused_paper);
-	// 	ItemStack item = new ItemStack(Material.PAPER);
-	// 	ItemMeta meta = item.getItemMeta();
-	// 	meta.displayName(Component.text("Infused Paper").color(NamedTextColor.AQUA));
-	// 	recipe.addIngredient(item);
-	// 	Bukkit.getServer().addRecipe(recipe);
-	// 	Bukkit.updateRecipes();
+	// NamespacedKey key = new NamespacedKey(magic.getPlugin(),
+	// "custom_infused_paper_convert");
+	// ShapelessRecipe recipe = new ShapelessRecipe(key, infused_paper);
+	// ItemStack item = new ItemStack(Material.PAPER);
+	// ItemMeta meta = item.getItemMeta();
+	// meta.displayName(Component.text("Infused Paper").color(NamedTextColor.AQUA));
+	// recipe.addIngredient(item);
+	// Bukkit.getServer().addRecipe(recipe);
+	// Bukkit.updateRecipes();
 	// }
 	private static void createPortalisRecipe() {
 		// leather
@@ -241,7 +245,7 @@ public class Item_Manager {
 		NamespacedKey key = new NamespacedKey(magic.getPlugin(), "portalis_ripped_page");
 		meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, warp_name);
 		List<Component> lore = new ArrayList<>();
-		lore.add(Component.text(String.format("@: %s",warp_name)).color(NamedTextColor.YELLOW));
+		lore.add(Component.text(String.format("@: %s", warp_name)).color(NamedTextColor.YELLOW));
 		lore.add(Component.text(String.format("..you feel dissy gazing on it.")).color(NamedTextColor.DARK_PURPLE));
 		lore.add(Component.text(String.format("one time use")).color(NamedTextColor.AQUA));
 		meta.lore(lore);
@@ -311,71 +315,97 @@ public class Item_Manager {
 			Bukkit.updateRecipes();
 		}
 		// TODO: add "Netherack > Red Sand at Stonecutter"
-		//yea maybe not
+		// yea maybe not
+	}
+
+	public static void changeLodestoneRecipe() {
+		for (var recipe : Bukkit.getRecipesFor(new ItemStack(Material.LODESTONE))) {
+			if (recipe instanceof ShapedRecipe) {
+				ShapedRecipe shapedRecipe = (ShapedRecipe) recipe;
+				NamespacedKey key = shapedRecipe.getKey(); // Correct method to get the key
+				// getLogger().info("Lodestone Recipe Key: " + key);
+				Bukkit.removeRecipe(key);
+			}
+			// Bukkit.removeRecipe(recipe.getKey());
+			// NamespacedKey key = recipe.getKey();
+		}
+
+		// Create a new Lodestone recipe
+		// ShapedRecipe newLodestoneRecipe = new ShapedRecipe(new
+		// ItemStack(Material.LODESTONE));
+		NamespacedKey key = new NamespacedKey(magic.getPlugin(), "portalis_lodestone");
+		ShapedRecipe newLodestoneRecipe = new ShapedRecipe(key, new ItemStack(Material.LODESTONE));
+		newLodestoneRecipe.shape("DDD", "DSD", "DDD");
+		newLodestoneRecipe.setIngredient('D', Material.CHISELED_STONE_BRICKS); // Change this as needed
+		newLodestoneRecipe.setIngredient('S', Material.NETHERITE_INGOT); // Change this as needed
+
+		// Add the new recipe to the Bukkit recipe list
+		Bukkit.getServer().addRecipe(newLodestoneRecipe);
+
 	}
 
 	// private static void createSpawnBook() {
-	// 	ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
-	// 	ItemMeta meta = book.getItemMeta();
-	// 	BookMeta bookMeta = (BookMeta) meta;
-	// 	BookMetaBuilder builder = bookMeta.toBuilder();
-	// 	// bookMeta.displayName(Component.text("Leaving Spawn & You"));
-	// 	builder.title(Component.text("Leaving Spawn & You"));
-	// 	builder.author(Component.text("DustyGuard"));
-	// 	List<Component> pages = new ArrayList<>();
-	// 	pages.add(
-	// 			Component.text("Hey there newcomer, ")
-	// 					.append(Component.text("Welcome to Dusty.\n\n"))
-	// 					.append(Component.text("First off you should "))
-	// 					.append(Component.text("know that reading "))
-	// 					.append(Component.text("the board at spawn "))
-	// 					.append(Component.text("is manditory, not "))
-	// 					.append(Component.text("doing so would be "))
-	// 					.append(Component.text("very bad for your "))
-	// 					.append(Component.text("overall health. Note "))
-	// 					.append(Component.text("that you will not "))
-	// 					.append(Component.text("be able to interact "))
-	// 					.append(Component.text("with the world if "))
-	// 					.append(Component.text("you don't read it.")));
-	// 	pages.add(
-	// 			Component.text("So do make sure you ")
-	// 					.append(Component.text("read the board.\n\n"))
-	// 					.append(Component.text("At this point "))
-	// 					.append(Component.text("let's assume you've "))
-	// 					.append(Component.text("read the board "))
-	// 					.append(Component.text("and are able to "))
-	// 					.append(Component.text("interact with the "))
-	// 					.append(Component.text("world. Please try "))
-	// 					.append(Component.text("not to build your "))
-	// 					.append(Component.text("base anywhere "))
-	// 					.append(Component.text("near spawn. "))
+	// ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
+	// ItemMeta meta = book.getItemMeta();
+	// BookMeta bookMeta = (BookMeta) meta;
+	// BookMetaBuilder builder = bookMeta.toBuilder();
+	// // bookMeta.displayName(Component.text("Leaving Spawn & You"));
+	// builder.title(Component.text("Leaving Spawn & You"));
+	// builder.author(Component.text("DustyGuard"));
+	// List<Component> pages = new ArrayList<>();
+	// pages.add(
+	// Component.text("Hey there newcomer, ")
+	// .append(Component.text("Welcome to Dusty.\n\n"))
+	// .append(Component.text("First off you should "))
+	// .append(Component.text("know that reading "))
+	// .append(Component.text("the board at spawn "))
+	// .append(Component.text("is manditory, not "))
+	// .append(Component.text("doing so would be "))
+	// .append(Component.text("very bad for your "))
+	// .append(Component.text("overall health. Note "))
+	// .append(Component.text("that you will not "))
+	// .append(Component.text("be able to interact "))
+	// .append(Component.text("with the world if "))
+	// .append(Component.text("you don't read it.")));
+	// pages.add(
+	// Component.text("So do make sure you ")
+	// .append(Component.text("read the board.\n\n"))
+	// .append(Component.text("At this point "))
+	// .append(Component.text("let's assume you've "))
+	// .append(Component.text("read the board "))
+	// .append(Component.text("and are able to "))
+	// .append(Component.text("interact with the "))
+	// .append(Component.text("world. Please try "))
+	// .append(Component.text("not to build your "))
+	// .append(Component.text("base anywhere "))
+	// .append(Component.text("near spawn. "))
 
-	// 	);
-	// 	pages.add(
-	// 			Component.text("Go at least 1k blocks ")
-	// 					.append(Component.text("away from spawn to "))
-	// 					.append(Component.text("start building your "))
-	// 					.append(Component.text("base. Lets say you "))
-	// 					.append(Component.text("happen to stumble "))
-	// 					.append(Component.text("upon the Shopping "))
-	// 					.append(Component.text("District located "))
-	// 					.append(Component.text("right outside of "))
-	// 					.append(Component.text("spawn.. Do not break "))
-	// 					.append(Component.text("any trees there, do "))
-	// 					.append(Component.text("not build your base ")));
-	// 	pages.add(
-	// 			Component.text("there, that area ")
-	// 					.append(Component.text("is meant for player "))
-	// 					.append(Component.text("shops only.\n\n "))
+	// );
+	// pages.add(
+	// Component.text("Go at least 1k blocks ")
+	// .append(Component.text("away from spawn to "))
+	// .append(Component.text("start building your "))
+	// .append(Component.text("base. Lets say you "))
+	// .append(Component.text("happen to stumble "))
+	// .append(Component.text("upon the Shopping "))
+	// .append(Component.text("District located "))
+	// .append(Component.text("right outside of "))
+	// .append(Component.text("spawn.. Do not break "))
+	// .append(Component.text("any trees there, do "))
+	// .append(Component.text("not build your base ")));
+	// pages.add(
+	// Component.text("there, that area ")
+	// .append(Component.text("is meant for player "))
+	// .append(Component.text("shops only.\n\n "))
 
-	// 					.append(Component.text("That is all for now, "))
-	// 					.append(Component.text("hope you enjoy your "))
-	// 					.append(Component.text("stay. "))
+	// .append(Component.text("That is all for now, "))
+	// .append(Component.text("hope you enjoy your "))
+	// .append(Component.text("stay. "))
 
-	// 	);
-	// 	builder.pages(pages);
-	// 	bookMeta = builder.build();
-	// 	book.setItemMeta(bookMeta);
-	// 	spawn_book = book;
+	// );
+	// builder.pages(pages);
+	// bookMeta = builder.build();
+	// book.setItemMeta(bookMeta);
+	// spawn_book = book;
 	// }
 }
