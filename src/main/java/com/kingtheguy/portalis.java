@@ -33,6 +33,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -2012,110 +2013,173 @@ public class portalis implements Listener {
   }
 
   @EventHandler
-  public void onPrepareItemCraft(PrepareItemCraftEvent event) {
-    // Get the crafting matrix
-    ItemStack[] matrix = event.getInventory().getMatrix();
+  public void onInventoryClick(InventoryClickEvent event) {
+    // Ensure the clicked inventory belongs to a player
+    if (event.getWhoClicked() instanceof Player) {
+      Player player = (Player) event.getWhoClicked();
 
-    // Check each item in the matrix
-    int how_many = 0;
-    int how_many_books = 0;
-    boolean book_found = false;
-    int uses = 0;
-    boolean stacked = false;
-    NamespacedKey portalis_key = new NamespacedKey(magic.getPlugin(), "portalis_use_data");
-    for (ItemStack item : matrix) {
-      if (item != null) {
-        ItemStack one_item = item.clone();
-        one_item.asOne();
-        if (one_item.equals(Item_Manager.coin)) {
-          // If the item with the certain data value is found, prevent crafting
-          event.getInventory().setResult(new ItemStack(Material.AIR));
-          break;
-        }
-        if (item.equals(Item_Manager.infused_paper)) {
-          how_many++;
-          if (item.getAmount() > 1) {
-            stacked = true;
-          }
-        }
-        if (!item.equals(Item_Manager.infused_paper)) {
-          if (item.getType() == Material.PAPER) {
-            if (item.getEnchantments().toString().contains("minecraft:luck_of_the_sea")) {
-              how_many++;
-              if (item.getAmount() > 1) {
-                stacked = true;
-              }
+      // Get the clicked item
+      ItemStack clickedItem = event.getCurrentItem();
+      // ItemStack itemInHand = player.getInventory().getItemInMainHand();
+      ItemStack itemInHand = event.getCursor();
+
+      // Check if the player has an item in hand and clicked an item
+      if (clickedItem != null && itemInHand != null) {
+        NamespacedKey portalis_key = new NamespacedKey(magic.getPlugin(), "portalis_use_data");
+        // Example: Check if the clicked item is a diamond and the item in hand is dirt
+        if (clickedItem.getItemMeta() != null) {
+          ItemStack temp_item = itemInHand.clone();
+          temp_item.setAmount(1);
+
+          if (clickedItem.getItemMeta().getPersistentDataContainer().has(portalis_key)
+              && temp_item.equals(Item_Manager.infused_paper)) {
+            event.setCancelled(true); // swaping
+            Integer cur_value = clickedItem.getItemMeta().getPersistentDataContainer().get(portalis_key,
+                PersistentDataType.INTEGER);
+            if (cur_value < Item_Manager.portalis_max_uses) {
+              ItemMeta meta = Item_Manager.refillPortalis(cur_value + 1).getItemMeta();
+              clickedItem.setItemMeta(meta);
+              itemInHand.subtract();
+
+              Bukkit.getWorld(player.getLocation().getWorld().getUID()).playSound(player.getLocation(),
+                  Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
+            } else {
+              Bukkit.getWorld(player.getLocation().getWorld().getUID()).playSound(player.getLocation(),
+                  Sound.ITEM_BOOK_PUT, 1f, 1f);             
             }
           }
         }
-        one_item = item.clone(); // reset this cuz yes
-        // for (int x = 0; x <= Item_Manager.portalis_max_uses; x++) {
-        if (one_item.getItemMeta().getPersistentDataContainer().has(portalis_key)) {
-          Integer cur_value = one_item.getItemMeta().getPersistentDataContainer().get(portalis_key,
-              PersistentDataType.INTEGER);
-          // System.out.println(String.format("book with [%s] uses left found",
-          // cur_value));
-          uses = cur_value;
-          how_many_books++;
-          book_found = true;
-        }
-        for (NamespacedKey key : item.getItemMeta().getPersistentDataContainer().getKeys()) {
-          if (key.toString().equals("magic-mirror:magic_mirror_use_data")) {
-            // System.out.println(String.format("book with [%s] uses left found",
-            // cur_value));
-            how_many_books++;
-            book_found = true;
-          }
-        }
+        // if (clickedItem.getType() == Material.DIAMOND && itemInHand.getType() ==
+        // Material.DIRT) {
+        // // Example action: Send a message to the player
+        // player.sendMessage("You clicked on a diamond with dirt!");
 
-        // FIXME: need to convert the old infused paper to the new one..
-
-        // System.out.println(String.format("enchatments:
-        // %s",item.getEnchantments().toString()));
-        // System.out.println(String.format("displayname:
-        // %s",item.getItemMeta().displayName()));
-        // if (item.getItemMeta().displayName().equals(Component.text("Infused
-        // Paper").color(NamedTextColor.AQUA))) {
-        // System.out.println("yes lets convert to the new infused paper");
-        // }
-
-        // System.out.println(String.format("here are some kets: [ %s
-        // ]",item.getItemMeta().getPersistentDataContainer().getKeys().toString()));
-        // this should convert old pages to the new ones
-        // if (one_item.getItemMeta().displayName() != null) {
-        // if (one_item.getItemMeta().displayName() ==
-        // Item_Manager.infused_paper.getItemMeta().displayName()){
-        // // ItemStack new_stack = new ItemStack(Item_Manager.infused_paper);
-        // // new_stack.setAmount(item.getAmount());
-        // event.getInventory().setResult(Item_Manager.infused_paper);
-        // }
+        // // Here you can add your custom logic (e.g., swapping items, giving rewards,
+        // // etc.)
         // }
       }
     }
-    if (stacked == true) {
-      return;
-    }
-    if (how_many_books > 1) {
-      // System.out.println("too many books");
-      event.getInventory().setResult(new ItemStack(Material.AIR));
-    }
-    if (book_found == true) {
-      // System.out.println("yes book found");
-      if (uses + how_many > Item_Manager.portalis_max_uses) {
-        how_many = Item_Manager.portalis_max_uses;
-        uses = 0;
-        event.getInventory().setResult(new ItemStack(Material.AIR));
-      } else {
-        event.getInventory().setResult(Item_Manager.refillPortalis(uses + how_many));
-      }
-    }
-    // else if (how_many > 0) {
-    // ItemStack new_stack = new ItemStack(Item_Manager.infused_paper);
-    // new_stack.setAmount(how_many);
-    // event.getInventory().setResult(new_stack);
-
-    // }
   }
+
+  // @EventHandler
+  // public void onPrepareItemCraft(PrepareItemCraftEvent event) {
+  //   // Get the crafting matrix
+  //   ItemStack[] matrix = event.getInventory().getMatrix();
+  //   // ItemStack[] matrix = event.getInventory().getContents();
+
+  //   // Check each item in the matrix
+  //   int how_many = 0;
+  //   int how_many_books = 0;
+  //   boolean book_found = false;
+  //   int uses = 0;
+  //   boolean stacked = false;
+  //   NamespacedKey portalis_key = new NamespacedKey(magic.getPlugin(), "portalis_use_data");
+  //   for (ItemStack item : matrix) {
+  //     if (stacked == true) {
+  //       event.getInventory().setResult(new ItemStack(Material.AIR));
+  //       return;
+  //     } else {
+  //       if (item != null) {
+  //         ItemStack one_item = item.clone();
+  //         one_item.asOne();
+  //         if (one_item.equals(Item_Manager.coin)) {
+  //           // If the item with the certain data value is found, prevent crafting
+  //           event.getInventory().setResult(new ItemStack(Material.AIR));
+  //           break;
+  //         }
+  //         if (item.equals(Item_Manager.infused_paper)) {
+  //           how_many++;
+  //           if (item.getAmount() > 1) {
+  //             stacked = true;
+  //             // System.out.println("yes we should set to air");
+  //           }
+  //         }
+  //         if (!item.equals(Item_Manager.infused_paper)) {
+  //           if (item.getType() == Material.PAPER) {
+  //             if (item.getEnchantments().toString().contains("minecraft:luck_of_the_sea")) {
+  //               how_many++;
+  //               if (item.getAmount() > 1) {
+  //                 stacked = true;
+  //               }
+  //             }
+  //           }
+  //         }
+  //         one_item = item.clone(); // reset this cuz yes
+  //         // for (int x = 0; x <= Item_Manager.portalis_max_uses; x++) {
+  //         if (one_item.getItemMeta() == null) {
+  //           continue;
+  //         }
+  //         if (one_item.getItemMeta().getPersistentDataContainer().has(portalis_key)) {
+  //           Integer cur_value = one_item.getItemMeta().getPersistentDataContainer().get(portalis_key,
+  //               PersistentDataType.INTEGER);
+  //           // System.out.println(String.format("book with [%s] uses left found",
+  //           // cur_value));
+  //           uses = cur_value;
+  //           how_many_books++;
+  //           book_found = true;
+  //         }
+  //         for (NamespacedKey key : item.getItemMeta().getPersistentDataContainer().getKeys()) {
+  //           if (key.toString().equals("magic-mirror:magic_mirror_use_data")) {
+  //             // System.out.println(String.format("book with [%s] uses left found",
+  //             // cur_value));
+  //             how_many_books++;
+  //             book_found = true;
+  //           }
+  //         }
+
+  //         // FIXME: need to convert the old infused paper to the new one..
+
+  //         // System.out.println(String.format("enchatments:
+  //         // %s",item.getEnchantments().toString()));
+  //         // System.out.println(String.format("displayname:
+  //         // %s",item.getItemMeta().displayName()));
+  //         // if (item.getItemMeta().displayName().equals(Component.text("Infused
+  //         // Paper").color(NamedTextColor.AQUA))) {
+  //         // System.out.println("yes lets convert to the new infused paper");
+  //         // }
+
+  //         // System.out.println(String.format("here are some kets: [ %s
+  //         // ]",item.getItemMeta().getPersistentDataContainer().getKeys().toString()));
+  //         // this should convert old pages to the new ones
+  //         // if (one_item.getItemMeta().displayName() != null) {
+  //         // if (one_item.getItemMeta().displayName() ==
+  //         // Item_Manager.infused_paper.getItemMeta().displayName()){
+  //         // // ItemStack new_stack = new ItemStack(Item_Manager.infused_paper);
+  //         // // new_stack.setAmount(item.getAmount());
+  //         // event.getInventory().setResult(Item_Manager.infused_paper);
+  //         // }
+  //         // }
+  //       }
+  //     }
+  //   }
+  //   if (stacked == true) {
+  //     return;
+  //   }
+  //   if (how_many_books > 1) {
+  //     // System.out.println("too many books");
+  //     event.getInventory().setResult(new ItemStack(Material.AIR));
+  //   }
+  //   if (book_found == true) {
+  //     // System.out.println("yes book found");
+  //     if (uses + how_many > Item_Manager.portalis_max_uses) {
+  //       how_many = Item_Manager.portalis_max_uses;
+  //       uses = 0;
+  //       event.getInventory().setResult(new ItemStack(Material.AIR));
+  //     } else {
+  //       if (stacked == true) {
+  //         event.getInventory().setResult(new ItemStack(Material.AIR));
+  //       } else {
+  //         event.getInventory().setResult(Item_Manager.refillPortalis(uses + how_many));
+  //       }
+  //     }
+  //   }
+  //   // else if (how_many > 0) {
+  //   // ItemStack new_stack = new ItemStack(Item_Manager.infused_paper);
+  //   // new_stack.setAmount(how_many);
+  //   // event.getInventory().setResult(new_stack);
+
+  //   // }
+  // }
 
   @EventHandler
   public void keepBookOnDeath(PlayerDeathEvent event) {
