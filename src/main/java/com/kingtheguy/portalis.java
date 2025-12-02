@@ -1414,6 +1414,7 @@ public class portalis implements Listener {
         }
         return;
       } else {
+        // this checks for the portalis book
         NamespacedKey key = new NamespacedKey(magic.getPlugin(), "portalis_use_data");
         ItemMeta meta = ev.getItem().getItemMeta();
         PersistentDataContainer container = meta.getPersistentDataContainer();
@@ -1422,6 +1423,11 @@ public class portalis implements Listener {
           return;
         }
         if (cur_value != null) {
+          if (ev.getItem().getAmount() > 1) {
+            audience.sendActionBar(
+                () -> Component.text(String.format("too heavy to flip through")).color(NamedTextColor.RED));
+            return;
+          }
           ev.setCancelled(true); // prevent other iteractions
 
           // if (portalis_no_data.equals(hand_item)) {
